@@ -1,0 +1,21 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.lock
+!pubspec.lock
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+*.class
+*.log
+local.properties
+GeneratedPluginRegistrant.java
+google-services.json
+**/android/key.properties
+**/android/*.jks
+**/android/*.keystore
