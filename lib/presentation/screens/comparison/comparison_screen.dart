@@ -91,9 +91,10 @@ class ComparisonScreen extends ConsumerWidget {
               final extra     = entry.value.$1;
               final r         = entry.value.$2;
               final isHighlight = extra == input.extraPayment && extra > 0;
+              final cs = Theme.of(context).colorScheme;
               final bg = isHighlight
                   ? AppTheme.accentGood.withValues(alpha: 0.1)
-                  : i % 2 == 0 ? Colors.white : Colors.grey.shade50;
+                  : i % 2 == 0 ? cs.surface : cs.surfaceContainerLow;
               return Container(
                 color: bg,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -110,7 +111,7 @@ class ComparisonScreen extends ConsumerWidget {
                   Expanded(flex: 2, child: Text(
                     fmt.format(r.interestExtra),
                     textAlign: TextAlign.right,
-                    style: TextStyle(color: Colors.orange.shade700, fontSize: 12))),
+                    style: TextStyle(color: AppTheme.warning, fontSize: 12))),
                   Expanded(flex: 2, child: Text(
                     extra == 0 ? '-' : fmt.format(r.interestSaved),
                     textAlign: TextAlign.right,
@@ -130,13 +131,22 @@ class ComparisonScreen extends ConsumerWidget {
             child: BarChart(BarChartData(
               alignment: BarChartAlignment.spaceAround,
               maxY: maxSaved * 1.15 + 1,
+              barTouchData: BarTouchData(
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipColor: (_) => Colors.blueGrey.shade800,
+                  getTooltipItem: (group, groupIdx, rod, rodIdx) => BarTooltipItem(
+                    '\$${(rod.toY / 1000).toStringAsFixed(1)}k saved',
+                    const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
+              ),
               barGroups: scenarios.asMap().entries.map((entry) =>
                 BarChartGroupData(
                   x: entry.key,
                   barRods: [BarChartRodData(
                     toY: entry.value.$2.interestSaved,
                     color: entry.value.$1 == 0
-                        ? Colors.grey.shade400
+                        ? const Color(0xFF94A3B8)
                         : AppTheme.accentGood,
                     width: 22,
                     borderRadius: BorderRadius.circular(4),
@@ -165,10 +175,150 @@ class ComparisonScreen extends ConsumerWidget {
               ),
             )),
           ),
+          const SizedBox(height: 24),
+
+          // ── Cost Breakdown: Principal vs Interest ─────────────────────
+          _CostBreakdownCard(
+              result: result, input: input, fmt: fmt, isEs: isEs),
           const SizedBox(height: 80),
         ]),
       )),
       const AdFooter(),
     ]);
   }
+}
+
+// ── Principal vs Interest visual breakdown ─────────────────────────────────
+class _CostBreakdownCard extends StatelessWidget {
+  final PayoffResult result;
+  final LoanInput    input;
+  final NumberFormat fmt;
+  final bool isEs;
+  const _CostBreakdownCard({
+    required this.result,
+    required this.input,
+    required this.fmt,
+    required this.isEs,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final principal = input.loanAmount;
+    final interest  = result.interestNormal;
+    final total     = principal + interest;
+    if (total <= 0) return const SizedBox.shrink();
+
+    final pPct = principal / total;
+    final iPct = interest  / total;
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(
+        isEs ? 'Desglose del Costo Total' : 'Total Cost Breakdown',
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+      const SizedBox(height: 12),
+      Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(children: [
+            // Stacked bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                height: 28,
+                child: Row(children: [
+                  Flexible(
+                    flex: (pPct * 1000).round(),
+                    child: Container(color: AppTheme.primary),
+                  ),
+                  Flexible(
+                    flex: (iPct * 1000).round(),
+                    child: Container(color: AppTheme.warning),
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(children: [
+              _BreakdownLeg(
+                color: AppTheme.primary,
+                label: isEs ? 'Capital' : 'Principal',
+                amount: fmt.format(principal),
+                pct: '${(pPct * 100).toStringAsFixed(0)}%',
+              ),
+              const SizedBox(width: 12),
+              _BreakdownLeg(
+                color: AppTheme.warning,
+                label: isEs ? 'Interés Total' : 'Total Interest',
+                amount: fmt.format(interest),
+                pct: '${(iPct * 100).toStringAsFixed(0)}%',
+              ),
+            ]),
+            if (result.monthsSaved > 0) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentGood.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: AppTheme.accentGood.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.savings_rounded,
+                        color: AppTheme.accentGood, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${isEs ? "Con pago extra, ahorras" : "With extra payment you save"} '
+                      '${fmt.format(result.interestSaved)} '
+                      '${isEs ? "en interés" : "in interest"}',
+                      style: const TextStyle(
+                          color: AppTheme.accentGood,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ]),
+        ),
+      ),
+    ]);
+  }
+}
+
+class _BreakdownLeg extends StatelessWidget {
+  final Color  color;
+  final String label, amount, pct;
+  const _BreakdownLeg({
+    required this.color,
+    required this.label,
+    required this.amount,
+    required this.pct,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Row(children: [
+      Container(
+        width: 12, height: 12,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+      ),
+      const SizedBox(width: 8),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+        Text(amount,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        Text(pct, style: TextStyle(
+            fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+      ])),
+    ]),
+  );
 }

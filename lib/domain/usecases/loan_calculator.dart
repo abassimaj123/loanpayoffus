@@ -74,6 +74,39 @@ class LoanCalculator {
     );
   }
 
+  /// Biweekly payment mode.
+  ///
+  /// payment = monthlyPayment / 2, 26 payments/year
+  /// effectiveMonthly = biweeklyPayment * 26 / 12  (≈ 13 monthly payments/yr)
+  static Map<String, double> calculateBiweekly(
+    double principal,
+    double annualRatePct,
+    int    termMonths,
+  ) {
+    final monthlyPayment  = computeMonthlyPayment(principal, annualRatePct, termMonths);
+    final biweeklyPayment = monthlyPayment / 2;
+    final effectiveMonthly = biweeklyPayment * 26 / 12;
+
+    final monthlySched   = buildSchedule(principal, annualRatePct, monthlyPayment, 0);
+    final biweeklySched  = buildSchedule(principal, annualRatePct, effectiveMonthly, 0);
+
+    final interestMonthly  = monthlySched.fold<double>(0, (s, e) => s + e.interest);
+    final interestBiweekly = biweeklySched.fold<double>(0, (s, e) => s + e.interest);
+
+    final monthsSaved    = (monthlySched.length - biweeklySched.length)
+        .clamp(0, monthlySched.length)
+        .toDouble();
+    final interestSaved  = (interestMonthly - interestBiweekly)
+        .clamp(0.0, double.infinity);
+
+    return {
+      'biweeklyPayment': biweeklyPayment,
+      'totalInterest':   interestBiweekly,
+      'monthsSaved':     monthsSaved,
+      'interestSaved':   interestSaved,
+    };
+  }
+
   static double requiredExtraForTarget(
     double loanAmount, double annualRatePct,
     double monthlyPayment, int targetMonths,
@@ -82,8 +115,8 @@ class LoanCalculator {
     for (int i = 0; i < 50; i++) {
       final mid   = (lo + hi) / 2;
       final sched = buildSchedule(loanAmount, annualRatePct, monthlyPayment, mid);
-      if (sched.length <= targetMonths) hi = mid;
-      else lo = mid;
+      if (sched.length <= targetMonths) { hi = mid; }
+      else { lo = mid; }
     }
     return (lo + hi) / 2;
   }

@@ -40,7 +40,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (mounted) setState(() => _rows = rows);
   }
 
-  Future<void> _delete(int id) async {
+  Future<void> _delete(int id, {bool confirm = true}) async {
+    if (confirm) {
+      final isEs = isSpanishNotifier.value;
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(isEs ? 'Eliminar entrada' : 'Delete entry'),
+          content: Text(isEs
+              ? '¿Eliminar este cálculo del historial?'
+              : 'Remove this calculation from history?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(isEs ? 'Cancelar' : 'Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(isEs ? 'Eliminar' : 'Delete',
+                  style: const TextStyle(color: AppTheme.dangerRed)),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
     await DatabaseHelper.instance.deleteHistory(id);
     _load();
   }
@@ -57,7 +81,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             child: Text(s.cancel),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.dangerRed),
             onPressed: () => Navigator.pop(context, true),
             child: Text(s.clearAll, style: const TextStyle(color: Colors.white)),
           ),
@@ -78,10 +102,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Column(children: [
       Expanded(child: _rows.isEmpty
         ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.history, size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 12),
+            Icon(Icons.history_rounded, size: 72,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15)),
+            const SizedBox(height: 16),
             Text(s.historyEmpty,
-              style: TextStyle(color: Colors.grey.shade500)),
+              style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45))),
+            const SizedBox(height: 8),
+            Text(
+              isEs
+                  ? 'Calcula un préstamo para guardar aquí'
+                  : 'Calculate a loan to save it here',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35)),
+            ),
           ]))
         : ListView.builder(
             padding: const EdgeInsets.all(12),
@@ -98,35 +135,36 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildHeader(dynamic s) {
-    final isPremium = freemiumService.isPremium;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          ValueListenableBuilder<bool>(
-            valueListenable: freemiumService.isPremiumNotifier,
-            builder: (_, isPrem, __) => Text(
-              isPrem
+      child: ValueListenableBuilder<bool>(
+        valueListenable: freemiumService.isPremiumNotifier,
+        builder: (_, isPremium, __) => Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              isPremium
                 ? '${_rows.length} saved'
                 : '${_rows.length} / ${freemiumService.historyLimit} saved',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                  fontSize: 13),
             ),
-          ),
-          if (!isPremium)
-            TextButton.icon(
-              onPressed: () => IAPService.instance.buy(),
-              icon: const Icon(Icons.star_outline, size: 14),
-              label: Text(s.unlockUnlimited,
-                  style: const TextStyle(fontSize: 12)),
-            )
-          else if (_rows.isNotEmpty)
-            TextButton(
-              onPressed: () => _clearAll(s),
-              child: Text(s.clearAll,
-                  style: const TextStyle(fontSize: 12, color: Colors.red)),
-            ),
-        ],
+            if (!isPremium)
+              TextButton.icon(
+                onPressed: () => IAPService.instance.buy(),
+                icon: const Icon(Icons.star_outline, size: 14),
+                label: Text(s.unlockUnlimited,
+                    style: const TextStyle(fontSize: 12)),
+              )
+            else if (_rows.isNotEmpty)
+              TextButton(
+                onPressed: () => _clearAll(s),
+                child: Text(s.clearAll,
+                    style: const TextStyle(fontSize: 12, color: AppTheme.dangerRed)),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -143,36 +181,47 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ? DateFormat('MMM d, yyyy • h:mm a').format(createdAt)
         : '';
 
-    return Card(
+    return Dismissible(
+      key: ValueKey(row['id']),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: AppTheme.dangerRed.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Icon(Icons.delete_rounded, color: AppTheme.dangerRed),
+      ),
+      confirmDismiss: (_) => _delete(row['id'] as int, confirm: true).then((_) => false),
+      child: Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(
-              builder: (_) => HistoryDetailScreen(entry: row)),
-        ),
+          PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => HistoryDetailScreen(entry: row),
+                    transitionsBuilder: (_, anim, __, child) =>
+                        FadeTransition(opacity: anim, child: child),
+                    transitionDuration: const Duration(milliseconds: 250),
+                  )),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Text(loanType,
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.chevron_right,
-                    size: 18, color: Colors.grey.shade400),
-                const SizedBox(width: 4),
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                  onPressed: () => _delete(row['id'] as int),
-                ),
-              ]),
+              Icon(Icons.chevron_right,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35)),
             ]),
             const SizedBox(height: 4),
             Text(dateStr,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+                  fontSize: 11)),
             const SizedBox(height: 10),
             Row(children: [
               _chip('${_fmt.format(amount)}', Icons.attach_money),
@@ -196,6 +245,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ]),
         ),
       ),
+    ),
     );
   }
 

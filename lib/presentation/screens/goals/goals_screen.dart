@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/ads/ad_footer.dart';
 import '../../../core/language/language_notifier.dart';
+import '../../../domain/models/amortization_entry.dart';
 import '../../../domain/usecases/loan_calculator.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
@@ -72,11 +73,89 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
 
     final currentPayoff = DateTime.now()
         .add(Duration(days: result.extraMonths * 30));
+    final dateFmt = DateFormat('MMM yyyy');
+
+    // ── Compute balance-based milestone months from the schedule ──────────────
+    final loanAmt = input.loanAmount;
+    final sched   = result.schedule;
+    int monthAt(double targetRatio) {
+      for (final AmortizationEntry e in sched) {
+        if (loanAmt > 0 && e.balance <= loanAmt * targetRatio) return e.month;
+      }
+      return sched.isNotEmpty ? sched.last.month : result.extraMonths;
+    }
+    final mo25 = monthAt(0.75); // 25% of balance paid
+    final mo50 = monthAt(0.50); // 50% paid
+    final mo75 = monthAt(0.25); // 75% paid
+    final hasExtra = result.monthsSaved > 0;
 
     return Column(children: [
       Expanded(child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+          // ── Time saved hero (only shown when extra payment is active) ──
+          if (hasExtra) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppTheme.primary, AppTheme.primaryDark],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(children: [
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  const Icon(Icons.rocket_launch_rounded,
+                      color: Colors.white70, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    isEs ? 'AHORRAS CON PAGO EXTRA' : 'YOU SAVE WITH EXTRA PAYMENT',
+                    style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        letterSpacing: 1.1),
+                  ),
+                ]),
+                const SizedBox(height: 8),
+                Text(
+                  '${result.yearsSaved}y ${result.remMonthsSaved}m',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 38,
+                      fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_fmt.format(result.interestSaved)} ${isEs ? "en interés ahorrado" : "in interest saved"}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // Milestones
           Card(
             color: AppTheme.primary.withValues(alpha: 0.05),
@@ -89,17 +168,26 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                 Text(s.payoffMilestones,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
-                _Milestone(s.paid25, result.normalMonths > 0 &&
-                    result.schedule.length < result.normalMonths * 0.75),
-                _Milestone(s.paid50, result.normalMonths > 0 &&
-                    result.schedule.length < result.normalMonths * 0.50),
-                _Milestone(s.paid75, result.normalMonths > 0 &&
-                    result.schedule.length < result.normalMonths * 0.25),
-                _Milestone(s.paidOff, false),
+                _Milestone(
+                  '${s.paid25}  —  ${isEs ? "mes" : "mo"} $mo25',
+                  hasExtra && mo25 < result.normalMonths,
+                ),
+                _Milestone(
+                  '${s.paid50}  —  ${isEs ? "mes" : "mo"} $mo50',
+                  hasExtra && mo50 < result.normalMonths,
+                ),
+                _Milestone(
+                  '${s.paid75}  —  ${isEs ? "mes" : "mo"} $mo75',
+                  hasExtra && mo75 < result.normalMonths,
+                ),
+                _Milestone(
+                  '${s.paidOff}  —  ${dateFmt.format(currentPayoff)}',
+                  hasExtra,
+                ),
                 const SizedBox(height: 8),
                 Text(
-                  'Loan: ${_fmt.format(input.loanAmount)} @ ${input.interestRatePct}%',
-                  style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  'Loan: ${_fmt.format(loanAmt)} @ ${input.interestRatePct}%',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45), fontSize: 12)),
               ]),
             ),
           ),
@@ -110,8 +198,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
             leading: const Icon(Icons.calendar_today, color: AppTheme.primary),
             title: Text(s.currentPayoffDate),
             subtitle: Text(
-              '${currentPayoff.month}/${currentPayoff.year}'
-              '  (${result.extraMonths} ${s.months})',
+              '${dateFmt.format(currentPayoff)}  (${result.extraMonths} ${s.months})',
               style: const TextStyle(
                 fontWeight: FontWeight.bold, color: AppTheme.primary)),
           )),
@@ -138,7 +225,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
             icon: const Icon(Icons.date_range),
             label: Text(_deadline == null
               ? s.chooseTargetDate
-              : '${s.goalPrefix} ${_deadline!.month}/${_deadline!.day}/${_deadline!.year}'),
+              : '${s.goalPrefix} ${DateFormat('MMM d, yyyy').format(_deadline!)}'),
           ),
           if (_requiredExtra != null) ...[
             const SizedBox(height: 16),
@@ -152,13 +239,13 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
               ),
               child: Column(children: [
                 Text(s.extraRequired,
-                  style: const TextStyle(color: Colors.grey)),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45))),
                 const SizedBox(height: 8),
                 Text(_fmt.format(_requiredExtra),
                   style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold,
                     color: AppTheme.accentGood)),
                 Text(s.perMonth,
-                  style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45), fontSize: 13)),
               ]),
             ),
           ],
@@ -179,10 +266,10 @@ class _Milestone extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 6),
     child: Row(children: [
       Icon(done ? Icons.check_circle : Icons.radio_button_unchecked,
-        color: done ? AppTheme.accentGood : Colors.grey, size: 18),
+        color: done ? AppTheme.accentGood : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45), size: 18),
       const SizedBox(width: 8),
       Text(label, style: TextStyle(
-        color: done ? AppTheme.accentGood : Colors.grey)),
+        color: done ? AppTheme.accentGood : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45))),
     ]),
   );
 }

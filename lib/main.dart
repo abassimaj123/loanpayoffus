@@ -1,11 +1,16 @@
+﻿import 'dart:async';
+import 'package:calcwise_core/calcwise_core.dart' hide CrashlyticsService;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'core/theme/app_theme.dart';
 import 'core/ads/ad_service.dart';
 import 'core/freemium/freemium_service.dart';
 import 'core/freemium/iap_service.dart';
-import 'core/freemium/paywall_service.dart';
+
+final paywallSession = PaywallSessionService(appKey: 'loanpayoffus');
 import 'core/firebase/firebase_options.dart';
 import 'core/firebase/crashlytics_service.dart';
 import 'core/firebase/analytics_service.dart';
@@ -18,32 +23,52 @@ import 'presentation/screens/comparison/comparison_screen.dart';
 import 'presentation/screens/goals/goals_screen.dart';
 import 'presentation/screens/history/history_screen.dart';
 import 'presentation/screens/settings/settings_screen.dart';
+import 'presentation/screens/debt_strategy/debt_strategy_screen.dart';
 import 'presentation/widgets/paywall_soft.dart';
 import 'presentation/widgets/paywall_hard.dart';
+import 'presentation/widgets/premium_badge.dart';
+import 'presentation/screens/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await CrashlyticsService.init();
+  await loadSavedLanguage();
+  await themeModeService.initialize();
   await freemiumService.initialize();
-  await paywallService.init();
+  await paywallSession.initialize();
   await IAPService.instance.initialize();
+  await _requestConsent();
   await AdService.instance.initialize();
   await AnalyticsService.instance.logAppOpen();
-  runApp(const ProviderScope(child: LoanPayoffUSApp()));
+  final isFirstSession = paywallSession.sessionCount == 0;
+  runApp(ProviderScope(child: LoanPayoffUSApp(showSplash: isFirstSession)));
 }
 
 class LoanPayoffUSApp extends StatelessWidget {
-  const LoanPayoffUSApp({super.key});
+  final bool showSplash;
+  const LoanPayoffUSApp({super.key, this.showSplash = false});
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'Loan Payoff US',
-    theme: AppTheme.light,
-    darkTheme: AppTheme.dark,
-    themeMode: ThemeMode.system,
-    home: const _MainShell(),
-    debugShowCheckedModeBanner: false,
-  );
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: isSpanishNotifier,
+      builder: (context, isEs, _) {
+        return ValueListenableBuilder<ThemeMode>(
+          valueListenable: themeModeService.notifier,
+          builder: (context, themeMode, child) => MaterialApp(
+            title: 'Loan Payoff US',
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: themeMode,
+            home: showSplash
+                ? const SplashScreen(child: _MainShell())
+                : const _MainShell(),
+            debugShowCheckedModeBanner: false,
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _MainShell extends StatefulWidget {
@@ -60,6 +85,7 @@ class _MainShellState extends State<_MainShell> {
     PayoffPlanScreen(),
     ComparisonScreen(),
     GoalsScreen(),
+    DebtStrategyScreen(),
     HistoryScreen(),
   ];
 
@@ -68,6 +94,7 @@ class _MainShellState extends State<_MainShell> {
     Icons.receipt_long_rounded,
     Icons.compare_arrows_rounded,
     Icons.flag_rounded,
+    Icons.account_balance_wallet_rounded,
     Icons.history_rounded,
   ];
   static const _iconsOutlined = [
@@ -75,10 +102,11 @@ class _MainShellState extends State<_MainShell> {
     Icons.receipt_long_outlined,
     Icons.compare_arrows,
     Icons.flag_outlined,
+    Icons.account_balance_wallet_outlined,
     Icons.history_outlined,
   ];
 
-  static const _tabNames = ['Calculator', 'PayoffPlan', 'Comparison', 'Goals', 'History'];
+  static const _tabNames = ['Calculator', 'PayoffPlan', 'Comparison', 'Goals', 'Strategy', 'History'];
 
   @override
   void initState() {
@@ -105,7 +133,7 @@ class _MainShellState extends State<_MainShell> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: Colors.red.shade700,
+        backgroundColor: AppTheme.dangerRed,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 4),
       ),
@@ -113,26 +141,21 @@ class _MainShellState extends State<_MainShell> {
   }
 
   Future<void> _recordSession() async {
-    final gate = await paywallService.recordSession();
+    await paywallSession.recordSession();
     if (!mounted) return;
     await AnalyticsService.instance.logSessionStart(
-        sessionNumber: paywallService.sessionCount);
-    if (gate == PaywallGate.hard) {
-      await PaywallHard.show(context);
-    } else if (gate == PaywallGate.soft) {
-      await PaywallSoft.show(context);
-    }
+        sessionNumber: paywallSession.sessionCount);
   }
 
   Future<void> _onTabSelected(int i) async {
     setState(() => _index = i);
     await AnalyticsService.instance.logTabSwitch(tabName: _tabNames[i]);
     // recordAction on tab switch — may trigger paywall
-    final gate = await paywallService.recordAction();
+    final gate = await paywallSession.recordAction();
     if (!mounted) return;
-    if (gate == PaywallGate.hard) {
+    if (gate == PaywallTrigger.hard) {
       await PaywallHard.show(context);
-    } else if (gate == PaywallGate.soft) {
+    } else if (gate == PaywallTrigger.soft) {
       await PaywallSoft.show(context);
     }
   }
@@ -142,7 +165,13 @@ class _MainShellState extends State<_MainShell> {
     final isEs = isSpanishNotifier.value;
     final dynamic s = isEs ? AppStringsES() : AppStringsEN();
 
-    final labels = [s.navCalculator, s.navPayoffPlan, s.navComparison, s.navGoals, s.navHistory];
+    final labels = [s.navCalculator, s.navPayoffPlan, s.navComparison, s.navGoals, s.navDebtStrategy, s.navHistory];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      systemNavigationBarColor: Theme.of(context).scaffoldBackgroundColor,
+      systemNavigationBarIconBrightness:
+          isDark ? Brightness.light : Brightness.dark,
+    ));
 
     return Scaffold(
       appBar: PreferredSize(
@@ -172,11 +201,17 @@ class _MainShellState extends State<_MainShell> {
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 19)),
             ]),
             actions: [
+              const PremiumBadge(),
               IconButton(
                 icon: const Icon(Icons.settings_outlined, color: Colors.white),
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => const SettingsScreen(),
+                    transitionsBuilder: (_, anim, __, child) =>
+                        FadeTransition(opacity: anim, child: child),
+                    transitionDuration: const Duration(milliseconds: 250),
+                  ),
                 ),
               ),
             ],
@@ -204,4 +239,27 @@ class _MainShellState extends State<_MainShell> {
       ),
     );
   }
+}
+
+
+/// Request GDPR/PIPEDA consent via Google UMP SDK.
+/// Resolves on success, timeout, or error so the app always launches.
+/// On non-EEA/UK devices the UMP SDK completes immediately without showing a form.
+Future<void> _requestConsent() async {
+  final completer = Completer<void>();
+  ConsentInformation.instance.requestConsentInfoUpdate(
+    ConsentRequestParameters(),
+    () async {
+      // Consent info updated — show form only if required
+      if (await ConsentInformation.instance.isConsentFormAvailable()) {
+        ConsentForm.loadAndShowConsentFormIfRequired(
+          (_) { if (!completer.isCompleted) completer.complete(); },
+        );
+      } else {
+        if (!completer.isCompleted) completer.complete();
+      }
+    },
+    (_) { if (!completer.isCompleted) completer.complete(); },
+  );
+  return completer.future;
 }

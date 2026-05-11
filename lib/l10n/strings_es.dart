@@ -63,6 +63,7 @@ class AppStringsES {
   final language           = 'Idioma';
   final support            = 'Soporte';
   final contactSupport     = 'Contactar Soporte';
+  final rateApp            = 'Valorar la App';
   final privacyPolicy      = 'Política de Privacidad';
   final discover           = 'Descubrir';
   final calcSuite          = 'Suite de Calculadoras Financieras';
@@ -82,6 +83,9 @@ class AppStringsES {
   final unlockUnlimited    = 'Desbloquear ilimitado';
   final extraSaved         = 'Extra';
   final interestLabel      = 'Interés';
+
+  // Debt Strategy
+  final navDebtStrategy     = 'Estrategia';
 
   // History Detail
   final historyDetail      = 'Detalle del Préstamo';

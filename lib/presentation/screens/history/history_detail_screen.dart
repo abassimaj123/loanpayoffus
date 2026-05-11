@@ -4,15 +4,16 @@ import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import '../../../core/ads/banner_ad_widget.dart';
+import '../../../core/ads/ad_footer.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/language/language_notifier.dart';
-import '../../../core/freemium/paywall_service.dart';
+import '../../../main.dart' show paywallSession;
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
+import '../../widgets/premium_badge.dart';
 
 class HistoryDetailScreen extends StatefulWidget {
   final Map<String, dynamic> entry;
@@ -86,12 +87,12 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
   Future<void> _share(BuildContext context, dynamic s) async {
     if (!freemiumService.isPremium) {
-      final gate = await paywallService.recordAction();
+      final gate = await paywallSession.recordAction();
       if (!context.mounted) return;
-      if (gate == PaywallGate.hard) {
+      if (gate == PaywallTrigger.hard) {
         await PaywallHard.show(context);
         return;
-      } else if (gate == PaywallGate.soft) {
+      } else if (gate == PaywallTrigger.soft) {
         await PaywallSoft.show(context);
         if (!context.mounted) return;
       }
@@ -179,7 +180,8 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         children: [
           Text(label,
               style: TextStyle(
-                  color: Colors.grey.shade600, fontSize: 14)),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                  fontSize: 14)),
           Text(value,
               style: TextStyle(
                   fontWeight: bold ? FontWeight.bold : FontWeight.w600,
@@ -207,6 +209,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                     : s.historyDetail),
                 centerTitle: false,
                 actions: [
+                  const PremiumBadge(),
                   IconButton(
                     icon: const Icon(Icons.share_outlined),
                     tooltip: s.shareLabel,
@@ -234,7 +237,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                             child: Text(
                               _fmtDate.format(ts),
                               style: TextStyle(
-                                  color: Colors.grey.shade500, fontSize: 13),
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45), fontSize: 13),
                             ),
                           ),
 
@@ -298,7 +301,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                               icon: const Icon(Icons.share_outlined),
                               label: Text(s.shareLabel),
                               style: OutlinedButton.styleFrom(
-                                  minimumSize: const Size(double.infinity, 48)),
+                                  minimumSize: const Size(double.infinity, 52)),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -310,7 +313,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                                   : const Icon(Icons.lock_outline),
                               label: Text(s.exportPdf),
                               style: FilledButton.styleFrom(
-                                  minimumSize: const Size(double.infinity, 48)),
+                                  minimumSize: const Size(double.infinity, 52)),
                             ),
                           ),
                         ]),
@@ -321,7 +324,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                   ),
 
                   // ── Banner ad — free only ─────────────────────────────────
-                  if (!isPremium) const BannerAdWidget(),
+                  if (!isPremium) const AdFooter(),
                 ],
               ),
             );

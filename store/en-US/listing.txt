@@ -1,0 +1,38 @@
+APP NAME
+Loan Payoff US — Debt Calculator
+
+SHORT DESCRIPTION (80 chars)
+Pay off loans faster. Compare strategies, save on interest, export to PDF.
+
+FULL DESCRIPTION
+Take control of your debt with Loan Payoff US — the most complete loan payoff calculator for US borrowers. Whether you have a mortgage, auto loan, student loan, or personal loan, this app shows you exactly how to pay it off faster and save thousands in interest.
+
+TOOLS INCLUDED
+• Payment Calculator — compute your monthly payment for any loan type
+• Amortization Schedule — see every payment broken down by principal and interest
+• Payoff Strategies — compare Avalanche (highest rate first) vs Snowball (smallest balance first) side by side
+• Loan Comparator — compare up to 3 loan offers before you sign
+• Goals Tracker — set a debt-free target date and track your progress
+• History & PDF Export — save unlimited calculations and share as professional PDF reports
+
+FREEMIUM MODEL
+Free: Full calculator access, up to 100 saved calculations
+Premium ($2.99 one-time): Unlimited history, PDF export, zero ads — forever
+Rewarded Ad: Watch a short ad for 60 minutes of premium access (up to 3 times per day)
+
+BILINGUAL: English + Spanish (EN/ES)
+
+Trusted by 75,000+ borrowers across the US to pay off their loans faster.
+
+WHAT MAKES IT DIFFERENT
+✓ Extra payment slider — see the exact impact of paying $100 or $500 more per month
+✓ One-time vs monthly extra payment toggle
+✓ Debt-free date chip — know exactly when you will be debt free
+✓ Avalanche vs Snowball strategy comparison
+✓ No subscription — $2.99 one-time unlock, yours forever
+
+LOAN TYPES SUPPORTED
+Mortgage · Auto · Student · Personal · Home Equity · Credit Card
+
+KEYWORDS
+loan payoff, mortgage calculator, debt free, amortization, extra payment, avalanche, snowball, loan comparator, student loan, auto loan, interest savings, debt snowball, debt avalanche, loan payoff calculator

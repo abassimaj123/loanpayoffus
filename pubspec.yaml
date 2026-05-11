@@ -1,7 +1,7 @@
 name: loan_payoff_us
 description: Loan Payoff US Calculator
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.11.4
@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  calcwise_core:
+    path: ../packages/calcwise_core
   flutter_riverpod: ^2.5.1
   google_mobile_ads: ^5.1.0
   fl_chart: ^0.69.0
@@ -17,7 +19,7 @@ dependencies:
   shared_preferences: ^2.3.2
   in_app_purchase: ^3.2.0
   url_launcher: ^6.3.0
-  intl: ^0.19.0
+  intl: ^0.20.0
   firebase_core: ^3.6.0
   firebase_analytics: ^11.3.3
   firebase_crashlytics: ^4.1.3
@@ -29,6 +31,7 @@ dependencies:
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.1
+  flutter_native_splash: ^2.4.0
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
@@ -42,7 +45,7 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path_android: "assets/icons/icon_foreground.png"
-  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_background: "#512DA8"
   adaptive_icon_foreground: "assets/icons/icon_foreground.png"
   min_sdk_android: 21
   web:

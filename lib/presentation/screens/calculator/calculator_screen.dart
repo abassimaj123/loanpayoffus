@@ -1,15 +1,19 @@
+import 'dart:async';
+import 'package:calcwise_core/calcwise_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/ads/ad_service.dart';
 import '../../../core/ads/ad_footer.dart';
 import '../../../core/db/database_helper.dart';
 import '../../../core/freemium/freemium_service.dart';
-import '../../../core/freemium/paywall_service.dart';
+import '../../../main.dart' show paywallSession;
 import '../../../core/firebase/analytics_service.dart';
 import '../../../domain/models/loan_input.dart';
+import '../../../domain/models/payoff_result.dart';
 import '../../../domain/models/loan_type.dart';
 import '../../../domain/usecases/loan_calculator.dart';
 import '../../../l10n/strings_en.dart';
@@ -18,6 +22,9 @@ import '../../../core/language/language_notifier.dart';
 import '../../providers/loan_provider.dart';
 import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
+import '../../../core/review/review_service.dart';
+import '../../widgets/insight_card.dart';
+import '../../../core/utils/insight_engine.dart';
 
 double _parseNum(String v) {
   if (v.isEmpty) return 0.0;
@@ -35,12 +42,17 @@ class CalculatorScreen extends ConsumerStatefulWidget {
 
 class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   LoanType _type      = LoanType.mortgage;
-  final _amountCtrl   = TextEditingController(text: '400000');
-  final _rateCtrl     = TextEditingController(text: '6.2');
-  final _paymentCtrl  = TextEditingController();
+  final _amountCtrl   = TextEditingController(text: '15000');
+  final _rateCtrl     = TextEditingController(text: '5.5');
+  final _paymentCtrl  = TextEditingController(text: '300');
+  Timer? _adDebounce;
   double _extra       = 0;
   double _extraSlider = 0;
-  bool   _extraOneTime = false; // toggle: monthly vs one-time extra
+  bool   _extraOneTime  = false; // toggle: monthly vs one-time extra
+  bool   _biweekly      = false; // toggle: monthly vs biweekly mode
+
+  // Biweekly results (computed alongside main calculation)
+  Map<String, double>? _biweeklyData;
 
   final _fmt = NumberFormat.currency(locale: 'en_US', symbol: '\$', decimalDigits: 0);
 
@@ -49,6 +61,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     super.initState();
     isSpanishNotifier.addListener(_onLangChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // _paymentCtrl is pre-filled with '300', only auto-compute if still empty
       if (mounted && _paymentCtrl.text.isEmpty) {
         final amount = _parseNum(_amountCtrl.text);
         final rate   = _parseNum(_rateCtrl.text);
@@ -61,6 +74,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
 
   @override
   void dispose() {
+    _adDebounce?.cancel();
     isSpanishNotifier.removeListener(_onLangChange);
     _amountCtrl.dispose();
     _rateCtrl.dispose();
@@ -105,7 +119,20 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
       extraPayment:    effectiveExtra,
     );
     ref.read(loanInputProvider.notifier).update(input);
-    AdService.instance.onCalculation();
+
+    // Compute biweekly data whenever amount/rate/term are valid
+    if (amount > 0 && rate > 0) {
+      setState(() {
+        _biweeklyData = LoanCalculator.calculateBiweekly(
+            amount, rate, _type.defaultTermMonths);
+      });
+    }
+
+    _adDebounce?.cancel();
+    _adDebounce = Timer(const Duration(milliseconds: 1500), () {
+      AdService.instance.onCalculation();
+    });
+    HapticFeedback.mediumImpact();
     _saveToHistory(input);
 
     // Analytics + paywall gate
@@ -120,11 +147,11 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
         interestSaved: result.interestSaved,
       );
     }
-    final gate = await paywallService.recordAction();
+    final gate = await paywallSession.recordAction();
     if (!mounted) return;
-    if (gate == PaywallGate.hard) {
+    if (gate == PaywallTrigger.hard) {
       await PaywallHard.show(context);
-    } else if (gate == PaywallGate.soft) {
+    } else if (gate == PaywallTrigger.soft) {
       await PaywallSoft.show(context);
     }
   }
@@ -144,10 +171,12 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
       'interest_saved':  result?.interestSaved ?? 0,
       'created_at':      DateTime.now().toIso8601String(),
     });
+    try { AnalyticsService.instance.logSave(); } catch (_) {}
+    ReviewService.instance.requestAfterSave();
   }
 
   Widget _field(String label, TextEditingController ctrl,
-      {String? prefix, String? suffix}) =>
+      {String? prefix, String? suffix, String hint = ''}) =>
     Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
@@ -156,6 +185,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
         inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
         decoration: InputDecoration(
           labelText: label, prefixText: prefix, suffixText: suffix,
+          hintText: hint.isEmpty ? null : hint,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
@@ -181,9 +211,12 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     return Column(children: [
       Expanded(child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: CalcwisePageEntrance(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           DropdownButtonFormField<LoanType>(
-            value: _type,
+            initialValue: _type,
             decoration: InputDecoration(
               labelText: s.loanType,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -194,9 +227,52 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
             onChanged: _onTypeChanged,
           ),
           const SizedBox(height: 12),
-          _field(s.loanAmount,     _amountCtrl, prefix: '\$'),
-          _field(s.interestRate,   _rateCtrl,   suffix: '%'),
-          _field(s.monthlyPayment, _paymentCtrl, prefix: '\$'),
+          _field(s.loanAmount,     _amountCtrl,  prefix: '\$', hint: '15 000'),
+          _field(s.interestRate,   _rateCtrl,    suffix: '%',  hint: '5.5'),
+          _field(s.monthlyPayment, _paymentCtrl, prefix: '\$', hint: '300'),
+
+          // ── Monthly / Biweekly toggle ──
+          const SizedBox(height: 4),
+          SegmentedButton<bool>(
+            segments: [
+              ButtonSegment(
+                value: false,
+                label: Text(isEs ? 'Mensual' : 'Monthly'),
+                icon: const Icon(Icons.calendar_month_outlined, size: 16),
+              ),
+              ButtonSegment(
+                value: true,
+                label: Text(isEs ? 'Quincenal' : 'Biweekly'),
+                icon: const Icon(Icons.date_range_outlined, size: 16),
+              ),
+            ],
+            selected: {_biweekly},
+            onSelectionChanged: (v) {
+              setState(() => _biweekly = v.first);
+              _recalculate();
+            },
+            style: ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              backgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return AppTheme.primary;
+                }
+                return null;
+              }),
+              foregroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return null;
+              }),
+            ),
+          ),
+
+          // ── Biweekly result card ──
+          if (_biweekly && _biweeklyData != null) ...[
+            const SizedBox(height: 12),
+            _BiweeklyCard(data: _biweeklyData!, fmt: _fmt, isEs: isEs),
+          ],
 
           const SizedBox(height: 8),
           // ── Extra payment row with monthly/one-time toggle ──
@@ -217,11 +293,11 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _extraOneTime
-                      ? Colors.purple.shade100
+                      ? AppTheme.neutral
                       : AppTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: _extraOneTime ? Colors.purple : AppTheme.primary,
+                    color: AppTheme.primary,
                     width: 1,
                   ),
                 ),
@@ -232,7 +308,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: _extraOneTime ? Colors.purple : AppTheme.primary,
+                    color: AppTheme.primary,
                   ),
                 ),
               ),
@@ -241,7 +317,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: _extra > 0 ? AppTheme.accentGood : Colors.grey.shade300,
+                color: _extra > 0
+                    ? AppTheme.accentGood
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -249,7 +327,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                     ? _fmt.format(_extra)
                     : '${_fmt.format(_extra)}/mo',
                 style: TextStyle(
-                  color: _extra > 0 ? Colors.white : Colors.grey.shade600,
+                  color: _extra > 0
+                      ? Colors.white
+                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   fontWeight: FontWeight.bold, fontSize: 13)),
             ),
           ]),
@@ -258,7 +338,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
             min: 0, max: _extraOneTime ? 10000 : 1000,
             divisions: 100,
             label: _fmt.format(_extraSlider),
-            activeColor: _extraOneTime ? Colors.purple : AppTheme.primary,
+            activeColor: AppTheme.primary,
             onChanged: (v) {
               setState(() { _extra = v; _extraSlider = v; });
               _recalculate();
@@ -336,6 +416,16 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                       style: const TextStyle(color: Colors.white60, fontSize: 12)),
                   ]),
                 ],
+                // ── Interest-to-loan ratio insight ──
+                if (result.interestNormal > 0 && input.loanAmount > 0) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    '${isEs ? "Pagas" : "You pay"} ${((result.interestNormal / input.loanAmount) * 100).toStringAsFixed(0)}% '
+                    '${isEs ? "del préstamo en intereses" : "of loan amount in interest"}',
+                    style: const TextStyle(color: Colors.white60, fontSize: 11),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ]),
             ),
             const SizedBox(height: 16),
@@ -348,7 +438,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                   (s.interest,  _fmt.format(result.interestNormal)),
                   (s.totalPaid, _fmt.format(result.totalPaidNormal)),
                 ],
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.outline,
+                isNeutral: true,
               )),
               const SizedBox(width: 12),
               if (input.extraPayment > 0)
@@ -365,8 +456,35 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                 )),
             ]),
           ],
+          // ── Balance Over Time chart ──
+          if (result != null) ...[
+            const SizedBox(height: 16),
+            _BalanceChart(result: result, isEs: isEs),
+          ],
+
+          // ── Smart Insights ──
+          if (result != null) ...[
+            const SizedBox(height: 16),
+            InsightCard(
+              isSpanish: isEs,
+              insights: InsightEngine.generate(
+                balance:               input.loanAmount,
+                annualRatePct:         input.interestRatePct,
+                monthlyPayment:        input.monthlyPayment,
+                monthsToPayoff:        result.normalMonths,
+                totalInterest:         result.interestNormal,
+                extraMonthlyPayment:   input.extraPayment > 0 ? input.extraPayment : null,
+                monthsSavedWithExtra:  input.extraPayment > 0 ? result.monthsSaved : null,
+                interestSavedWithExtra: input.extraPayment > 0 ? result.interestSaved : null,
+                isEs: isEs,
+              ),
+            ),
+          ],
+
           const SizedBox(height: 80),
-        ]),
+        ])),  // CalcwisePageEntrance closes
+          ),
+        ),
       )),
       const AdFooter(),
     ]);
@@ -377,7 +495,13 @@ class _InfoCard extends StatelessWidget {
   final String title;
   final List<(String, String)> rows;
   final Color  color;
-  const _InfoCard({required this.title, required this.rows, required this.color});
+  final bool   isNeutral;
+  const _InfoCard({
+    required this.title,
+    required this.rows,
+    required this.color,
+    this.isNeutral = false,
+  });
   @override
   Widget build(BuildContext context) => Card(
     color: color.withValues(alpha: 0.05),
@@ -403,12 +527,331 @@ class _InfoCard extends StatelessWidget {
         ...rows.map((r) => Padding(
           padding: const EdgeInsets.only(bottom: 5),
           child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text(r.$1, style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
-            Text(r.$2, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold,
-                color: color == Colors.grey.shade600 ? Colors.black87 : color)),
+            Text(r.$1, style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                fontSize: 11)),
+            Text(r.$2, style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isNeutral
+                    ? Theme.of(context).colorScheme.onSurface
+                    : color)),
           ]),
         )),
       ]),
     ),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Balance Over Time chart
+// ---------------------------------------------------------------------------
+class _BalanceChart extends StatelessWidget {
+  final PayoffResult result;
+  final bool isEs;
+
+  const _BalanceChart({required this.result, required this.isEs});
+
+  @override
+  Widget build(BuildContext context) {
+    // Sample every N months to keep data points manageable
+    const maxPoints = 60;
+    final normalLen = result.normalSchedule.length;
+    final extraLen  = result.schedule.length;
+    final maxLen    = normalLen > extraLen ? normalLen : extraLen;
+    final step      = (maxLen / maxPoints).ceil().clamp(1, maxLen);
+
+    List<FlSpot> sampleSpots(List spots, int len) {
+      final out = <FlSpot>[];
+      for (int i = 0; i < len; i += step) {
+        out.add(spots[i]);
+      }
+      // Always include the final zero point
+      if (out.isEmpty || out.last.x != len.toDouble()) {
+        out.add(FlSpot(len.toDouble(), 0));
+      }
+      return out;
+    }
+
+    final normalSpots = sampleSpots(
+      [
+        FlSpot(0, result.normalSchedule.isNotEmpty
+            ? (result.normalSchedule.first.balance +
+                   result.normalSchedule.first.principal) /
+                1000
+            : 0),
+        ...List.generate(normalLen,
+            (i) => FlSpot((i + 1).toDouble(),
+                result.normalSchedule[i].balance / 1000)),
+      ],
+      normalLen + 1,
+    );
+
+    final extraSpots = sampleSpots(
+      [
+        FlSpot(0, result.schedule.isNotEmpty
+            ? (result.schedule.first.balance +
+                   result.schedule.first.principal) /
+                1000
+            : 0),
+        ...List.generate(extraLen,
+            (i) => FlSpot((i + 1).toDouble(),
+                result.schedule[i].balance / 1000)),
+      ],
+      extraLen + 1,
+    );
+
+    // Y-axis max (in $K)
+    final maxBalance = normalSpots.isNotEmpty ? normalSpots.first.y : 1.0;
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 16, 16, 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.show_chart_rounded, size: 18, color: AppTheme.primary),
+            const SizedBox(width: 6),
+            Text(
+              isEs ? 'Saldo en el Tiempo' : 'Balance Over Time',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.primary),
+            ),
+          ]),
+          const SizedBox(height: 6),
+          // Legend
+          Row(children: [
+            _LegendDot(color: const Color(0xFF64748B),
+                label: isEs ? 'Normal' : 'Baseline'),
+            const SizedBox(width: 14),
+            _LegendDot(color: AppTheme.primary,
+                label: isEs ? 'Con Extra' : 'Accelerated'),
+          ]),
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 180),
+            child: LineChart(
+              LineChartData(
+                minX: 0,
+                maxX: maxLen.toDouble(),
+                minY: 0,
+                maxY: maxBalance * 1.05,
+                clipData: const FlClipData.all(),
+                lineTouchData: LineTouchData(
+                  handleBuiltInTouches: true,
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipItems: (spots) => spots.map((s) => LineTooltipItem(
+                      '\$${(s.y).toStringAsFixed(0)}K',
+                      const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold),
+                    )).toList(),
+                  ),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (v) => FlLine(
+                    color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    strokeWidth: 1,
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (v, _) => Text(
+                        '\$${v.toStringAsFixed(0)}K',
+                        style: TextStyle(
+                            fontSize: 9,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
+                      ),
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 20,
+                      getTitlesWidget: (v, _) {
+                        if (v == 0) return const SizedBox.shrink();
+                        if (v % 12 == 0) {
+                          return Text(
+                            '${(v / 12).toInt()}y',
+                            style: TextStyle(
+                                fontSize: 9,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                ),
+                lineBarsData: [
+                  // Baseline (gray)
+                  LineChartBarData(
+                    spots: normalSpots,
+                    isCurved: true,
+                    color: const Color(0xFF94A3B8),
+                    barWidth: 2,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(show: false),
+                  ),
+                  // Accelerated (primary)
+                  LineChartBarData(
+                    spots: extraSpots,
+                    isCurved: true,
+                    color: AppTheme.primary,
+                    barWidth: 2.5,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: AppTheme.primary.withValues(alpha: 0.08),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  final Color  color;
+  final String label;
+  const _LegendDot({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 4),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+        ],
+      );
+}
+
+// ---------------------------------------------------------------------------
+// Biweekly result card
+// ---------------------------------------------------------------------------
+class _BiweeklyCard extends StatelessWidget {
+  final Map<String, double> data;
+  final NumberFormat        fmt;
+  final bool                isEs;
+
+  const _BiweeklyCard({
+    required this.data,
+    required this.fmt,
+    required this.isEs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final biweeklyPayment = data['biweeklyPayment'] ?? 0;
+    final totalInterest   = data['totalInterest']   ?? 0;
+    final monthsSaved     = (data['monthsSaved']    ?? 0).toInt();
+    final interestSaved   = data['interestSaved']   ?? 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppTheme.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: AppTheme.primary.withValues(alpha: 0.3), width: 1.5),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.date_range_outlined, size: 16, color: AppTheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            isEs ? 'Modo Quincenal' : 'Biweekly Mode',
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: AppTheme.primaryDark),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(
+            child: _BwRow(
+              label: isEs ? 'Pago c/2 semanas' : 'Payment every 2 wks',
+              value: fmt.format(biweeklyPayment),
+              color: AppTheme.primary,
+            ),
+          ),
+          Expanded(
+            child: _BwRow(
+              label: isEs ? 'Total en interés' : 'Total interest',
+              value: fmt.format(totalInterest),
+              color: AppTheme.warning,
+            ),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        Row(children: [
+          Expanded(
+            child: _BwRow(
+              label: isEs ? 'Meses ahorrados' : 'Months saved',
+              value: '${monthsSaved ~/ 12}y ${monthsSaved % 12}m',
+              color: AppTheme.accentGood,
+            ),
+          ),
+          Expanded(
+            child: _BwRow(
+              label: isEs ? 'Interés ahorrado' : 'Interest saved',
+              value: fmt.format(interestSaved),
+              color: AppTheme.accentGood,
+            ),
+          ),
+        ]),
+      ]),
+    );
+  }
+}
+
+class _BwRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color  color;
+  const _BwRow({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
+          const SizedBox(height: 2),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: color)),
+        ],
+      );
 }

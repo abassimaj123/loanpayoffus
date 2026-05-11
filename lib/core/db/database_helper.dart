@@ -13,7 +13,9 @@ class DatabaseHelper {
 
   Future<Database> _initDb() async {
     final p = join(await getDatabasesPath(), 'loan_payoff_us.db');
-    return openDatabase(p, version: 1, onCreate: _onCreate);
+    return openDatabase(p, version: 1, onCreate: _onCreate, onUpgrade: (db, oldVersion, newVersion) async {
+      // Future schema migrations go here
+    });
   }
 
   Future<void> _onCreate(Database db, int version) async {

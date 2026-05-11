@@ -1,3 +1,4 @@
+import 'package:calcwise_core/calcwise_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -5,8 +6,10 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/freemium/iap_service.dart';
+import '../../../core/review/review_service.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
+import '../../widgets/premium_badge.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -40,7 +43,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final dynamic s = isEs ? AppStringsES() : AppStringsEN();
 
     return Scaffold(
-      appBar: AppBar(title: Text(s.settingsTitle)),
+      appBar: AppBar(
+        title: Text(s.settingsTitle),
+        actions: const [PremiumBadge()],
+      ),
       body: ListView(children: [
         // ── Language ──
         _SectionHeader(s.language),
@@ -53,7 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text(s.language,
                 style: const TextStyle(fontSize: 15)),
               Text(isEs ? 'Español' : 'English',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55))),
             ])),
             Switch(
               value: isEs,
@@ -66,6 +72,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontWeight: FontWeight.bold,
                 fontSize: 13)),
           ]),
+        ),
+        // Theme toggle
+        ValueListenableBuilder<ThemeMode>(
+          valueListenable: themeModeService.notifier,
+          builder: (_, mode, __) => ListTile(
+            leading: Icon(themeModeService.icon, color: AppTheme.primary),
+            title: Text(themeModeService.label(isSpanish: isEs)),
+            trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
+            onTap: () => themeModeService.toggle(),
+          ),
         ),
         const Divider(),
 
@@ -84,7 +100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading: const Icon(Icons.star_outline, color: AppTheme.primary),
                   title: Text(s.getPremium),
                   subtitle: Text(s.premiumSubtitle),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                  trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
                   onTap: () => IAPService.instance.buy(),
                 ),
                 ListTile(
@@ -107,14 +123,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ListTile(
           leading: const Icon(Icons.email_outlined, color: AppTheme.primary),
           title: Text(s.contactSupport),
-          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
           onTap: () => _launch('mailto:support@loanpayoffus.com'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.star_rate_rounded, color: Colors.amber),
+          title: Text(s.rateApp),
+          trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
+          onTap: () => ReviewService.instance.openStoreForReview(),
         ),
         ListTile(
           leading: const Icon(Icons.privacy_tip_outlined, color: AppTheme.primary),
           title: Text(s.privacyPolicy),
-          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-          onTap: () => _launch('https://loanpayoffus.com/privacy'),
+          trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
+          onTap: () => _launch('https://calqwise.com/privacy'),
         ),
         const Divider(),
 
@@ -124,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           leading: const Icon(Icons.apps_outlined, color: AppTheme.primary),
           title: const Text('CalqWise'),
           subtitle: Text(s.calcSuite),
-          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
           onTap: () => _launch('https://calqwise.com'),
         ),
       ]),

@@ -9,7 +9,7 @@ import 'package:printing/printing.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/ads/ad_footer.dart';
 import '../../../core/freemium/freemium_service.dart';
-import '../../../core/freemium/paywall_service.dart';
+import '../../../main.dart' show paywallSession;
 import '../../../core/language/language_notifier.dart';
 import '../../../domain/models/amortization_entry.dart';
 import '../../../domain/models/payoff_result.dart';
@@ -27,12 +27,12 @@ class PayoffPlanScreen extends ConsumerWidget {
     final fmt = NumberFormat.currency(locale: 'en_US', symbol: '\$', decimalDigits: 0);
 
     if (!freemiumService.isPremium) {
-      final gate = await paywallService.recordAction();
+      final gate = await paywallSession.recordAction();
       if (!context.mounted) return;
-      if (gate == PaywallGate.hard) {
+      if (gate == PaywallTrigger.hard) {
         await PaywallHard.show(context);
         return;
-      } else if (gate == PaywallGate.soft) {
+      } else if (gate == PaywallTrigger.soft) {
         await PaywallSoft.show(context);
         if (!context.mounted) return;
       }
@@ -277,7 +277,7 @@ class PayoffPlanScreen extends ConsumerWidget {
           _HeaderStat(s.months,   '${result.extraMonths}',          Colors.white),
           _HeaderStat(s.interest, fmt.format(result.interestExtra), Colors.white70),
           _HeaderStat(s.payoff,
-            '${payoffDate.month}/${payoffDate.year}',               AppTheme.accentGood),
+            DateFormat('MMM yyyy').format(payoffDate),              AppTheme.accentGood),
         ]),
       ),
 
@@ -328,6 +328,18 @@ class PayoffPlanScreen extends ConsumerWidget {
               maxY: maxBalance * 1.05,
               gridData: const FlGridData(show: false),
               borderData: FlBorderData(show: false),
+              lineTouchData: LineTouchData(
+                handleBuiltInTouches: true,
+                touchTooltipData: LineTouchTooltipData(
+                  getTooltipItems: (spots) => spots.map((sp) => LineTooltipItem(
+                    '\$${(sp.y / 1000).toStringAsFixed(1)}k',
+                    const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold),
+                  )).toList(),
+                ),
+              ),
               titlesData: FlTitlesData(
                 leftTitles: AxisTitles(sideTitles: SideTitles(
                   showTitles: true,
@@ -352,7 +364,7 @@ class PayoffPlanScreen extends ConsumerWidget {
                 LineChartBarData(
                   spots: normalSpots,
                   isCurved: true,
-                  color: Colors.grey.shade400,
+                  color: const Color(0xFF94A3B8),
                   barWidth: 2,
                   dotData: const FlDotData(show: false),
                   belowBarData: BarAreaData(show: false),
@@ -374,7 +386,7 @@ class PayoffPlanScreen extends ConsumerWidget {
             )),
           ),
           Row(children: [
-            _LegendDot(color: Colors.grey.shade400, label: s.normalLabel),
+            _LegendDot(color: const Color(0xFF94A3B8), label: s.normalLabel),
             const SizedBox(width: 16),
             _LegendDot(color: AppTheme.accentGood, label: s.withExtraLabel),
           ]),
@@ -517,7 +529,9 @@ class _MonthGroupState extends State<_MonthGroup>
                 const SizedBox(height: 2),
                 Text(
                   '${s.balance}: ${widget.fmt.format(widget.endBalance)}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55)),
                 ),
               ])),
               // Summary chips
@@ -529,14 +543,14 @@ class _MonthGroupState extends State<_MonthGroup>
                 const SizedBox(height: 3),
                 _MiniChip(
                   label: '${widget.fmtFull.format(widget.totalInterest)} int',
-                  color: Colors.orange.shade700,
+                  color: AppTheme.warning,
                 ),
               ]),
               const SizedBox(width: 6),
               RotationTransition(
                 turns: _rot,
                 child: Icon(Icons.keyboard_arrow_down_rounded,
-                    color: Colors.grey.shade500),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)),
               ),
             ]),
           ),
@@ -560,9 +574,10 @@ class _MonthGroupState extends State<_MonthGroup>
             final i    = entry.key;
             final e    = entry.value;
             final last = i == widget.entries.length - 1 && widget.isLastGroup;
+            final cs   = Theme.of(context).colorScheme;
             final bg   = last
                 ? AppTheme.accentGood.withValues(alpha: 0.08)
-                : i % 2 == 0 ? Colors.grey.shade50 : Colors.white;
+                : i % 2 == 0 ? cs.surfaceContainerLow : cs.surface;
             return Container(
               color: bg,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
@@ -571,7 +586,7 @@ class _MonthGroupState extends State<_MonthGroup>
                 _Cell(widget.fmtFull.format(e.payment), 2, bold: last),
                 _Cell(widget.fmtFull.format(e.principal), 2, bold: last),
                 _Cell(widget.fmtFull.format(e.interest), 2,
-                    color: Colors.orange.shade700),
+                    color: AppTheme.warning),
                 _Cell(widget.fmt.format(e.balance), 2, bold: last,
                     color: last ? AppTheme.accentGood : null),
               ]),
@@ -594,7 +609,10 @@ class _LegendDot extends StatelessWidget {
     Container(width: 10, height: 10,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
     const SizedBox(width: 4),
-    Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+    Text(label, style: TextStyle(
+        fontSize: 10,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+        fontWeight: FontWeight.w600)),
   ]);
 }
 
@@ -634,7 +652,8 @@ class _HCell extends StatelessWidget {
   Widget build(BuildContext context) => Expanded(
     flex: flex,
     child: Text(text,
-      style: TextStyle(color: Colors.grey.shade500,
+      style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
           fontWeight: FontWeight.bold, fontSize: 10),
       textAlign: TextAlign.right),
   );
