@@ -1,4 +1,5 @@
 // Run with: flutter test test/gen_icons_test.dart
+// Skipped on CI (Windows-only absolute paths)
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -88,6 +89,9 @@ void _write(String resPath, String density, Uint8List bytes) {
 }
 
 void main() {
+  // Skip entirely on non-Windows (CI uses Linux — hardcoded D:\ paths don't exist)
+  if (!Platform.isWindows) return;
+
   setUpAll(() async => _loadFont());
 
   const rbColors = [Color(0xFF00897B), Color(0xFF004D40)];
