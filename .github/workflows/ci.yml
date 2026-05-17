@@ -1,0 +1,40 @@
+name: CI — Lint, Format, Test
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  validate:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🔍 Dart analyze
+        run: flutter analyze --fatal-infos
+
+      - name: 🎨 Format check
+        run: dart format --set-exit-if-changed lib/ test/
+
+      - name: 🧪 Run tests
+        run: flutter test --no-pub
+
+      - name: 📊 Summary
+        if: always()
+        run: |
+          echo "## CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Analyze: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
