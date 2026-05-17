@@ -78,7 +78,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _load();
   }
 
-  Future<void> _clearAll(dynamic s) async {
+  Future<void> _clearAll(AppStrings s) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -111,7 +111,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final isEs = isSpanishNotifier.value;
-    final dynamic s = isEs ? AppStringsES() : AppStringsEN();
+    final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
 
     return Column(
       children: [
@@ -169,7 +169,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildHeader(dynamic s) {
+  Widget _buildHeader(AppStrings s) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: ValueListenableBuilder<bool>(
@@ -214,7 +214,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildCard(Map<String, dynamic> row, dynamic s) {
+  Widget _buildCard(Map<String, dynamic> row, AppStrings s) {
     final amount = row['loan_amount'] as double;
     final rate = row['interest_rate'] as double;
     final months = row['normal_months'] as int;

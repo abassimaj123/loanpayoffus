@@ -1,10 +1,10 @@
 import 'package:calcwise_core/calcwise_core.dart' hide CrashlyticsService;
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'core/theme/app_theme.dart';
 import 'core/freemium/freemium_service.dart';
 import 'core/freemium/iap_service.dart';
@@ -16,7 +16,8 @@ import 'l10n/strings_en.dart';
 import 'l10n/strings_es.dart';
 import 'presentation/screens/calculator/calculator_screen.dart';
 import 'presentation/screens/payoff_plan/payoff_plan_screen.dart';
-import 'presentation/screens/comparison/comparison_screen.dart';
+// comparison_screen.dart — accessible from within PayoffPlanScreen via push
+// import 'presentation/screens/comparison/comparison_screen.dart';
 import 'presentation/screens/goals/goals_screen.dart';
 import 'presentation/screens/history/history_screen.dart';
 import 'presentation/screens/settings/settings_screen.dart';
@@ -86,6 +87,9 @@ class LoanPayoffUSApp extends StatelessWidget {
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: themeMode,
+            navigatorObservers: [
+              FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+            ],
             home: showSplash
                 ? const SplashScreen(child: _MainShell())
                 : const _MainShell(),
@@ -109,27 +113,31 @@ class _MainShellState extends State<_MainShell> {
   static const _screens = [
     CalculatorScreen(),
     PayoffPlanScreen(),
-    ComparisonScreen(),
+    DebtStrategyScreen(),
+    GoalsScreen(),
     HistoryScreen(),
   ];
 
   static const _icons = [
     Icons.calculate_rounded,
     Icons.receipt_long_rounded,
-    Icons.compare_arrows_rounded,
+    Icons.account_balance_wallet_rounded,
+    Icons.flag_rounded,
     Icons.history_rounded,
   ];
   static const _iconsOutlined = [
     Icons.calculate_rounded,
     Icons.receipt_long_rounded,
-    Icons.compare_arrows,
+    Icons.account_balance_wallet_outlined,
+    Icons.flag_outlined,
     Icons.history_rounded,
   ];
 
   static const _tabNames = [
     'Calculator',
     'PayoffPlan',
-    'Comparison',
+    'Strategy',
+    'Goals',
     'History',
   ];
 
@@ -187,7 +195,8 @@ class _MainShellState extends State<_MainShell> {
     final labels = [
       s.navCalculator,
       s.navPayoffPlan,
-      s.navComparison,
+      s.navDebtStrategy,
+      s.navGoals,
       s.navHistory,
     ];
     final isDark = Theme.of(context).brightness == Brightness.dark;

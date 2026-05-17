@@ -50,7 +50,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     return v == null ? 0 : (v as num).toInt();
   }
 
-  List<({String label, String value})> _inputRows(dynamic s) => [
+  List<({String label, String value})> _inputRows(AppStrings s) => [
     (label: s.loanTypeLabel, value: (_e['loan_type'] as String? ?? '—')),
     (label: s.loanAmount, value: _fmtInt.format(_d('loan_amount'))),
     (
@@ -65,7 +65,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       ),
   ];
 
-  List<({String label, String value})> _resultRows(dynamic s) {
+  List<({String label, String value})> _resultRows(AppStrings s) {
     final months = _i('normal_months');
     final saved = _d('interest_saved');
     return [
@@ -83,7 +83,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     ];
   }
 
-  String _buildShareText(dynamic s) {
+  String _buildShareText(AppStrings s) {
     final ts = DateTime.tryParse(_e['created_at'] as String? ?? '');
     const sep = '─────────────────────';
     final buf = StringBuffer();
@@ -106,7 +106,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     return buf.toString();
   }
 
-  Future<void> _share(BuildContext context, dynamic s) async {
+  Future<void> _share(BuildContext context, AppStrings s) async {
     if (!freemiumService.hasFullAccess) {
       final gate = await paywallSession.recordAction();
       if (!context.mounted) return;
@@ -124,7 +124,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     } catch (_) {}
   }
 
-  Future<void> _exportPdf(BuildContext context, dynamic s) async {
+  Future<void> _exportPdf(BuildContext context, AppStrings s) async {
     if (!freemiumService.hasFullAccess) {
       await PaywallHard.show(context);
       return;
@@ -284,7 +284,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     return ValueListenableBuilder<bool>(
       valueListenable: isSpanishNotifier,
       builder: (context, isEs, _) {
-        final dynamic s = isEs ? AppStringsES() : AppStringsEN();
+        final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
         final ts = DateTime.tryParse(_e['created_at'] as String? ?? '');
 
         return ValueListenableBuilder<bool>(

@@ -40,7 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final isEs = isSpanishNotifier.value;
-    final dynamic s = isEs ? AppStringsES() : AppStringsEN();
+    final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
 
     return Scaffold(
       appBar: AppBar(

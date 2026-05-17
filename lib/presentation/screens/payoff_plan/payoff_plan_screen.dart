@@ -30,7 +30,7 @@ class PayoffPlanScreen extends ConsumerWidget {
     PayoffResult result,
     bool isEs,
   ) async {
-    final dynamic s = isEs ? AppStringsES() : AppStringsEN();
+    final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
     final fmt = NumberFormat.currency(
       locale: 'en_US',
       symbol: '\$',
@@ -85,7 +85,7 @@ class PayoffPlanScreen extends ConsumerWidget {
     PayoffResult result,
     bool isEs,
   ) async {
-    final dynamic s = isEs ? AppStringsES() : AppStringsEN();
+    final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
 
     if (!freemiumService.hasFullAccess) {
       await PdfExportService.showUnlockOrPay(
@@ -103,7 +103,7 @@ class PayoffPlanScreen extends ConsumerWidget {
     PayoffResult result,
     bool isEs,
   ) async {
-    final dynamic s = isEs ? AppStringsES() : AppStringsEN();
+    final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
     final fmt = NumberFormat.currency(
       locale: 'en_US',
       symbol: '\$',
@@ -361,7 +361,7 @@ class PayoffPlanScreen extends ConsumerWidget {
     PayoffResult? result,
     bool isEs,
   ) {
-    final dynamic s = isEs ? AppStringsES() : AppStringsEN();
+    final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
     final fmt = NumberFormat.currency(
       locale: 'en_US',
       symbol: '\$',
@@ -657,7 +657,7 @@ class _MonthGroup extends StatefulWidget {
   final bool isLastGroup;
   final List<AmortizationEntry> entries;
   final NumberFormat fmt, fmtFull;
-  final dynamic s;
+  final AppStrings s;
 
   const _MonthGroup({
     required this.yearNum,

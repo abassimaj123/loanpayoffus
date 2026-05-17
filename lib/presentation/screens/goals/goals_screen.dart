@@ -82,7 +82,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     final result = ref.watch(payoffResultProvider);
     final input = ref.watch(loanInputProvider);
     final isEs = isSpanishNotifier.value;
-    final dynamic s = isEs ? AppStringsES() : AppStringsEN();
+    final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
 
     if (result == null) {
       return Column(

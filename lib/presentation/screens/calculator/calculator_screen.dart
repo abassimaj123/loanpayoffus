@@ -1143,7 +1143,7 @@ class _BalanceChart extends StatelessWidget {
     final maxLen = normalLen > extraLen ? normalLen : extraLen;
     final step = (maxLen / maxPoints).ceil().clamp(1, maxLen);
 
-    List<FlSpot> sampleSpots(List spots, int len) {
+    List<FlSpot> sampleSpots(List<FlSpot> spots, int len) {
       final out = <FlSpot>[];
       for (int i = 0; i < len; i += step) {
         out.add(spots[i]);
