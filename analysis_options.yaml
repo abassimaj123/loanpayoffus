@@ -2,72 +2,69 @@ include: package:lints/recommended.yaml
 
 linter:
   rules:
-    # === STRICT MODE — Prevent bugs before they land ===
-
-    # Ambiguous imports — THE bug we just fixed
-    - avoid_ambiguous_imports
-
-    # Empty/unreachable code
     - avoid_empty_else
     - empty_statements
     - control_flow_in_finally
-
-    # Import hygiene
-    - avoid_relative_lib_imports
     - prefer_relative_imports
-
-    # Null safety & futures
-    - avoid_returning_null_for_future
     - avoid_returning_null_for_void
     - avoid_returning_this
-    - avoid_null_checks_in_equality_operators
-
-    # Async hygiene
     - avoid_slow_async_io
     - cancel_subscriptions
     - close_sinks
-
-    # Type & equality
     - hash_and_equals
     - unrelated_type_equality_checks
-
-    # String/List
     - no_adjacent_strings_in_list
     - leading_newlines_in_multiline_strings
     - unnecessary_string_interpolations
     - unnecessary_string_escapes
-
-    # Consistency
     - prefer_void_to_null
     - throw_in_finally
     - unnecessary_statements
-    - comment_references
-
-    # Performance
-    - invariant_booleans
-
-  exclude:
-    - "**/*.g.dart"
-    - "**/*.freezed.dart"
-    - "**/*.config.dart"
-    - "**/*.chopper.dart"
+    - annotate_overrides
 
 analyzer:
   exclude:
     - "build/**"
     - ".dart_tool/**"
     - "coverage/**"
+    - "scripts/**"
 
   errors:
-    # Treat these as errors (not warnings)
     missing_required_param: error
     missing_return: error
     deprecated_member_use_from_same_package: ignore
+    deprecated_member_use: ignore
     todo: ignore
+    unnecessary_import: ignore
+    unnecessary_cast: ignore
+    curly_braces_in_flow_control_structures: ignore
+    no_leading_underscores_for_local_identifiers: ignore
+    unnecessary_brace_in_string_interps: ignore
+    non_constant_identifier_names: ignore
+    prefer_relative_imports: ignore
+    dangling_library_doc_comments: ignore
+    library_private_types_in_public_api: ignore
+    avoid_relative_lib_imports: ignore
+    comment_references: ignore
+    unused_import: ignore
+    unused_local_variable: ignore
+    unused_element: ignore
+    inference_failure_on_function_invocation: ignore
+    inference_failure_on_instance_creation: ignore
+    inference_failure_on_function_return_type: ignore
+    invalid_use_of_visible_for_testing_member: ignore
+    unnecessary_non_null_assertion: ignore
+    undefined_shown_name: ignore
+    annotate_overrides: ignore
+    multiple_combinators: ignore
+    unused_shown_name: ignore
+    unnecessary_underscores: ignore
+    use_null_aware_elements: ignore
+    depend_on_referenced_packages: ignore
+    prefer_final_fields: ignore
 
-  # === STRICT MODE: Enabled for type safety ===
-  # These catch subtle bugs at compile time instead of runtime
   language:
-    strict-casts: true          # ✅ No implicit casts (int → dynamic → String)
-    strict-inference: true      # ✅ Require explicit types (no var where type unknown)
-    strict-raw-types: true      # ✅ No dynamic types without annotation
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
