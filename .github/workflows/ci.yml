@@ -26,9 +26,9 @@ jobs:
 
       - name: Dart analyze
         run: |
-          output=$(flutter analyze --no-pub 2>&1)
+          output=$(flutter analyze --no-pub 2>&1) || true
           echo "$output"
-          errors=$(echo "$output" | grep -cE "^  error - " || true)
+          errors=$(echo "$output" | grep -cE "^  error [•-]" || true)
           if [ "${errors:-0}" -gt 0 ]; then
             echo "FAIL: $errors real error(s) found"
             exit 1
