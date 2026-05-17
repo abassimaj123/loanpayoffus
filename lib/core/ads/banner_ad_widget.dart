@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'ad_service.dart';
+import '../../main.dart' show adService;
 import '../freemium/freemium_service.dart';
 import '../firebase/analytics_service.dart';
 
@@ -23,15 +23,20 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   void _load() {
     _ad = BannerAd(
-      adUnitId: AdService.bannerId,
+      adUnitId: adService.bannerAdUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (_) { if (mounted) setState(() => _loaded = true); },
+        onAdLoaded: (_) {
+          if (mounted) setState(() => _loaded = true);
+        },
         onAdFailedToLoad: (ad, _) {
           ad.dispose();
           if (!mounted) return;
-          setState(() { _ad = null; _loaded = false; });
+          setState(() {
+            _ad = null;
+            _loaded = false;
+          });
           AnalyticsService.instance.logBannerFailed();
           if (!_retried) {
             _retried = true;
@@ -45,7 +50,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 
   @override
-  void dispose() { _ad?.dispose(); super.dispose(); }
+  void dispose() {
+    _ad?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

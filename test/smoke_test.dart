@@ -54,9 +54,18 @@ void main() {
           home: Scaffold(
             bottomNavigationBar: NavigationBar(
               destinations: const [
-                NavigationDestination(icon: Icon(Icons.calculate), label: 'Calculator'),
-                NavigationDestination(icon: Icon(Icons.history), label: 'History'),
-                NavigationDestination(icon: Icon(Icons.settings), label: 'Settings'),
+                NavigationDestination(
+                  icon: Icon(Icons.calculate),
+                  label: 'Calculator',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.history),
+                  label: 'History',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.settings),
+                  label: 'Settings',
+                ),
               ],
             ),
           ),

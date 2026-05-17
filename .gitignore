@@ -19,3 +19,16 @@ google-services.json
 **/android/key.properties
 **/android/*.jks
 **/android/*.keystore
+
+# ── iOS artifacts (opt-in via calcwise_core/ios_templates/activate_ios.sh) ───
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/.last_build_id
+ios/Flutter/Generated.xcconfig
+ios/Flutter/Flutter.podspec
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GoogleService-Info.plist
+ios/Podfile.lock
+ios/build/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/

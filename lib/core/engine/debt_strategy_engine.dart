@@ -13,7 +13,7 @@ import '../../domain/models/debt_item.dart';
 
 /// One month's payment record for a single debt.
 class MonthlyAllocation {
-  final int    month;
+  final int month;
   final String debtName;
   final double interest;
   final double principal;
@@ -31,7 +31,7 @@ class MonthlyAllocation {
 /// Per-debt summary in a strategy run.
 class DebtPayoffSummary {
   final String name;
-  final int    monthPaidOff; // 1-based month number
+  final int monthPaidOff; // 1-based month number
   final double interestPaid;
 
   const DebtPayoffSummary({
@@ -80,14 +80,14 @@ class DebtStrategyEngine {
   // ---------- Public API ----------
 
   static EngineResult run({
-    required List<DebtItem>  debts,
-    required double          extraMonthly,
-    required PayoffStrategy  strategy,
+    required List<DebtItem> debts,
+    required double extraMonthly,
+    required PayoffStrategy strategy,
   }) {
     return _simulate(
-      debts:       debts,
+      debts: debts,
       extraMonthly: extraMonthly,
-      comparator:  _comparatorFor(strategy),
+      comparator: _comparatorFor(strategy),
     );
   }
 
@@ -96,9 +96,9 @@ class DebtStrategyEngine {
     // Use avalanche order for minimum-only; order doesn't matter for total
     // interest when extra = 0, but avalanche is the conventional baseline.
     return _simulate(
-      debts:        debts,
+      debts: debts,
       extraMonthly: 0,
-      comparator:   _comparatorFor(PayoffStrategy.avalanche),
+      comparator: _comparatorFor(PayoffStrategy.avalanche),
     );
   }
 
@@ -114,30 +114,30 @@ class DebtStrategyEngine {
   }
 
   static EngineResult _simulate({
-    required List<DebtItem>              debts,
-    required double                      extraMonthly,
+    required List<DebtItem> debts,
+    required double extraMonthly,
     required int Function(DebtItem, DebtItem) comparator,
   }) {
     if (debts.isEmpty) {
       return const EngineResult(
-        totalMonths:        0,
-        totalInterest:      0,
-        payoffOrder:        [],
+        totalMonths: 0,
+        totalInterest: 0,
+        payoffOrder: [],
         monthlyAllocations: [],
       );
     }
 
     // Mutable working state
-    final balances       = List<double>.from(debts.map((d) => d.balance));
-    final debtInterest   = List<double>.filled(debts.length, 0.0);
+    final balances = List<double>.from(debts.map((d) => d.balance));
+    final debtInterest = List<double>.filled(debts.length, 0.0);
     final payoffSummaries = <DebtPayoffSummary>[];
-    final allocations     = <MonthlyAllocation>[];
-    final recordedPayoff  = List<bool>.filled(debts.length, false);
+    final allocations = <MonthlyAllocation>[];
+    final recordedPayoff = List<bool>.filled(debts.length, false);
 
-    double runningExtra  = extraMonthly;
+    double runningExtra = extraMonthly;
     double totalInterest = 0;
-    int    month         = 0;
-    const  int maxMonths = 1200; // 100-year safety cap
+    int month = 0;
+    const int maxMonths = 1200; // 100-year safety cap
 
     while (balances.any((b) => b > 0.005) && month < maxMonths) {
       month++;
@@ -145,15 +145,15 @@ class DebtStrategyEngine {
       // Build priority-sorted list of active debt indices
       final active = [
         for (int i = 0; i < debts.length; i++)
-          if (balances[i] > 0.005) i
+          if (balances[i] > 0.005) i,
       ]..sort((a, b) => comparator(debts[a], debts[b]));
 
       // Step 1 — accrue interest and apply minimum payments
       for (final i in active) {
         final monthlyRate = debts[i].annualRate / 100 / 12;
-        final interest    = balances[i] * monthlyRate;
-        totalInterest        += interest;
-        debtInterest[i]      += interest;
+        final interest = balances[i] * monthlyRate;
+        totalInterest += interest;
+        debtInterest[i] += interest;
 
         var principal = debts[i].minPayment - interest;
         if (principal < 0) principal = 0;
@@ -162,13 +162,15 @@ class DebtStrategyEngine {
         final endBalance = balances[i] - principal;
         balances[i] = endBalance < 0 ? 0 : endBalance;
 
-        allocations.add(MonthlyAllocation(
-          month:          month,
-          debtName:       debts[i].name,
-          interest:       interest,
-          principal:      principal,
-          endingBalance:  balances[i],
-        ));
+        allocations.add(
+          MonthlyAllocation(
+            month: month,
+            debtName: debts[i].name,
+            interest: interest,
+            principal: principal,
+            endingBalance: balances[i],
+          ),
+        );
       }
 
       // Step 2 — apply extra to priority debt (first active by strategy order)
@@ -179,7 +181,7 @@ class DebtStrategyEngine {
         final apply = leftover < balances[i] ? leftover : balances[i];
         balances[i] -= apply;
         if (balances[i] < 0) balances[i] = 0;
-        leftover    -= apply;
+        leftover -= apply;
 
         // Update the last allocation entry for this debt this month
         // (update endingBalance to reflect extra payment)
@@ -187,10 +189,10 @@ class DebtStrategyEngine {
           if (allocations[k].month == month &&
               allocations[k].debtName == debts[i].name) {
             allocations[k] = MonthlyAllocation(
-              month:         allocations[k].month,
-              debtName:      allocations[k].debtName,
-              interest:      allocations[k].interest,
-              principal:     allocations[k].principal + apply,
+              month: allocations[k].month,
+              debtName: allocations[k].debtName,
+              interest: allocations[k].interest,
+              principal: allocations[k].principal + apply,
               endingBalance: balances[i],
             );
             break;
@@ -203,11 +205,13 @@ class DebtStrategyEngine {
       for (int i = 0; i < debts.length; i++) {
         if (!recordedPayoff[i] && balances[i] <= 0.005) {
           recordedPayoff[i] = true;
-          payoffSummaries.add(DebtPayoffSummary(
-            name:          debts[i].name,
-            monthPaidOff:  month,
-            interestPaid:  debtInterest[i],
-          ));
+          payoffSummaries.add(
+            DebtPayoffSummary(
+              name: debts[i].name,
+              monthPaidOff: month,
+              interestPaid: debtInterest[i],
+            ),
+          );
           freed += debts[i].minPayment;
           balances[i] = 0;
         }
@@ -218,9 +222,9 @@ class DebtStrategyEngine {
     payoffSummaries.sort((a, b) => a.monthPaidOff.compareTo(b.monthPaidOff));
 
     return EngineResult(
-      totalMonths:        month,
-      totalInterest:      totalInterest,
-      payoffOrder:        payoffSummaries,
+      totalMonths: month,
+      totalInterest: totalInterest,
+      payoffOrder: payoffSummaries,
       monthlyAllocations: allocations,
     );
   }

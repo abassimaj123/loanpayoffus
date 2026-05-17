@@ -2,14 +2,14 @@ import '../models/debt_item.dart';
 
 class DebtPayoffDate {
   final String name;
-  final int    monthPaidOff;
+  final int monthPaidOff;
 
   const DebtPayoffDate({required this.name, required this.monthPaidOff});
 }
 
 class StrategyResult {
-  final int                  totalMonths;
-  final double               totalInterest;
+  final int totalMonths;
+  final double totalInterest;
   final List<DebtPayoffDate> debtPayoffDates;
 
   const StrategyResult({
@@ -22,40 +22,44 @@ class StrategyResult {
 class DebtStrategyCalculator {
   // ---------- Avalanche: highest-rate first ----------
   static StrategyResult runAvalanche(
-      List<DebtItem> debts, double extraMonthly) {
+    List<DebtItem> debts,
+    double extraMonthly,
+  ) {
     return _run(
-      debts:        debts,
+      debts: debts,
       extraMonthly: extraMonthly,
-      comparator:   (a, b) => b.annualRate.compareTo(a.annualRate),
+      comparator: (a, b) => b.annualRate.compareTo(a.annualRate),
     );
   }
 
   // ---------- Snowball: lowest-balance first ----------
-  static StrategyResult runSnowball(
-      List<DebtItem> debts, double extraMonthly) {
+  static StrategyResult runSnowball(List<DebtItem> debts, double extraMonthly) {
     return _run(
-      debts:        debts,
+      debts: debts,
       extraMonthly: extraMonthly,
-      comparator:   (a, b) => a.balance.compareTo(b.balance),
+      comparator: (a, b) => a.balance.compareTo(b.balance),
     );
   }
 
   // ---------- Shared simulation core ----------
   static StrategyResult _run({
     required List<DebtItem> debts,
-    required double         extraMonthly,
+    required double extraMonthly,
     required int Function(DebtItem, DebtItem) comparator,
   }) {
     if (debts.isEmpty) {
       return const StrategyResult(
-          totalMonths: 0, totalInterest: 0, debtPayoffDates: []);
+        totalMonths: 0,
+        totalInterest: 0,
+        debtPayoffDates: [],
+      );
     }
 
     // Working state: mutable balances keyed by index
     final balances = List<double>.from(debts.map((d) => d.balance));
     final payoffDates = <DebtPayoffDate>[];
     double totalInterest = 0;
-    int    month         = 0;
+    int month = 0;
 
     while (balances.any((b) => b > 0.005) && month < 1200) {
       month++;
@@ -63,14 +67,14 @@ class DebtStrategyCalculator {
       // 1. Build list of active (unpaid) indices sorted by strategy priority
       final activeIndices = [
         for (int i = 0; i < debts.length; i++)
-          if (balances[i] > 0.005) i
+          if (balances[i] > 0.005) i,
       ]..sort((a, b) => comparator(debts[a], debts[b]));
 
       // 2. Pay minimum on every active debt; collect freed-up payments
       double leftover = extraMonthly;
 
       for (final i in activeIndices) {
-        final r        = debts[i].annualRate / 100 / 12;
+        final r = debts[i].annualRate / 100 / 12;
         final interest = balances[i] * r;
         totalInterest += interest;
 
@@ -99,7 +103,9 @@ class DebtStrategyCalculator {
       for (int i = 0; i < debts.length; i++) {
         if (balances[i] <= 0.005 &&
             !payoffDates.any((p) => p.name == debts[i].name)) {
-          payoffDates.add(DebtPayoffDate(name: debts[i].name, monthPaidOff: month));
+          payoffDates.add(
+            DebtPayoffDate(name: debts[i].name, monthPaidOff: month),
+          );
           freed += debts[i].minPayment;
           balances[i] = 0;
         }
@@ -113,8 +119,8 @@ class DebtStrategyCalculator {
     payoffDates.sort((a, b) => a.monthPaidOff.compareTo(b.monthPaidOff));
 
     return StrategyResult(
-      totalMonths:    month,
-      totalInterest:  totalInterest,
+      totalMonths: month,
+      totalInterest: totalInterest,
       debtPayoffDates: payoffDates,
     );
   }

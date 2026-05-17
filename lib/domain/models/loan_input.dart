@@ -2,10 +2,10 @@ import 'loan_type.dart';
 
 class LoanInput {
   final LoanType loanType;
-  final double   loanAmount;
-  final double   interestRatePct;
-  final double   monthlyPayment;
-  final double   extraPayment;
+  final double loanAmount;
+  final double interestRatePct;
+  final double monthlyPayment;
+  final double extraPayment;
 
   const LoanInput({
     required this.loanType,
@@ -16,13 +16,16 @@ class LoanInput {
   });
 
   LoanInput copyWith({
-    LoanType? loanType, double? loanAmount, double? interestRatePct,
-    double? monthlyPayment, double? extraPayment,
+    LoanType? loanType,
+    double? loanAmount,
+    double? interestRatePct,
+    double? monthlyPayment,
+    double? extraPayment,
   }) => LoanInput(
-    loanType:        loanType        ?? this.loanType,
-    loanAmount:      loanAmount      ?? this.loanAmount,
+    loanType: loanType ?? this.loanType,
+    loanAmount: loanAmount ?? this.loanAmount,
     interestRatePct: interestRatePct ?? this.interestRatePct,
-    monthlyPayment:  monthlyPayment  ?? this.monthlyPayment,
-    extraPayment:    extraPayment    ?? this.extraPayment,
+    monthlyPayment: monthlyPayment ?? this.monthlyPayment,
+    extraPayment: extraPayment ?? this.extraPayment,
   );
 }

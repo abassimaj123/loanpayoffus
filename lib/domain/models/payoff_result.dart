@@ -1,9 +1,9 @@
 import 'amortization_entry.dart';
 
 class PayoffResult {
-  final int    normalMonths;
-  final int    extraMonths;
-  final int    monthsSaved;
+  final int normalMonths;
+  final int extraMonths;
+  final int monthsSaved;
   final double interestNormal;
   final double interestExtra;
   final double interestSaved;
@@ -25,6 +25,6 @@ class PayoffResult {
     required this.normalSchedule,
   });
 
-  int get yearsSaved     => monthsSaved ~/ 12;
+  int get yearsSaved => monthsSaved ~/ 12;
   int get remMonthsSaved => monthsSaved % 12;
 }

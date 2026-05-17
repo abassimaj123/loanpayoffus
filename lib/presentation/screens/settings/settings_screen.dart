@@ -6,7 +6,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/freemium/iap_service.dart';
-import '../../../core/review/review_service.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import '../../widgets/premium_badge.dart';
@@ -34,12 +33,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _launch(String url) async {
     final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (await canLaunchUrl(uri))
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEs    = isSpanishNotifier.value;
+    final isEs = isSpanishNotifier.value;
     final dynamic s = isEs ? AppStringsES() : AppStringsEN();
 
     return Scaffold(
@@ -47,109 +47,168 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(s.settingsTitle),
         actions: const [PremiumBadge()],
       ),
-      body: ListView(children: [
-        // ── Language ──
-        _SectionHeader(s.language),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Row(children: [
-            const Icon(Icons.language, color: AppTheme.primary),
-            const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(s.language,
-                style: const TextStyle(fontSize: 15)),
-              Text(isEs ? 'Español' : 'English',
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55))),
-            ])),
-            Switch(
-              value: isEs,
-              activeColor: AppTheme.primary,
-              onChanged: (v) => isSpanishNotifier.value = v,
-            ),
-            Text(isEs ? 'ES' : 'EN',
-              style: TextStyle(
-                color: AppTheme.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 13)),
-          ]),
-        ),
-        // Theme toggle
-        ValueListenableBuilder<ThemeMode>(
-          valueListenable: themeModeService.notifier,
-          builder: (_, mode, __) => ListTile(
-            leading: Icon(themeModeService.icon, color: AppTheme.primary),
-            title: Text(themeModeService.label(isSpanish: isEs)),
-            trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
-            onTap: () => themeModeService.toggle(),
-          ),
-        ),
-        const Divider(),
-
-        // ── Premium ──
-        _SectionHeader('Premium'),
-        ValueListenableBuilder<bool>(
-          valueListenable: freemiumService.isPremiumNotifier,
-          builder: (context, isPremium, _) => isPremium
-            ? ListTile(
-                leading: const Icon(Icons.verified, color: Colors.amber),
-                title: Text(s.premiumActive),
-                subtitle: Text(s.premiumSubtitle),
-              )
-            : Column(mainAxisSize: MainAxisSize.min, children: [
-                ListTile(
-                  leading: const Icon(Icons.star_outline, color: AppTheme.primary),
-                  title: Text(s.getPremium),
-                  subtitle: Text(s.premiumSubtitle),
-                  trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
-                  onTap: () => IAPService.instance.buy(),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.restore, color: AppTheme.primary),
-                  title: Text(s.restorePurchase),
-                  onTap: () => IAPService.instance.restore(),
-                ),
-                if (kDebugMode)
-                  ListTile(
-                    leading: const Icon(Icons.bug_report, color: Colors.orange),
-                    title: const Text('Force Premium (DEV)'),
-                    onTap: () => freemiumService.debugUnlockPremium(),
+      bottomNavigationBar: const CalcwiseAdFooter(),
+      body: ListView(
+        children: [
+          // ── Language ──
+          _SectionHeader(s.language),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                const Icon(Icons.language, color: AppTheme.primary),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        s.language,
+                        style: const TextStyle(fontSize: AppTextSize.bodyMd),
+                      ),
+                      Text(
+                        isEs ? 'Español' : 'English',
+                        style: TextStyle(
+                          fontSize: AppTextSize.sm,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ],
                   ),
-              ]),
-        ),
-        const Divider(),
+                ),
+                Switch(
+                  value: isEs,
+                  activeColor: AppTheme.primary,
+                  onChanged: (v) => isSpanishNotifier.value = v,
+                ),
+                Text(
+                  isEs ? 'ES' : 'EN',
+                  style: TextStyle(
+                    color: AppTheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: AppTextSize.md,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Theme toggle
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: themeModeService.notifier,
+            builder: (_, mode, __) => ListTile(
+              leading: Icon(themeModeService.icon, color: AppTheme.primary),
+              title: Text(themeModeService.label(isSpanish: isEs)),
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.45),
+              ),
+              onTap: () => themeModeService.toggle(),
+            ),
+          ),
+          const Divider(),
 
-        // ── Support ──
-        _SectionHeader(s.support),
-        ListTile(
-          leading: const Icon(Icons.email_outlined, color: AppTheme.primary),
-          title: Text(s.contactSupport),
-          trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
-          onTap: () => _launch('mailto:support@loanpayoffus.com'),
-        ),
-        ListTile(
-          leading: const Icon(Icons.star_rate_rounded, color: Colors.amber),
-          title: Text(s.rateApp),
-          trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
-          onTap: () => ReviewService.instance.openStoreForReview(),
-        ),
-        ListTile(
-          leading: const Icon(Icons.privacy_tip_outlined, color: AppTheme.primary),
-          title: Text(s.privacyPolicy),
-          trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
-          onTap: () => _launch('https://calqwise.com/privacy'),
-        ),
-        const Divider(),
+          // ── Premium ──
+          _SectionHeader('Premium'),
+          ValueListenableBuilder<bool>(
+            valueListenable: freemiumService.isPremiumNotifier,
+            builder: (context, isPremium, _) => isPremium
+                ? ListTile(
+                    leading: const Icon(Icons.verified, color: Colors.amber),
+                    title: Text(s.premiumActive),
+                    subtitle: Text(s.premiumSubtitle),
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: const Icon(
+                          Icons.star_outline,
+                          color: AppTheme.primary,
+                        ),
+                        title: Text(s.getPremium),
+                        subtitle: Text(s.premiumSubtitle),
+                        trailing: Icon(
+                          Icons.chevron_right_rounded,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.45),
+                        ),
+                        onTap: () => IAPService.instance.buy(),
+                      ),
+                      ListTile(
+                        leading: const Icon(
+                          Icons.restore,
+                          color: AppTheme.primary,
+                        ),
+                        title: Text(s.restorePurchase),
+                        onTap: () => IAPService.instance.restore(),
+                      ),
+                      if (kDebugMode)
+                        ListTile(
+                          leading: const Icon(
+                            Icons.bug_report,
+                            color: Colors.orange,
+                          ),
+                          title: const Text('Force Premium (DEV)'),
+                          onTap: () => freemiumService.debugUnlockPremium(),
+                        ),
+                    ],
+                  ),
+          ),
+          const Divider(),
 
-        // ── Discover ──
-        _SectionHeader(s.discover),
-        ListTile(
-          leading: const Icon(Icons.apps_outlined, color: AppTheme.primary),
-          title: const Text('CalqWise'),
-          subtitle: Text(s.calcSuite),
-          trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
-          onTap: () => _launch('https://calqwise.com'),
-        ),
-      ]),
+          // ── Support ──
+          _SectionHeader(s.support),
+          ListTile(
+            leading: const Icon(Icons.email_rounded, color: AppTheme.primary),
+            title: Text(s.contactSupport),
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.45),
+            ),
+            onTap: () => _launch('mailto:support@loanpayoffus.com'),
+          ),
+          CalcwiseRateAppTile(
+            label: isEs ? 'Calificar la app' : 'Rate the App',
+          ),
+          ListTile(
+            leading: const Icon(
+              Icons.privacy_tip_rounded,
+              color: AppTheme.primary,
+            ),
+            title: Text(s.privacyPolicy),
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.45),
+            ),
+            onTap: () => _launch('https://calqwise.com/privacy'),
+          ),
+          const Divider(),
+
+          // ── Discover ──
+          _SectionHeader(s.discover),
+          ListTile(
+            leading: const Icon(Icons.apps_rounded, color: AppTheme.primary),
+            title: const Text('CalqWise'),
+            subtitle: Text(s.calcSuite),
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.45),
+            ),
+            onTap: () => _launch('https://calqwise.com'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -160,8 +219,14 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
-    child: Text(title.toUpperCase(),
-      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-        color: AppTheme.primary, letterSpacing: 0.8)),
+    child: Text(
+      title.toUpperCase(),
+      style: const TextStyle(
+        fontSize: AppTextSize.xs,
+        fontWeight: FontWeight.w600,
+        color: AppTheme.primary,
+        letterSpacing: 0.8,
+      ),
+    ),
   );
 }

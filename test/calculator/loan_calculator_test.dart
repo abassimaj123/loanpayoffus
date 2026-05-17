@@ -5,10 +5,10 @@ import 'package:loan_payoff_us/domain/usecases/loan_calculator.dart';
 
 void main() {
   const base = LoanInput(
-    loanType:        LoanType.mortgage,
-    loanAmount:      400000,
+    loanType: LoanType.mortgage,
+    loanAmount: 400000,
     interestRatePct: 6.0,
-    monthlyPayment:  2398.20,
+    monthlyPayment: 2398.20,
   );
 
   // ── Monthly payment ───────────────────────────────────────────────────────
@@ -56,7 +56,10 @@ void main() {
   // ── Schedule integrity ────────────────────────────────────────────────────
   test('interest in schedule matches total interest', () {
     final r = LoanCalculator.calculate(base);
-    final schedInterest = r.normalSchedule.fold<double>(0, (s, e) => s + e.interest);
+    final schedInterest = r.normalSchedule.fold<double>(
+      0,
+      (s, e) => s + e.interest,
+    );
     expect(r.interestNormal, closeTo(schedInterest, 1.0));
   });
 
@@ -78,18 +81,25 @@ void main() {
 
   // ── Credit card high-rate ─────────────────────────────────────────────────
   test('credit card 18.5% 5k at 150/mo > 36 months', () {
-    final r = LoanCalculator.calculate(const LoanInput(
-      loanType:        LoanType.creditCard,
-      loanAmount:      5000,
-      interestRatePct: 18.5,
-      monthlyPayment:  150,
-    ));
+    final r = LoanCalculator.calculate(
+      const LoanInput(
+        loanType: LoanType.creditCard,
+        loanAmount: 5000,
+        interestRatePct: 18.5,
+        monthlyPayment: 150,
+      ),
+    );
     expect(r.normalMonths, greaterThan(36));
   });
 
   // ── Goal calculator ───────────────────────────────────────────────────────
   test('requiredExtraForTarget: extra > 0 and results in ≤ target months', () {
-    final extra = LoanCalculator.requiredExtraForTarget(400000, 6.0, 2398.20, 240);
+    final extra = LoanCalculator.requiredExtraForTarget(
+      400000,
+      6.0,
+      2398.20,
+      240,
+    );
     expect(extra, greaterThan(0));
     final sched = LoanCalculator.buildSchedule(400000, 6.0, 2398.20, extra);
     expect(sched.length, closeTo(240, 5));
@@ -103,14 +113,14 @@ void main() {
 
   // ── Loan type defaults ────────────────────────────────────────────────────
   test('LoanType defaults: mortgage 6.2% / 360mo', () {
-    expect(LoanType.mortgage.defaultRate,        closeTo(6.2,  0.01));
-    expect(LoanType.mortgage.defaultTermMonths,  360);
-    expect(LoanType.mortgage.defaultAmount,      closeTo(400000, 1));
+    expect(LoanType.mortgage.defaultRate, closeTo(6.2, 0.01));
+    expect(LoanType.mortgage.defaultTermMonths, 360);
+    expect(LoanType.mortgage.defaultAmount, closeTo(400000, 1));
   });
 
   test('LoanType defaults: creditCard 18.5% / auto 60mo', () {
-    expect(LoanType.creditCard.defaultRate,       closeTo(18.5, 0.01));
-    expect(LoanType.auto.defaultTermMonths,       60);
+    expect(LoanType.creditCard.defaultRate, closeTo(18.5, 0.01));
+    expect(LoanType.auto.defaultTermMonths, 60);
   });
 
   // ── One-time extra (spread across term) ──────────────────────────────────
@@ -119,15 +129,19 @@ void main() {
     const oneTimeExtra = 10000.0;
     const approxTermMonths = 360.0;
     final monthlyEffective = oneTimeExtra / approxTermMonths;
-    final r = LoanCalculator.calculate(base.copyWith(extraPayment: monthlyEffective));
+    final r = LoanCalculator.calculate(
+      base.copyWith(extraPayment: monthlyEffective),
+    );
     expect(r.extraMonths, lessThan(r.normalMonths));
   });
 
   // ── totalPaid consistency ─────────────────────────────────────────────────
   test('totalPaidNormal ≈ loanAmount + interestNormal', () {
     final r = LoanCalculator.calculate(base);
-    expect(r.totalPaidNormal,
-        closeTo(base.loanAmount + r.interestNormal, 10.0));
+    expect(
+      r.totalPaidNormal,
+      closeTo(base.loanAmount + r.interestNormal, 10.0),
+    );
   });
 
   test('extra payment: totalPaidExtra < totalPaidNormal', () {

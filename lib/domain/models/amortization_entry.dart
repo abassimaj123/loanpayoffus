@@ -1,5 +1,5 @@
 class AmortizationEntry {
-  final int    month;
+  final int month;
   final double payment;
   final double principal;
   final double interest;

@@ -4,20 +4,25 @@ import '../../domain/models/loan_type.dart';
 import '../../domain/models/payoff_result.dart';
 import '../../domain/usecases/loan_calculator.dart';
 
-final loanInputProvider =
-    StateNotifierProvider<LoanInputNotifier, LoanInput>(
+final loanInputProvider = StateNotifierProvider<LoanInputNotifier, LoanInput>(
   (ref) => LoanInputNotifier(),
 );
 
 class LoanInputNotifier extends StateNotifier<LoanInput> {
   LoanInputNotifier()
-      : super(LoanInput(
-          loanType:        LoanType.mortgage,
-          loanAmount:      400000,
+    : super(
+        LoanInput(
+          loanType: LoanType.mortgage,
+          loanAmount: 400000,
           interestRatePct: 6.2,
-          monthlyPayment:  LoanCalculator.computeMonthlyPayment(400000, 6.2, 360),
-          extraPayment:    0,
-        ));
+          monthlyPayment: LoanCalculator.computeMonthlyPayment(
+            400000,
+            6.2,
+            360,
+          ),
+          extraPayment: 0,
+        ),
+      );
 
   void update(LoanInput input) => state = input;
 }
