@@ -7,11 +7,15 @@ environment:
   sdk: ^3.11.4
 
 dependencies:
+  calcwise_core:
+    git:
+      url: https://github.com/abassimaj123/calcwise_core.git
+      ref: main
   flutter:
     sdk: flutter
-  calcwise_core:
-    path: ../packages/calcwise_core
+
   flutter_riverpod: ^2.5.1
+  flutter_local_notifications: ^18.0.1
   google_mobile_ads: ^5.1.0
   fl_chart: ^0.69.0
   sqflite: ^2.3.3
@@ -44,11 +48,14 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path_android: "assets/icons/icon_foreground.png"
-  adaptive_icon_background: "#512DA8"
-  adaptive_icon_foreground: "assets/icons/icon_foreground.png"
+  image_path_android: "assets/icons/icon_foreground_full.png"
+  adaptive_icon_background: "#6F48BB"
+  adaptive_icon_foreground: "assets/icons/icon_foreground_full.png"
   min_sdk_android: 21
   web:
     generate: false
   windows:
     generate: false
+
+
+
