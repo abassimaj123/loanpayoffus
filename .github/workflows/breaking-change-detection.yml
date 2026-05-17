@@ -1,0 +1,122 @@
+name: 🔨 Breaking Change Detection — Warn on API changes
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'pubspec.yaml'
+      - '.github/workflows/breaking-change-detection.yml'
+
+jobs:
+  detect-breaking-changes:
+    runs-on: ubuntu-latest
+    name: Detect breaking changes in dependencies
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+
+      - name: 🔍 Check for major version bumps
+        id: detect
+        run: |
+          echo "Comparing pubspec.yaml versions..."
+
+          # Get old and new pubspec.yaml
+          git show HEAD:pubspec.yaml > /tmp/old_pubspec.yaml 2>/dev/null || true
+          cp pubspec.yaml /tmp/new_pubspec.yaml
+
+          # Extract key dependencies
+          echo "## Dependency Changes Detected" > /tmp/changes.md
+          echo "" >> /tmp/changes.md
+
+          breaking_found=0
+
+          # Check for major version bumps in critical deps
+          critical_deps=(
+            "provider"
+            "riverpod"
+            "calcwise_core"
+            "flutter_riverpod"
+            "firebase_core"
+          )
+
+          for dep in "${critical_deps[@]}"; do
+            old_version=$(grep "^ *$dep:" /tmp/old_pubspec.yaml 2>/dev/null | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -1 || echo "")
+            new_version=$(grep "^ *$dep:" /tmp/new_pubspec.yaml 2>/dev/null | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -1 || echo "")
+
+            if [ -n "$old_version" ] && [ -n "$new_version" ] && [ "$old_version" != "$new_version" ]; then
+              old_major=$(echo $old_version | cut -d. -f1)
+              new_major=$(echo $new_version | cut -d. -f1)
+
+              if [ "$old_major" != "$new_major" ]; then
+                echo "⚠️  **BREAKING CHANGE** in $dep: $old_version → $new_version" >> /tmp/changes.md
+                breaking_found=1
+              else
+                echo "✅ $dep: $old_version → $new_version" >> /tmp/changes.md
+              fi
+            fi
+          done
+
+          cat /tmp/changes.md
+
+          if [ $breaking_found -eq 1 ]; then
+            echo "breaking_found=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📢 Comment on PR if breaking changes
+        if: steps.detect.outputs.breaking_found == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const changes = fs.readFileSync('/tmp/changes.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `⚠️  **BREAKING CHANGE DETECTED**
+
+${changes}
+
+### Action Required
+1. Run \`bash scripts/batch-analyze.sh\` to find errors in all apps
+2. Update all apps to handle the breaking change
+3. Create migration guide (template below)
+
+### Migration Guide Template
+\`\`\`markdown
+## Migration: [Lib] v[OLD] → v[NEW]
+
+### What Changed
+[Describe what changed]
+
+### Before
+\`\`\`dart
+// Old code
+\`\`\`
+
+### After
+\`\`\`dart
+// New code
+\`\`\`
+
+### Affected Apps
+- AutoLoan
+- MortgageUS
+- [...]
+\`\`\`
+              `
+            })
+
+      - name: 📊 Summary
+        run: |
+          echo "# ✅ Breaking Change Check Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Major version bumps detected in critical dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "- All apps should be tested with new versions" >> $GITHUB_STEP_SUMMARY

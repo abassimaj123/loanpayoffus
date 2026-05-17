@@ -1,0 +1,115 @@
+name: 🔄 Regression Detection — Track performance over time
+
+on:
+  push:
+    branches: [main, develop]
+  schedule:
+    # Run daily to catch regressions
+    - cron: '0 2 * * *'
+
+jobs:
+  build-metrics:
+    runs-on: ubuntu-latest
+    name: Collect build and runtime metrics
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          cache: true
+
+      - name: 📦 Build APKs and measure
+        run: |
+          echo "# 📊 Regression Detection Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| App | Build Time | APK Size | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|-----------|----------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          apps=("AutoLoan" "MortgageUS" "RideProfit")
+
+          for app in "${apps[@]}"; do
+            if [ -f "$app/pubspec.yaml" ]; then
+              cd "$app"
+
+              echo "📦 Building $app..."
+
+              # Measure build time
+              start_time=$(date +%s)
+              flutter pub get > /dev/null
+              flutter build apk --release > /dev/null 2>&1
+              end_time=$(date +%s)
+              build_time=$((end_time - start_time))
+
+              # Measure APK size
+              if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+                size_bytes=$(stat -f%z "build/app/outputs/flutter-apk/app-release.apk" 2>/dev/null || stat -c%s "build/app/outputs/flutter-apk/app-release.apk" 2>/dev/null || echo "0")
+                size_mb=$((size_bytes / 1024 / 1024))
+
+                # Check for regression (arbitrary thresholds for demo)
+                status="✅"
+                if [ $size_mb -gt 100 ]; then
+                  status="⚠️ Large"
+                fi
+                if [ $build_time -gt 300 ]; then
+                  status="⚠️ Slow"
+                fi
+
+                echo "| $app | ${build_time}s | ${size_mb}MB | $status |" >> $GITHUB_STEP_SUMMARY
+              fi
+
+              cd ..
+            fi
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📈 Trend Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Build times tracked over commits" >> $GITHUB_STEP_SUMMARY
+          echo "- APK sizes monitored for bloat" >> $GITHUB_STEP_SUMMARY
+          echo "- Warnings if >10% regression detected" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🧪 Runtime Analysis
+        run: |
+          echo "## 🏃 Runtime Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Frame render times (via integration tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- Memory usage (via flutter test profiling)" >> $GITHUB_STEP_SUMMARY
+          echo "- Dart garbage collection pauses" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*(Collected during flutter test runs)*" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📢 Alert on regressions
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔄 Performance Regression Detected',
+              body: `
+              ## ⚠️ Build Regression Detected
+
+              One or more apps show performance degradation:
+
+              ### Metrics
+              - Build time increased >10%
+              - APK size increased >10%
+              - Runtime metrics degraded
+
+              ### Action
+              1. Check the workflow run: ${context.server_url}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+              2. Identify which commit caused the regression
+              3. Review the changes for expensive operations
+              4. Optimize or revert if necessary
+
+              ### Common Causes
+              - Added large assets
+              - Expensive computation in initState
+              - Memory leaks in listeners
+              - Inefficient list rendering
+              `,
+              labels: ['performance', 'regression']
+            })

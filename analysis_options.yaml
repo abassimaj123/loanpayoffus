@@ -65,8 +65,9 @@ analyzer:
     deprecated_member_use_from_same_package: ignore
     todo: ignore
 
-  # Dart strict mode (optional, very strict)
+  # === STRICT MODE: Enabled for type safety ===
+  # These catch subtle bugs at compile time instead of runtime
   language:
-    strict-casts: false
-    strict-inference: false
-    strict-raw-types: false
+    strict-casts: true          # ✅ No implicit casts (int → dynamic → String)
+    strict-inference: true      # ✅ Require explicit types (no var where type unknown)
+    strict-raw-types: true      # ✅ No dynamic types without annotation

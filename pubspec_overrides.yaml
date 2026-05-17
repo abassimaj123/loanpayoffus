@@ -1,0 +1,67 @@
+# 📌 UNIFIED DEPENDENCY MANAGEMENT
+# This file pins ALL dependency versions for the entire portfolio
+# Every app imports this to stay in sync
+#
+# To update a dependency:
+# 1. Edit the version here
+# 2. Run: bash scripts/batch-clean.sh && bash scripts/batch-analyze.sh
+# 3. All 22 apps use the new version automatically
+#
+# This prevents version drift bugs like:
+# ❌ AutoLoan uses provider: ^6.0.0
+# ❌ MortgageUS uses provider: ^6.1.0
+# = Different behavior between apps
+
+dependency_overrides:
+  # === CORE FLUTTER ===
+  flutter_lints: ^3.0.0
+
+  # === STATE MANAGEMENT ===
+  provider: ^6.0.0
+  riverpod: ^2.4.0
+  flutter_riverpod: ^2.4.0
+
+  # === LOCALIZATION & FORMATTING ===
+  intl: ^0.19.0
+
+  # === HTTP & NETWORKING ===
+  http: ^1.1.0
+  dio: ^5.3.0
+
+  # === FIREBASE ===
+  firebase_core: ^2.21.0
+  firebase_analytics: ^10.5.0
+  firebase_crashlytics: ^3.3.5
+  firebase_messaging: ^14.6.0
+
+  # === MONETIZATION ===
+  google_mobile_ads: ^3.0.0
+  in_app_purchase: ^3.1.9
+
+  # === UI & STYLING ===
+  google_fonts: ^6.1.0
+  shimmer: ^3.0.0
+  fl_chart: ^0.65.0
+
+  # === UTILITIES ===
+  shared_preferences: ^2.2.2
+  sqflite: ^2.3.0
+  uuid: ^4.0.0
+  url_launcher: ^6.1.14
+  share_plus: ^7.2.0
+  package_info_plus: ^4.1.0
+
+  # === TESTING ===
+  mockito: ^5.4.4
+  integration_test: null  # Use Flutter's version
+
+  # === ANALYSIS ===
+  lints: ^3.0.0
+
+  # === CALCWISE CORE (SHARED LIBRARY) ===
+  # Pin this carefully - breaking changes affect all 22 apps
+  calcwise_core: ^1.5.0  # Update when major features land
+
+  # === APP-SPECIFIC (If needed, override per-app in pubspec.yaml) ===
+  # Example: if one app needs a specific version for compatibility
+  # Put it in that app's pubspec.yaml with "dependency_overrides:"
