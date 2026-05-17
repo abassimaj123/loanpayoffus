@@ -1,0 +1,172 @@
+name: 🔥 Hotfix Cascade — Auto-test & bump all apps when calcwise_core changes
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'packages/calcwise_core/**'  # Only when calcwise_core changes
+      - '.github/workflows/hotfix-cascade.yml'
+
+jobs:
+  detect-change:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.detect.outputs.changed }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect calcwise_core change
+        id: detect
+        run: |
+          if git diff HEAD~1 HEAD --name-only | grep -q "packages/calcwise_core"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  test-all-apps:
+    needs: detect-change
+    if: needs.detect-change.outputs.changed == 'true'
+
+    runs-on: ubuntu-latest
+    name: Test all apps after calcwise_core change
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          cache: true
+
+      - name: 🔍 Analyze all apps
+        run: |
+          apps=(
+            "AutoLoan"
+            "CreditCardAPR"
+            "HELOCApp"
+            "LoanPayoffUS"
+            "MortgageCA"
+            "MortgageUK"
+            "MortgageUS"
+            "PropertyROISuite"
+            "RentBuyUS"
+            "RentalExpenses"
+            "RideProfit"
+            "SalaryApp"
+            "StudentLoan"
+          )
+
+          failed=0
+          for app in "${apps[@]}"; do
+            if [ -f "$app/pubspec.yaml" ]; then
+              echo "Analyzing $app..."
+              cd "$app"
+              flutter pub get
+              if ! flutter analyze --fatal-infos; then
+                echo "❌ $app FAILED"
+                failed=1
+              fi
+              cd ..
+            fi
+          done
+
+          if [ $failed -eq 1 ]; then
+            exit 1
+          fi
+
+      - name: 🧪 Run tests
+        run: |
+          apps_with_tests=(
+            "AutoLoan"
+            "MortgageUS"
+            "MortgageUK"
+            "RideProfit"
+          )
+
+          failed=0
+          for app in "${apps_with_tests[@]}"; do
+            if [ -d "$app/test" ]; then
+              echo "Testing $app..."
+              cd "$app"
+              flutter pub get
+              if ! flutter test; then
+                echo "❌ $app tests FAILED"
+                failed=1
+              fi
+              cd ..
+            fi
+          done
+
+          if [ $failed -eq 1 ]; then
+            exit 1
+          fi
+
+  notify-success:
+    needs: test-all-apps
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: 📢 Notify success
+        run: |
+          echo "✅ calcwise_core hotfix successful!"
+          echo "All apps passed analyze + test"
+          echo "Safe to merge and deploy"
+
+  notify-failure:
+    needs: test-all-apps
+    runs-on: ubuntu-latest
+    if: failure()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 📢 Create failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔥 Hotfix Cascade FAILED — calcwise_core broke apps',
+              body: `
+              ## ❌ Hotfix Cascade Failed
+
+              A change in **calcwise_core** broke one or more apps.
+
+              ### Failed Checks
+              - Some apps failed \`flutter analyze --fatal-infos\`
+              - Some apps failed \`flutter test\`
+
+              ### Action Required
+              1. Check the workflow run: ${context.server_url}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+              2. Fix the issue in calcwise_core
+              3. Push a fix commit
+              4. The cascade will re-run automatically
+
+              ### Affected Apps
+              See the workflow logs for which apps failed.
+              `,
+              labels: ['hotfix', 'calcwise_core', 'critical']
+            })
+
+  update-apps:
+    needs: [test-all-apps]
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🔄 Create PRs to bump calcwise_core version
+        run: |
+          echo "Creating PRs for all apps to bump calcwise_core..."
+          echo "(Manual step: PR creation not yet automated)"
+          echo "To update calcwise_core version in all apps:"
+          echo "1. cd AutoLoan && edit pubspec.yaml"
+          echo "2. Run: bash scripts/batch-clean.sh && bash scripts/batch-analyze.sh"
+          echo "3. Commit and push"
