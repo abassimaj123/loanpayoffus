@@ -630,8 +630,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                           gradient: result.monthsSaved > 0
                                               ? const LinearGradient(
                                                   colors: [
-                                                    Color(0xFF2E7D32),
-                                                    Color(0xFF1B5E20),
+                                                    CalcwiseSemanticColors.successDeep,
+                                                    CalcwiseSemanticColors.successDark,
                                                   ],
                                                   begin: Alignment.topLeft,
                                                   end: Alignment.bottomRight,
