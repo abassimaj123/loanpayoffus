@@ -87,7 +87,7 @@ class ComparisonScreen extends ConsumerWidget {
                     fontSize: AppTextSize.bodyLg,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 Card(
                   child: Column(
                     children: [
@@ -100,8 +100,8 @@ class ComparisonScreen extends ConsumerWidget {
                           ),
                         ),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                          horizontal: AppSpacing.lg,
+                          vertical: AppSpacing.smPlus,
                         ),
                         child: Row(
                           children: [
@@ -170,8 +170,8 @@ class ComparisonScreen extends ConsumerWidget {
                         return Container(
                           color: bg,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.smPlus,
                           ),
                           child: Row(
                             children: [
@@ -233,7 +233,7 @@ class ComparisonScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
 
                 Text(
                   s.interestSavedChart,
@@ -242,7 +242,7 @@ class ComparisonScreen extends ConsumerWidget {
                     fontSize: AppTextSize.bodyLg,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 SizedBox(
                   height: 220,
                   child: BarChart(
@@ -320,7 +320,7 @@ class ComparisonScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // ── Cost Breakdown: Principal vs Interest ─────────────────────
                 _CostBreakdownCard(
@@ -374,7 +374,7 @@ class _CostBreakdownCard extends StatelessWidget {
             fontSize: AppTextSize.bodyLg,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         Card(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -402,7 +402,7 @@ class _CostBreakdownCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.mdPlus),
                 Row(
                   children: [
                     _BreakdownLeg(
@@ -411,7 +411,7 @@ class _CostBreakdownCard extends StatelessWidget {
                       amount: fmt.format(principal),
                       pct: '${(pPct * 100).toStringAsFixed(0)}%',
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     _BreakdownLeg(
                       color: AppTheme.warning,
                       label: isEs ? 'Interés Total' : 'Total Interest',
@@ -421,11 +421,11 @@ class _CostBreakdownCard extends StatelessWidget {
                   ],
                 ),
                 if (result.monthsSaved > 0) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
                     ),
                     decoration: BoxDecoration(
                       color: AppTheme.accentGood.withValues(alpha: 0.08),
@@ -489,7 +489,7 @@ class _BreakdownLeg extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

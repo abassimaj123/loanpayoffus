@@ -79,7 +79,7 @@ class _PaymentsHistoryScreenState extends State<PaymentsHistoryScreen> {
                         context,
                       ).colorScheme.onSurface.withValues(alpha: 0.3),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     Text(
                       isEs
                           ? 'Aún no hay pagos registrados.'
@@ -101,7 +101,7 @@ class _PaymentsHistoryScreenState extends State<PaymentsHistoryScreen> {
             child: ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
               itemBuilder: (_, i) {
                 final p = items[i];
                 return Card(

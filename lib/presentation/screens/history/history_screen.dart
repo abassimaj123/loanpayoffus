@@ -128,7 +128,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           context,
                         ).colorScheme.onSurface.withValues(alpha: 0.15),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       Text(
                         s.historyEmpty,
                         style: TextStyle(
@@ -139,7 +139,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ).colorScheme.onSurface.withValues(alpha: 0.45),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
                         isEs
                             ? 'Calcula un préstamo para guardar aquí'
@@ -171,7 +171,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Widget _buildHeader(AppStrings s) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ValueListenableBuilder<bool>(
         valueListenable: freemiumService.isPremiumNotifier,
         builder: (_, isPremium, __) => Row(
@@ -231,8 +231,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.only(right: AppSpacing.xl),
+        margin: const EdgeInsets.only(bottom: AppSpacing.smPlus),
         decoration: BoxDecoration(
           color: AppTheme.dangerRed.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -242,7 +242,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       confirmDismiss: (_) =>
           _delete(row['id'] as int, confirm: true).then((_) => false),
       child: Card(
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: const EdgeInsets.only(bottom: AppSpacing.smPlus),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.lg),
           onTap: () => Navigator.push(
@@ -278,7 +278,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   dateStr,
                   style: TextStyle(
@@ -288,13 +288,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     fontSize: AppTextSize.xs,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: AppSpacing.smPlus),
                 Row(
                   children: [
                     _chip('${_fmt.format(amount)}', Icons.attach_money),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     _chip('$rate%', Icons.percent),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     _chip(
                       '${(months / 12).toStringAsFixed(1)} yrs',
                       Icons.schedule,
@@ -302,7 +302,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ],
                 ),
                 if (extra > 0 || saved > 0) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     extra > 0
                         ? '${s.extraSaved}: ${_fmt.format(extra)}/mo → saved ${_fmt.format(saved)}'
@@ -323,7 +323,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _chip(String label, IconData icon) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
     decoration: BoxDecoration(
       color: AppTheme.primary.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(20),
@@ -332,7 +332,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 12, color: AppTheme.primary),
-        const SizedBox(width: 4),
+        const SizedBox(width: AppSpacing.xs),
         Text(
           label,
           style: const TextStyle(

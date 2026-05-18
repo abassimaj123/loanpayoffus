@@ -53,11 +53,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── Language ──
           _SectionHeader(s.language),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
             child: Row(
               children: [
                 const Icon(Icons.language, color: AppTheme.primary),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpacing.lg),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ListTile(
                           leading: const Icon(
                             Icons.bug_report,
-                            color: Colors.orange,
+                            color: CalcwiseSemanticColors.warnIcon,
                           ),
                           title: const Text('Force Premium (DEV)'),
                           onTap: () => freemiumService.debugUnlockPremium(),
@@ -218,7 +218,7 @@ class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.title);
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+    padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 6),
     child: Text(
       title.toUpperCase(),
       style: const TextStyle(

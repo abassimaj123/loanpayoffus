@@ -195,7 +195,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                 Container(
                   width: 36,
                   height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
+                  margin: const EdgeInsets.only(bottom: AppSpacing.lg),
                   decoration: BoxDecoration(
                     color: Theme.of(
                       sheetCtx,
@@ -213,7 +213,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     color: AppTheme.primaryDark,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 // Category chips
                 Align(
@@ -227,7 +227,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -263,7 +263,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.mdPlus),
                 _field(isEs ? 'Nombre' : 'Name', nameCtrl),
                 _field(
                   isEs ? 'Saldo (\$)' : 'Balance (\$)',
@@ -280,7 +280,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   minCtrl,
                   numeric: true,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
                     Expanded(
@@ -289,7 +289,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         child: Text(isEs ? 'Cancelar' : 'Cancel'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
@@ -354,7 +354,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     TextEditingController ctrl, {
     bool numeric = false,
   }) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.only(bottom: AppSpacing.md),
     child: TextField(
       controller: ctrl,
       keyboardType: numeric
@@ -372,8 +372,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
+          horizontal: AppSpacing.mdPlus,
+          vertical: AppSpacing.md,
         ),
       ),
     ),
@@ -416,7 +416,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
               Container(
                 width: 36,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
+                margin: const EdgeInsets.only(bottom: AppSpacing.lg),
                 decoration: BoxDecoration(
                   color: Theme.of(
                     sheetCtx,
@@ -431,7 +431,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     color: debt.category.color,
                     size: 20,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       isEs
@@ -446,7 +446,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               _field(
                 isEs ? 'Monto (\$)' : 'Amount (\$)',
                 amountCtrl,
@@ -466,10 +466,10 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 14,
+                    horizontal: AppSpacing.mdPlus,
+                    vertical: AppSpacing.mdPlus,
                   ),
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
                   decoration: BoxDecoration(
                     border: Border.all(
                       color: Theme.of(
@@ -485,7 +485,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         size: 18,
                         color: AppTheme.primary,
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: AppSpacing.smPlus),
                       Text(
                         DateFormat.yMMMd().format(selectedDate),
                         style: const TextStyle(fontSize: AppTextSize.body),
@@ -504,7 +504,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                 ),
               ),
               _field(isEs ? 'Nota (opcional)' : 'Note (optional)', noteCtrl),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               AnimatedSwitcher(
                 duration: AppDuration.base,
                 child: Row(
@@ -515,7 +515,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         child: Text(isEs ? 'Cancelar' : 'Cancel'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.check_rounded, size: 18),
@@ -595,7 +595,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
             Container(
               width: 36,
               height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
+              margin: const EdgeInsets.symmetric(vertical: AppSpacing.md),
               decoration: BoxDecoration(
                 color: Theme.of(
                   context,
@@ -604,7 +604,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xs),
               child: Row(
                 children: [
                   const Icon(
@@ -627,7 +627,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
             const Divider(height: 1),
             // Header row
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
               child: Row(
                 children: [
                   _schedHdr(isEs ? 'Mo.' : 'Mo.', 48),
@@ -651,7 +651,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         ? Colors.transparent
                         : Theme.of(context).colorScheme.surfaceContainerLowest,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
+                      horizontal: AppSpacing.lg,
                       vertical: 5,
                     ),
                     child: Row(
@@ -767,7 +767,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   icon: Icons.account_balance_wallet_rounded,
                   title: isEs ? 'Estrategia de Pago' : 'Payoff Strategy',
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: AppSpacing.smPlus),
                 SegmentedButton<PayoffStrategy>(
                   segments: [
                     ButtonSegment(
@@ -804,7 +804,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     }),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   _strategy == PayoffStrategy.avalanche
                       ? (isEs
@@ -853,7 +853,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
 
                 ..._debts.asMap().entries.map(
                   (e) => Dismissible(
@@ -861,8 +861,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     direction: DismissDirection.endToStart,
                     background: Container(
                       alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 16),
-                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(right: AppSpacing.lg),
+                      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppTheme.dangerRed.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -887,7 +887,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 OutlinedButton.icon(
                   onPressed: () => _showDebtDialog(),
                   icon: const Icon(Icons.add_rounded, size: 18),
@@ -937,8 +937,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                           prefixText: '\$',
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
+                            horizontal: AppSpacing.smPlus,
+                            vertical: AppSpacing.sm,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(
@@ -975,7 +975,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 // ── Results ───────────────────────────────────────────────────
                 if (_strategyResult != null && _debts.isNotEmpty) ...[
@@ -983,7 +983,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     icon: Icons.emoji_events_rounded,
                     title: isEs ? 'Resultados' : 'Results',
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
 
                   // Hero card — debt-free date
                   AnimatedSwitcher(
@@ -1032,7 +1032,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppSpacing.mdPlus),
 
                   // Bar chart: minimum interest vs strategy interest
                   if (_minimumResult != null)
@@ -1043,14 +1043,14 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       isEs: isEs,
                       strategy: _strategy,
                     ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Payoff order
                   _SectionHeader(
                     icon: Icons.sort_rounded,
                     title: isEs ? 'Orden de Pago' : 'Payoff Order',
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   ..._strategyResult!.payoffOrder.asMap().entries.map(
                     (e) => _PayoffOrderTile(
                       rank: e.key + 1,
@@ -1060,7 +1060,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // View schedule button (premium-gated)
                   SizedBox(
@@ -1148,7 +1148,7 @@ class _InterestBarChart extends StatelessWidget {
       ),
       elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1174,7 +1174,7 @@ class _InterestBarChart extends StatelessWidget {
             ),
             if (saved > 0)
               Padding(
-                padding: const EdgeInsets.only(top: 6, left: 24),
+                padding: const EdgeInsets.only(top: 6, left: AppSpacing.xxl),
                 child: Text(
                   '${isEs ? "Ahorras" : "You save"} ${fmt.format(saved)}',
                   style: const TextStyle(
@@ -1184,7 +1184,7 @@ class _InterestBarChart extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             SizedBox(
               height: 160,
               child: BarChart(
@@ -1386,14 +1386,14 @@ class _DebtTile extends StatelessWidget {
     final progress = orig <= 0 ? 0.0 : (totalPaid / orig).clamp(0.0, 1.0);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
         side: BorderSide(color: Theme.of(context).dividerColor),
       ),
       elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.mdPlus, AppSpacing.smPlus, AppSpacing.sm, AppSpacing.smPlus),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1408,7 +1408,7 @@ class _DebtTile extends StatelessWidget {
                   ),
                   child: Icon(cat.icon, color: cat.color, size: 20),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1429,8 +1429,8 @@ class _DebtTile extends StatelessWidget {
                           // Category chip
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
+                              horizontal: AppSpacing.sm,
+                              vertical: AppSpacing.xxs,
                             ),
                             decoration: BoxDecoration(
                               color: cat.color.withValues(alpha: 0.12),
@@ -1453,7 +1453,7 @@ class _DebtTile extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         '${fmt.format(debt.balance)}  •  '
                         '${debt.annualRate.toStringAsFixed(2)}%  •  '
@@ -1492,7 +1492,7 @@ class _DebtTile extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             // Progress bar
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -1534,7 +1534,7 @@ class _DebtTile extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -1553,7 +1553,7 @@ class _DebtTile extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 ),
               ),
             ),
@@ -1590,8 +1590,8 @@ class _PayoffOrderTile extends StatelessWidget {
     final months = summary.monthPaidOff;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.mdPlus, vertical: AppSpacing.smPlus),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -1614,7 +1614,7 @@ class _PayoffOrderTile extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.smPlus),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -63,7 +63,7 @@ class _CrossPromoCardState extends State<CrossPromoCard> {
     if (!_checked || _dismissed || widget.isPremium)
       return const SizedBox.shrink();
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 6),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: _accentColor.withValues(alpha: 0.06),
@@ -85,7 +85,7 @@ class _CrossPromoCardState extends State<CrossPromoCard> {
               size: 22,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.smPlus),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,7 +95,7 @@ class _CrossPromoCardState extends State<CrossPromoCard> {
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
-                        vertical: 2,
+                        vertical: AppSpacing.xxs,
                       ),
                       decoration: BoxDecoration(
                         color: _accentColor,
@@ -122,7 +122,7 @@ class _CrossPromoCardState extends State<CrossPromoCard> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 const Text(
                   _targetName,
                   style: TextStyle(
@@ -141,7 +141,7 @@ class _CrossPromoCardState extends State<CrossPromoCard> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Column(
             children: [
               GestureDetector(
@@ -152,12 +152,12 @@ class _CrossPromoCardState extends State<CrossPromoCard> {
                   color: Color(0xFF94A3B8),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               GestureDetector(
                 onTap: _open,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
+                    horizontal: AppSpacing.smPlus,
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(

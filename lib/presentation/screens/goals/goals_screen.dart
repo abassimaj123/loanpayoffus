@@ -126,8 +126,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 20,
+                      vertical: AppSpacing.xl,
+                      horizontal: AppSpacing.xl,
                     ),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -167,7 +167,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Text(
                           '${result.yearsSaved}y ${result.remMonthsSaved}m',
                           style: const TextStyle(
@@ -179,7 +179,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
+                            horizontal: AppSpacing.mdPlus,
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
@@ -198,7 +198,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                 ],
 
                 // Milestones
@@ -217,7 +217,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                           s.payoffMilestones,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         _Milestone(
                           '${s.paid25}  —  ${isEs ? "mes" : "mo"} $mo25',
                           hasExtra && mo25 < result.normalMonths,
@@ -234,7 +234,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                           '${s.paidOff}  —  ${dateFmt.format(currentPayoff)}',
                           hasExtra,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Text(
                           'Loan: ${_fmt.format(loanAmt)} @ ${input.interestRatePct}%',
                           style: TextStyle(
@@ -248,7 +248,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 // Current payoff date
                 Card(
@@ -267,7 +267,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
 
                 // Interest saved so far
                 Card(
@@ -287,7 +287,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // Set payoff goal
                 Text(
@@ -297,7 +297,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                     fontSize: AppTextSize.bodyLg,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 OutlinedButton.icon(
                   onPressed: _pickDate,
                   icon: const Icon(Icons.date_range),
@@ -308,7 +308,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                   ),
                 ),
                 if (_requiredExtra != null) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.xl),
@@ -327,7 +327,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                             ).colorScheme.onSurface.withValues(alpha: 0.45),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Text(
                           _fmt.format(_requiredExtra),
                           style: const TextStyle(
@@ -376,7 +376,7 @@ class _Milestone extends StatelessWidget {
               : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
           size: 18,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Text(
           label,
           style: TextStyle(

@@ -233,7 +233,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     String? helperText,
     String? errorText,
   }) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.only(bottom: AppSpacing.md),
     child: TextField(
       controller: ctrl,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -252,8 +252,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.mdPlus,
         ),
       ),
       onChanged: (_) => _recalculate(),
@@ -298,8 +298,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                               borderRadius: BorderRadius.circular(AppRadius.lg),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.mdPlus,
                             ),
                           ),
                           items: LoanType.values
@@ -312,7 +312,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                               .toList(),
                           onChanged: _onTypeChanged,
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         _field(
                           s.loanAmount,
                           _amountCtrl,
@@ -350,7 +350,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                         ),
 
                         // ── Monthly / Biweekly toggle ──
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         SegmentedButton<bool>(
                           segments: [
                             ButtonSegment(
@@ -398,7 +398,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
 
                         // ── Biweekly result card ──
                         if (_biweekly && _biweeklyData != null) ...[
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.md),
                           _BiweeklyCard(
                             data: _biweeklyData!,
                             fmt: _fmt,
@@ -406,7 +406,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                           ),
                         ],
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         // ── Extra payment row with monthly/one-time toggle ──
                         Row(
                           children: [
@@ -415,7 +415,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                               size: 18,
                               color: AppTheme.primary,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             Text(
                               s.extraPayment,
                               style: const TextStyle(
@@ -433,8 +433,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                                  horizontal: AppSpacing.sm,
+                                  vertical: AppSpacing.xs,
                                 ),
                                 decoration: BoxDecoration(
                                   color: _extraOneTime
@@ -460,11 +460,11 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.xs,
                               ),
                               decoration: BoxDecoration(
                                 color: _extra > 0
@@ -536,7 +536,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                         // ── Tick labels ──
                         if (!_extraOneTime)
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children:
@@ -569,7 +569,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                               child: Center(
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
+                                    horizontal: AppSpacing.mdPlus,
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
@@ -598,7 +598,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                           },
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.lg),
                         AnimatedSwitcher(
                           duration: AppDuration.base,
                           transitionBuilder: (child, animation) =>
@@ -623,8 +623,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                       Container(
                                         width: double.infinity,
                                         padding: const EdgeInsets.symmetric(
-                                          vertical: 24,
-                                          horizontal: 20,
+                                          vertical: AppSpacing.xxl,
+                                          horizontal: AppSpacing.xl,
                                         ),
                                         decoration: BoxDecoration(
                                           gradient: result.monthsSaved > 0
@@ -671,7 +671,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 8),
+                                              const SizedBox(height: AppSpacing.sm),
                                               Text(
                                                 _fmt.format(
                                                   result.interestSaved,
@@ -687,7 +687,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                               Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                      horizontal: 14,
+                                                      horizontal: AppSpacing.mdPlus,
                                                       vertical: 5,
                                                     ),
                                                 decoration: BoxDecoration(
@@ -726,7 +726,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 10),
+                                              const SizedBox(height: AppSpacing.smPlus),
                                               Text(
                                                 '${result.normalMonths ~/ 12} yrs ${result.normalMonths % 12} mos',
                                                 style: const TextStyle(
@@ -738,7 +738,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                             ],
                                             // ── Debt-free date chip ──
                                             if (debtFreeDateStr.isNotEmpty) ...[
-                                              const SizedBox(height: 10),
+                                              const SizedBox(height: AppSpacing.smPlus),
                                               Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,
@@ -777,7 +777,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                           ],
                                         ),
                                       ),
-                                      const SizedBox(height: 16),
+                                      const SizedBox(height: AppSpacing.lg),
 
                                       Row(
                                         children: [
@@ -808,7 +808,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                               isNeutral: true,
                                             ),
                                           ),
-                                          const SizedBox(width: 12),
+                                          const SizedBox(width: AppSpacing.md),
                                           if (input.extraPayment > 0)
                                             Expanded(
                                               child: _InfoCard(
@@ -841,7 +841,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                       // ── Debt-Free Date Banner ──
                                       if (result != null &&
                                           result.monthsSaved > 0) ...[
-                                        const SizedBox(height: 16),
+                                        const SizedBox(height: AppSpacing.lg),
                                         _DebtFreeDateBanner(
                                           result: result,
                                           isEs: isEs,
@@ -851,7 +851,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
 
                                       // ── Balance Over Time chart ──
                                       if (result != null) ...[
-                                        const SizedBox(height: 16),
+                                        const SizedBox(height: AppSpacing.lg),
                                         _BalanceChart(
                                           result: result,
                                           isEs: isEs,
@@ -860,7 +860,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
 
                                       // ── Smart Insights ──
                                       if (result != null) ...[
-                                        const SizedBox(height: 16),
+                                        const SizedBox(height: AppSpacing.lg),
                                         InsightCard(
                                           isSpanish: isEs,
                                           insights: InsightEngine.generate(
@@ -887,7 +887,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                             isEs: isEs,
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: AppSpacing.sm),
                                         Text(
                                           isEs
                                               ? 'Solo para fines informativos. No es asesoramiento financiero.'
@@ -908,7 +908,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                               : Padding(
                                   key: const ValueKey('empty'),
                                   padding: const EdgeInsets.symmetric(
-                                    vertical: 32,
+                                    vertical: AppSpacing.xxxl,
                                   ),
                                   child: Column(
                                     children: [
@@ -920,7 +920,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                             .onSurface
                                             .withValues(alpha: 0.3),
                                       ),
-                                      const SizedBox(height: 12),
+                                      const SizedBox(height: AppSpacing.md),
                                       Text(
                                         isEs
                                             ? 'Ingresa los valores para ver los resultados'
@@ -978,7 +978,7 @@ class _InfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -993,7 +993,7 @@ class _InfoCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.smPlus),
           ...rows.map(
             (r) => Padding(
               padding: const EdgeInsets.only(bottom: 5),
@@ -1058,7 +1058,7 @@ class _DebtFreeDateBanner extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.mdPlus, AppSpacing.lg, AppSpacing.mdPlus),
       decoration: BoxDecoration(
         color: AppTheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -1081,7 +1081,7 @@ class _DebtFreeDateBanner extends StatelessWidget {
       child: Row(
         children: [
           const Text('🎯', style: TextStyle(fontSize: AppTextSize.titleMd)),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1095,7 +1095,7 @@ class _DebtFreeDateBanner extends StatelessWidget {
                     letterSpacing: 1.2,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   dateStr,
                   style: const TextStyle(
@@ -1105,7 +1105,7 @@ class _DebtFreeDateBanner extends StatelessWidget {
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   soonerLabel,
                   style: TextStyle(
@@ -1196,7 +1196,7 @@ class _BalanceChart extends StatelessWidget {
       ),
       elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 16, 16, 12),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1226,14 +1226,14 @@ class _BalanceChart extends StatelessWidget {
                   color: const Color(0xFF64748B),
                   label: isEs ? 'Normal' : 'Baseline',
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: AppSpacing.mdPlus),
                 _LegendDot(
                   color: AppTheme.primary,
                   label: isEs ? 'Con Extra' : 'Accelerated',
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 180),
               child: LineChart(
@@ -1362,7 +1362,7 @@ class _LegendDot extends StatelessWidget {
         height: 10,
         decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
-      const SizedBox(width: 4),
+      const SizedBox(width: AppSpacing.xs),
       Text(
         label,
         style: TextStyle(
@@ -1397,7 +1397,7 @@ class _BiweeklyCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.mdPlus, horizontal: AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppTheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -1427,7 +1427,7 @@ class _BiweeklyCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.smPlus),
           Row(
             children: [
               Expanded(
@@ -1488,7 +1488,7 @@ class _BwRow extends StatelessWidget {
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
         ),
       ),
-      const SizedBox(height: 2),
+      const SizedBox(height: AppSpacing.xxs),
       Text(
         value,
         style: TextStyle(
