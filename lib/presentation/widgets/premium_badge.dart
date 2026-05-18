@@ -23,22 +23,22 @@ class PremiumBadge extends StatelessWidget {
                   vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(20),
+                  color: CalcwiseSemanticColors.warnIcon.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(AppRadius.xxl),
                   border: Border.all(
-                    color: Colors.amber.withValues(alpha: 0.6),
+                    color: CalcwiseSemanticColors.warnIcon.withValues(alpha: 0.6),
                     width: 1,
                   ),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.verified_rounded, color: Colors.amber, size: 13),
+                    Icon(Icons.verified_rounded, color: CalcwiseSemanticColors.warnIcon, size: 13),
                     SizedBox(width: AppSpacing.xs),
                     Text(
                       'Premium',
                       style: TextStyle(
-                        color: Colors.amber,
+                        color: CalcwiseSemanticColors.warnIcon,
                         fontSize: AppTextSize.xs,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.3,
@@ -62,7 +62,7 @@ class PremiumBadge extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppRadius.xxl),
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.5),
                     width: 1,

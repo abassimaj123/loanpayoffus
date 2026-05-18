@@ -117,7 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             valueListenable: freemiumService.isPremiumNotifier,
             builder: (context, isPremium, _) => isPremium
                 ? ListTile(
-                    leading: const Icon(Icons.verified, color: Colors.amber),
+                    leading: const Icon(Icons.verified, color: CalcwiseSemanticColors.warnIcon),
                     title: Text(s.premiumActive),
                     subtitle: Text(s.premiumSubtitle),
                   )

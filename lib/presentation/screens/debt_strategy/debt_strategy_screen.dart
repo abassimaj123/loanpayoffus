@@ -612,7 +612,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     color: AppTheme.primary,
                     size: 18,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: AppSpacing.xs),
                   Text(
                     isEs ? 'Calendario de Pagos' : 'Payment Schedule',
                     style: const TextStyle(
@@ -821,7 +821,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // ── Debt list ─────────────────────────────────────────────────
                 Row(
@@ -902,7 +902,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // ── Extra payment ─────────────────────────────────────────────
                 Row(
@@ -912,7 +912,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       size: 18,
                       color: AppTheme.primary,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: AppSpacing.xs),
                     Text(
                       isEs ? 'Pago Extra Mensual' : 'Monthly Extra Payment',
                       style: const TextStyle(
@@ -1159,7 +1159,7 @@ class _InterestBarChart extends StatelessWidget {
                   color: AppTheme.primary,
                   size: 18,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   isEs
                       ? 'Interés Total: Comparación'
@@ -1174,7 +1174,7 @@ class _InterestBarChart extends StatelessWidget {
             ),
             if (saved > 0)
               Padding(
-                padding: const EdgeInsets.only(top: 6, left: AppSpacing.xxl),
+                padding: const EdgeInsets.only(top: AppSpacing.xs, left: AppSpacing.xxl),
                 child: Text(
                   '${isEs ? "Ahorras" : "You save"} ${fmt.format(saved)}',
                   style: const TextStyle(
@@ -1236,7 +1236,7 @@ class _InterestBarChart extends StatelessWidget {
                             return const SizedBox.shrink();
                           }
                           return Padding(
-                            padding: const EdgeInsets.only(top: 6),
+                            padding: const EdgeInsets.only(top: AppSpacing.xs),
                             child: Text(
                               labels[i],
                               style: TextStyle(
@@ -1336,7 +1336,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     children: [
       Icon(icon, size: 18, color: AppTheme.primary),
-      const SizedBox(width: 6),
+      const SizedBox(width: AppSpacing.xs),
       Text(
         title,
         style: const TextStyle(
@@ -1425,7 +1425,7 @@ class _DebtTile extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: AppSpacing.xs),
                           // Category chip
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -1503,7 +1503,7 @@ class _DebtTile extends StatelessWidget {
                 valueColor: AlwaysStoppedAnimation(cat.color),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.xs),
             Row(
               children: [
                 Expanded(
@@ -1583,7 +1583,7 @@ class _PayoffOrderTile extends StatelessWidget {
       AppTheme.accentGood,
       AppTheme.primary,
       AppTheme.warning,
-      Colors.teal,
+      const Color(0xFF009688), // teal — chart accent, no semantic token
       Colors.indigo,
     ];
     final color = colors[(rank - 1).clamp(0, colors.length - 1)];
