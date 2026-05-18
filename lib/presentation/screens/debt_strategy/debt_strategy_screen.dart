@@ -988,14 +988,48 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   // Hero card — debt-free date
                   AnimatedSwitcher(
                     duration: AppDuration.base,
-                    child: _HeroCard(
+                    child: Builder(
                       key: ValueKey(_strategyResult!.totalMonths),
-                      result: _strategyResult!,
-                      minimumResult: _minimumResult,
-                      fmt: _fmt,
-                      isEs: isEs,
-                      interestSaved: interestSaved,
-                      extra: _extra,
+                      builder: (context) {
+                        final months = _strategyResult!.totalMonths;
+                        final interest = _strategyResult!.totalInterest;
+                        final now = DateTime.now();
+                        final freeOn = DateTime(
+                            now.year, now.month + months, now.day);
+                        final dateLabel = DateFormat.yMMM(isEs ? 'es' : 'en')
+                            .format(freeOn);
+                        final timeLabel =
+                            '${months ~/ 12}y ${months % 12}m';
+                        final secondaryLabel = isEs
+                            ? 'Libre de deudas: $dateLabel'
+                            : 'Debt-free: $dateLabel';
+                        return Semantics(
+                          label:
+                              '${isEs ? "Libre de deudas en" : "Debt-free in"} $timeLabel. ${isEs ? "Interés total" : "Total interest"}: ${_fmt.format(interest)}${interestSaved > 0 && _extra > 0 ? ". ${isEs ? "Ahorras" : "You save"} ${_fmt.format(interestSaved)}" : ""}',
+                          child: CalcwiseHeroCard(
+                            label: isEs
+                                ? 'LIBRE DE DEUDAS EN'
+                                : 'DEBT-FREE IN',
+                            value: timeLabel,
+                            secondary: secondaryLabel,
+                            stats: [
+                              (
+                                label: isEs
+                                    ? 'Interés total'
+                                    : 'Total interest',
+                                value: _fmt.format(interest),
+                              ),
+                              if (interestSaved > 0 && _extra > 0)
+                                (
+                                  label: isEs
+                                      ? 'Ahorro vs mínimos'
+                                      : 'Saved vs minimum',
+                                  value: _fmt.format(interestSaved),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -1073,158 +1107,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Hero card — debt-free DATE + countdown
+// Bar chart — minimum interest vs strategy interest  [_HeroCard removed — replaced by CalcwiseHeroCard]
 // ---------------------------------------------------------------------------
-
-class _HeroCard extends StatelessWidget {
-  final EngineResult result;
-  final EngineResult? minimumResult;
-  final NumberFormat fmt;
-  final bool isEs;
-  final double interestSaved;
-  final double extra;
-
-  const _HeroCard({
-    super.key,
-    required this.result,
-    required this.minimumResult,
-    required this.fmt,
-    required this.isEs,
-    required this.interestSaved,
-    required this.extra,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final months = result.totalMonths;
-    final interest = result.totalInterest;
-
-    final now = DateTime.now();
-    final freeOn = DateTime(now.year, now.month + months, now.day);
-    final daysRemaining = freeOn
-        .difference(DateTime(now.year, now.month, now.day))
-        .inDays;
-    final dateLabel = DateFormat.yMMM(isEs ? 'es' : 'en').format(freeOn);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppTheme.primary, AppTheme.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primary.withValues(alpha: 0.4),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            isEs ? 'LIBRE DE DEUDAS EN' : 'DEBT-FREE IN',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: AppTextSize.sm,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${months ~/ 12}y ${months % 12}m',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 34,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 6),
-          // Debt-free date — prominent
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.event_available_rounded,
-                  size: 16,
-                  color: Colors.white,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '${isEs ? "Fecha:" : "Date:"} $dateLabel',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: AppTextSize.md,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            isEs
-                ? '$daysRemaining días restantes'
-                : '$daysRemaining days remaining',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: AppTextSize.sm,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${isEs ? "Interés total" : "Total interest"}: ${fmt.format(interest)}',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: AppTextSize.md,
-            ),
-          ),
-          if (interestSaved > 0 && extra > 0) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              decoration: BoxDecoration(
-                color: AppTheme.accentGood.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(AppRadius.mdPlus),
-              ),
-              child: Text(
-                '${isEs ? "Ahorras" : "You save"} ${fmt.format(interestSaved)} '
-                '${isEs ? "vs solo mínimos" : "vs minimum-only"}',
-                style: const TextStyle(
-                  color: AppTheme.accentGood,
-                  fontWeight: FontWeight.bold,
-                  fontSize: AppTextSize.sm,
-                ),
-              ),
-            ),
-          ],
-          if (minimumResult != null &&
-              minimumResult!.totalMonths > result.totalMonths) ...[
-            const SizedBox(height: 6),
-            Text(
-              '${result.totalMonths < minimumResult!.totalMonths ? (minimumResult!.totalMonths - result.totalMonths) : 0} '
-              '${isEs ? "meses antes que el mínimo" : "months faster than minimum-only"}',
-              style: const TextStyle(
-                color: Colors.white60,
-                fontSize: AppTextSize.xs,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Bar chart — minimum interest vs strategy interest
