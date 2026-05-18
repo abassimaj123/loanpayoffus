@@ -23,6 +23,8 @@ linter:
     - annotate_overrides
 
 analyzer:
+  plugins:
+    - custom_lint
   exclude:
     - "build/**"
     - ".dart_tool/**"
@@ -68,3 +70,9 @@ analyzer:
     strict-inference: true
     strict-raw-types: true
 
+
+custom_lint:
+  rules:
+    - prefer_app_spacing: true
+    - prefer_app_radius: true
+    - prefer_semantic_colors: true
