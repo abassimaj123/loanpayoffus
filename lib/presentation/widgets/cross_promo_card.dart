@@ -63,7 +63,10 @@ class _CrossPromoCardState extends State<CrossPromoCard> {
     if (!_checked || _dismissed || widget.isPremium)
       return const SizedBox.shrink();
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 6),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: 6,
+      ),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: _accentColor.withValues(alpha: 0.06),

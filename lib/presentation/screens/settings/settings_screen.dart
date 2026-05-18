@@ -53,7 +53,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── Language ──
           _SectionHeader(s.language),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.xs,
+            ),
             child: Row(
               children: [
                 const Icon(Icons.language, color: AppTheme.primary),
@@ -117,7 +120,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             valueListenable: freemiumService.isPremiumNotifier,
             builder: (context, isPremium, _) => isPremium
                 ? ListTile(
-                    leading: const Icon(Icons.verified, color: CalcwiseSemanticColors.warnIcon),
+                    leading: const Icon(
+                      Icons.verified,
+                      color: CalcwiseSemanticColors.warnIcon,
+                    ),
                     title: Text(s.premiumActive),
                     subtitle: Text(s.premiumSubtitle),
                   )
@@ -218,7 +224,12 @@ class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.title);
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 6),
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      AppSpacing.lg,
+      AppSpacing.lg,
+      6,
+    ),
     child: Text(
       title.toUpperCase(),
       style: const TextStyle(
