@@ -53,7 +53,7 @@ class PayoffPlanScreen extends ConsumerWidget {
     final buf = StringBuffer();
     buf.writeln('Loan Payoff US — ${s.navPayoffPlan}');
     buf.writeln(sep);
-    buf.writeln('${s.withoutExtra}');
+    buf.writeln(s.withoutExtra);
     buf.writeln(
       '${s.payoff}: ${result.normalMonths ~/ 12}y ${result.normalMonths % 12}m',
     );
@@ -61,7 +61,7 @@ class PayoffPlanScreen extends ConsumerWidget {
     buf.writeln('${s.totalPaid}: ${fmt.format(result.totalPaidNormal)}');
     if (result.monthsSaved > 0) {
       buf.writeln(sep);
-      buf.writeln('${s.withExtraLabel}');
+      buf.writeln(s.withExtraLabel);
       buf.writeln(
         '${s.payoff}: ${result.extraMonths ~/ 12}y ${result.extraMonths % 12}m',
       );

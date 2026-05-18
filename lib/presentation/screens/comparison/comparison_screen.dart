@@ -351,7 +351,6 @@ class _CostBreakdownCard extends StatelessWidget {
     required this.input,
     required this.fmt,
     required this.isEs,
-    super.key,
   });
 
   @override
@@ -442,7 +441,7 @@ class _CostBreakdownCard extends StatelessWidget {
                           color: AppTheme.accentGood,
                           size: 16,
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: AppSpacing.xs),
                         Text(
                           '${isEs ? "Con pago extra, ahorras" : "With extra payment you save"} '
                           '${fmt.format(result.interestSaved)} '
@@ -474,7 +473,6 @@ class _BreakdownLeg extends StatelessWidget {
     required this.label,
     required this.amount,
     required this.pct,
-    super.key,
   });
 
   @override

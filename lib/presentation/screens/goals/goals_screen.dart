@@ -135,7 +135,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.xxl),
                       boxShadow: [
                         BoxShadow(
                           color: AppTheme.primary.withValues(alpha: 0.35),
@@ -184,7 +184,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(AppRadius.xxl),
                           ),
                           child: Text(
                             '${_fmt.format(result.interestSaved)} ${isEs ? "en interés ahorrado" : "in interest saved"}',

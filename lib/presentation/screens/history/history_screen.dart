@@ -8,7 +8,6 @@ import '../../../core/language/language_notifier.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import 'history_detail_screen.dart';
-import 'package:calcwise_core/calcwise_core.dart' show CalcwiseAdFooter;
 import 'package:calcwise_core/calcwise_core.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -291,7 +290,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 const SizedBox(height: AppSpacing.smPlus),
                 Row(
                   children: [
-                    _chip('${_fmt.format(amount)}', Icons.attach_money),
+                    _chip(_fmt.format(amount), Icons.attach_money),
                     const SizedBox(width: AppSpacing.sm),
                     _chip('$rate%', Icons.percent),
                     const SizedBox(width: AppSpacing.sm),
@@ -326,7 +325,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
     decoration: BoxDecoration(
       color: AppTheme.primary.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(AppRadius.xxl),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,

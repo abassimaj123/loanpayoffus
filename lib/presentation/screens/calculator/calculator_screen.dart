@@ -565,7 +565,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                             if (_extra <= 0 || monthsSaved <= 0)
                               return const SizedBox.shrink();
                             return Padding(
-                              padding: const EdgeInsets.only(top: 6),
+                              padding: const EdgeInsets.only(top: AppSpacing.xs),
                               child: Center(
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -576,7 +576,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                     color: AppTheme.accentGood.withValues(
                                       alpha: 0.12,
                                     ),
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(AppRadius.xxl),
                                     border: Border.all(
                                       color: AppTheme.accentGood,
                                       width: 1.2,
@@ -660,7 +660,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                     color: Colors.white70,
                                                     size: 18,
                                                   ),
-                                                  const SizedBox(width: 6),
+                                                  const SizedBox(width: AppSpacing.xs),
                                                   Text(
                                                     s.youCouldSave,
                                                     style: const TextStyle(
@@ -683,7 +683,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                   letterSpacing: -1.5,
                                                 ),
                                               ),
-                                              const SizedBox(height: 6),
+                                              const SizedBox(height: AppSpacing.xs),
                                               Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
@@ -694,7 +694,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                   color: Colors.white
                                                       .withValues(alpha: 0.2),
                                                   borderRadius:
-                                                      BorderRadius.circular(20),
+                                                      BorderRadius.circular(AppRadius.xxl),
                                                 ),
                                                 child: Text(
                                                   '${s.inInterest}  •  ${result.yearsSaved}y ${result.remMonthsSaved}m ${s.faster}',
@@ -715,7 +715,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                     color: Colors.white70,
                                                     size: 18,
                                                   ),
-                                                  const SizedBox(width: 6),
+                                                  const SizedBox(width: AppSpacing.xs),
                                                   Text(
                                                     s.payoffTimeline,
                                                     style: const TextStyle(
@@ -749,7 +749,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                     color: Colors.white60,
                                                     size: 15,
                                                   ),
-                                                  const SizedBox(width: 5),
+                                                  const SizedBox(width: AppSpacing.xs),
                                                   Text(
                                                     '${s.debtFreeDate}: $debtFreeDateStr',
                                                     style: const TextStyle(
@@ -763,7 +763,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                             // ── Interest-to-loan ratio insight ──
                                             if (result.interestNormal > 0 &&
                                                 input.loanAmount > 0) ...[
-                                              const SizedBox(height: 6),
+                                              const SizedBox(height: AppSpacing.xs),
                                               Text(
                                                 '${isEs ? "Pagas" : "You pay"} ${((result.interestNormal / input.loanAmount) * 100).toStringAsFixed(0)}% '
                                                 '${isEs ? "del préstamo en intereses" : "of loan amount in interest"}',
@@ -839,8 +839,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                         ],
                                       ),
                                       // ── Debt-Free Date Banner ──
-                                      if (result != null &&
-                                          result.monthsSaved > 0) ...[
+                                      if (result.monthsSaved > 0) ...[
                                         const SizedBox(height: AppSpacing.lg),
                                         _DebtFreeDateBanner(
                                           result: result,
@@ -850,7 +849,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                       ],
 
                                       // ── Balance Over Time chart ──
-                                      if (result != null) ...[
+                                      ...[
                                         const SizedBox(height: AppSpacing.lg),
                                         _BalanceChart(
                                           result: result,
@@ -859,7 +858,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                       ],
 
                                       // ── Smart Insights ──
-                                      if (result != null) ...[
+                                      ...[
                                         const SizedBox(height: AppSpacing.lg),
                                         InsightCard(
                                           isSpanish: isEs,
@@ -996,7 +995,7 @@ class _InfoCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.smPlus),
           ...rows.map(
             (r) => Padding(
-              padding: const EdgeInsets.only(bottom: 5),
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1207,7 +1206,7 @@ class _BalanceChart extends StatelessWidget {
                   size: 18,
                   color: AppTheme.primary,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   isEs ? 'Saldo en el Tiempo' : 'Balance Over Time',
                   style: TextStyle(
@@ -1218,7 +1217,7 @@ class _BalanceChart extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.xs),
             // Legend
             Row(
               children: [
@@ -1416,7 +1415,7 @@ class _BiweeklyCard extends StatelessWidget {
                 size: 16,
                 color: AppTheme.primary,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.xs),
               Text(
                 isEs ? 'Modo Quincenal' : 'Biweekly Mode',
                 style: const TextStyle(
@@ -1446,7 +1445,7 @@ class _BiweeklyCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.xs),
           Row(
             children: [
               Expanded(
