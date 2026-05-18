@@ -322,7 +322,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _chip(String label, IconData icon) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.sm,
+      vertical: AppSpacing.xs,
+    ),
     decoration: BoxDecoration(
       color: AppTheme.primary.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(AppRadius.xxl),

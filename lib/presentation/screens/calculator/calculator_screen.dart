@@ -536,7 +536,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                         // ── Tick labels ──
                         if (!_extraOneTime)
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xxl,
+                            ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children:
@@ -565,7 +567,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                             if (_extra <= 0 || monthsSaved <= 0)
                               return const SizedBox.shrink();
                             return Padding(
-                              padding: const EdgeInsets.only(top: AppSpacing.xs),
+                              padding: const EdgeInsets.only(
+                                top: AppSpacing.xs,
+                              ),
                               child: Center(
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -576,7 +580,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                     color: AppTheme.accentGood.withValues(
                                       alpha: 0.12,
                                     ),
-                                    borderRadius: BorderRadius.circular(AppRadius.xxl),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.xxl,
+                                    ),
                                     border: Border.all(
                                       color: AppTheme.accentGood,
                                       width: 1.2,
@@ -630,8 +636,10 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                           gradient: result.monthsSaved > 0
                                               ? const LinearGradient(
                                                   colors: [
-                                                    CalcwiseSemanticColors.successDeep,
-                                                    CalcwiseSemanticColors.successDark,
+                                                    CalcwiseSemanticColors
+                                                        .successDeep,
+                                                    CalcwiseSemanticColors
+                                                        .successDark,
                                                   ],
                                                   begin: Alignment.topLeft,
                                                   end: Alignment.bottomRight,
@@ -660,7 +668,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                     color: Colors.white70,
                                                     size: 18,
                                                   ),
-                                                  const SizedBox(width: AppSpacing.xs),
+                                                  const SizedBox(
+                                                    width: AppSpacing.xs,
+                                                  ),
                                                   Text(
                                                     s.youCouldSave,
                                                     style: const TextStyle(
@@ -671,7 +681,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: AppSpacing.sm),
+                                              const SizedBox(
+                                                height: AppSpacing.sm,
+                                              ),
                                               Text(
                                                 _fmt.format(
                                                   result.interestSaved,
@@ -683,18 +695,23 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                   letterSpacing: -1.5,
                                                 ),
                                               ),
-                                              const SizedBox(height: AppSpacing.xs),
+                                              const SizedBox(
+                                                height: AppSpacing.xs,
+                                              ),
                                               Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                      horizontal: AppSpacing.mdPlus,
+                                                      horizontal:
+                                                          AppSpacing.mdPlus,
                                                       vertical: 5,
                                                     ),
                                                 decoration: BoxDecoration(
                                                   color: Colors.white
                                                       .withValues(alpha: 0.2),
                                                   borderRadius:
-                                                      BorderRadius.circular(AppRadius.xxl),
+                                                      BorderRadius.circular(
+                                                        AppRadius.xxl,
+                                                      ),
                                                 ),
                                                 child: Text(
                                                   '${s.inInterest}  •  ${result.yearsSaved}y ${result.remMonthsSaved}m ${s.faster}',
@@ -715,7 +732,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                     color: Colors.white70,
                                                     size: 18,
                                                   ),
-                                                  const SizedBox(width: AppSpacing.xs),
+                                                  const SizedBox(
+                                                    width: AppSpacing.xs,
+                                                  ),
                                                   Text(
                                                     s.payoffTimeline,
                                                     style: const TextStyle(
@@ -726,7 +745,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: AppSpacing.smPlus),
+                                              const SizedBox(
+                                                height: AppSpacing.smPlus,
+                                              ),
                                               Text(
                                                 '${result.normalMonths ~/ 12} yrs ${result.normalMonths % 12} mos',
                                                 style: const TextStyle(
@@ -738,7 +759,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                             ],
                                             // ── Debt-free date chip ──
                                             if (debtFreeDateStr.isNotEmpty) ...[
-                                              const SizedBox(height: AppSpacing.smPlus),
+                                              const SizedBox(
+                                                height: AppSpacing.smPlus,
+                                              ),
                                               Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,
@@ -749,7 +772,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                     color: Colors.white60,
                                                     size: 15,
                                                   ),
-                                                  const SizedBox(width: AppSpacing.xs),
+                                                  const SizedBox(
+                                                    width: AppSpacing.xs,
+                                                  ),
                                                   Text(
                                                     '${s.debtFreeDate}: $debtFreeDateStr',
                                                     style: const TextStyle(
@@ -763,7 +788,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                             // ── Interest-to-loan ratio insight ──
                                             if (result.interestNormal > 0 &&
                                                 input.loanAmount > 0) ...[
-                                              const SizedBox(height: AppSpacing.xs),
+                                              const SizedBox(
+                                                height: AppSpacing.xs,
+                                              ),
                                               Text(
                                                 '${isEs ? "Pagas" : "You pay"} ${((result.interestNormal / input.loanAmount) * 100).toStringAsFixed(0)}% '
                                                 '${isEs ? "del préstamo en intereses" : "of loan amount in interest"}',
@@ -977,7 +1004,10 @@ class _InfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: 3,
+            ),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -1057,7 +1087,12 @@ class _DebtFreeDateBanner extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.mdPlus, AppSpacing.lg, AppSpacing.mdPlus),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.mdPlus,
+        AppSpacing.lg,
+        AppSpacing.mdPlus,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -1195,7 +1230,12 @@ class _BalanceChart extends StatelessWidget {
       ),
       elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.md,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1396,7 +1436,10 @@ class _BiweeklyCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.mdPlus, horizontal: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.mdPlus,
+        horizontal: AppSpacing.lg,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(AppRadius.xl),

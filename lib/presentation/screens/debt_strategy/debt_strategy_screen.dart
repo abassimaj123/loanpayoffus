@@ -604,7 +604,10 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xs),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl,
+                vertical: AppSpacing.xs,
+              ),
               child: Row(
                 children: [
                   const Icon(
@@ -627,7 +630,10 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
             const Divider(height: 1),
             // Header row
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
               child: Row(
                 children: [
                   _schedHdr(isEs ? 'Mo.' : 'Mo.', 48),
@@ -995,11 +1001,14 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         final interest = _strategyResult!.totalInterest;
                         final now = DateTime.now();
                         final freeOn = DateTime(
-                            now.year, now.month + months, now.day);
-                        final dateLabel = DateFormat.yMMM(isEs ? 'es' : 'en')
-                            .format(freeOn);
-                        final timeLabel =
-                            '${months ~/ 12}y ${months % 12}m';
+                          now.year,
+                          now.month + months,
+                          now.day,
+                        );
+                        final dateLabel = DateFormat.yMMM(
+                          isEs ? 'es' : 'en',
+                        ).format(freeOn);
+                        final timeLabel = '${months ~/ 12}y ${months % 12}m';
                         final secondaryLabel = isEs
                             ? 'Libre de deudas: $dateLabel'
                             : 'Debt-free: $dateLabel';
@@ -1007,9 +1016,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                           label:
                               '${isEs ? "Libre de deudas en" : "Debt-free in"} $timeLabel. ${isEs ? "Interés total" : "Total interest"}: ${_fmt.format(interest)}${interestSaved > 0 && _extra > 0 ? ". ${isEs ? "Ahorras" : "You save"} ${_fmt.format(interestSaved)}" : ""}',
                           child: CalcwiseHeroCard(
-                            label: isEs
-                                ? 'LIBRE DE DEUDAS EN'
-                                : 'DEBT-FREE IN',
+                            label: isEs ? 'LIBRE DE DEUDAS EN' : 'DEBT-FREE IN',
                             value: timeLabel,
                             secondary: secondaryLabel,
                             stats: [
@@ -1148,7 +1155,12 @@ class _InterestBarChart extends StatelessWidget {
       ),
       elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.md,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1174,7 +1186,10 @@ class _InterestBarChart extends StatelessWidget {
             ),
             if (saved > 0)
               Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.xs, left: AppSpacing.xxl),
+                padding: const EdgeInsets.only(
+                  top: AppSpacing.xs,
+                  left: AppSpacing.xxl,
+                ),
                 child: Text(
                   '${isEs ? "Ahorras" : "You save"} ${fmt.format(saved)}',
                   style: const TextStyle(
@@ -1393,7 +1408,12 @@ class _DebtTile extends StatelessWidget {
       ),
       elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.mdPlus, AppSpacing.smPlus, AppSpacing.sm, AppSpacing.smPlus),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.mdPlus,
+          AppSpacing.smPlus,
+          AppSpacing.sm,
+          AppSpacing.smPlus,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1553,7 +1573,9 @@ class _DebtTile extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
                 ),
               ),
             ),
@@ -1591,7 +1613,10 @@ class _PayoffOrderTile extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.mdPlus, vertical: AppSpacing.smPlus),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.mdPlus,
+        vertical: AppSpacing.smPlus,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(AppRadius.lg),
