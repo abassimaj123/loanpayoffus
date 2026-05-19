@@ -38,5 +38,15 @@ jobs:
         run: dart format --set-exit-if-changed lib/ test/
 
       - name: Run tests
-        run: flutter test --no-pub
+        run: |
+          flutter test --no-pub --coverage
+          if [ -f coverage/lcov.info ]; then
+            total_lines=$(grep -c "^DA:" coverage/lcov.info || echo 0)
+            covered=$(grep -c "^DA:.*,[^0]" coverage/lcov.info || echo 0)
+            if [ $total_lines -gt 0 ]; then
+              pct=$((covered * 100 / total_lines))
+              echo "## 📊 Test Coverage: ${pct}% (${covered}/${total_lines} lines)" >> $GITHUB_STEP_SUMMARY
+              echo "Coverage: ${pct}%"
+            fi
+          fi
 

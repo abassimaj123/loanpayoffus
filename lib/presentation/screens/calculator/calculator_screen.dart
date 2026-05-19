@@ -63,6 +63,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.logScreenView('calculator');
     isSpanishNotifier.addListener(_onLangChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // _paymentCtrl is pre-filled with '300', only auto-compute if still empty
