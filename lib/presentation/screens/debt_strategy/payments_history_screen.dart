@@ -58,7 +58,9 @@ class _PaymentsHistoryScreenState extends State<PaymentsHistoryScreen> {
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: FutureBuilder<List<DebtPayment>>(
+      body: SafeArea(
+        top: false, left: false, right: false,
+        child: FutureBuilder<List<DebtPayment>>(
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
@@ -162,6 +164,7 @@ class _PaymentsHistoryScreenState extends State<PaymentsHistoryScreen> {
             ),
           );
         },
+        ),
       ),
     );
   }
