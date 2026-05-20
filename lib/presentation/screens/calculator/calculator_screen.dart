@@ -252,10 +252,6 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.mdPlus,
-        ),
       ),
       onChanged: (_) => _recalculate(),
     ),
@@ -297,10 +293,6 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                             labelText: s.loanType,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(AppRadius.lg),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg,
-                              vertical: AppSpacing.mdPlus,
                             ),
                           ),
                           items: LoanType.values
@@ -657,7 +649,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                     end: Alignment.bottomRight,
                                                   ),
                                             borderRadius:
-                                                BorderRadius.circular(20),
+                                                BorderRadius.circular(AppRadius.xxl),
                                           ),
                                           child: Column(
                                             children: [
@@ -758,7 +750,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                   '${result.normalMonths ~/ 12} yrs ${result.normalMonths % 12} mos',
                                                   style: const TextStyle(
                                                     color: Colors.white,
-                                                    fontSize: 30,
+                                                    fontSize: AppTextSize.hero,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
@@ -955,36 +947,16 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                     ],
                                   ),
                                 )
-                              : Padding(
+                              : KeyedSubtree(
                                   key: const ValueKey('empty'),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.xxxl,
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Icon(
-                                        Icons.account_balance_rounded,
-                                        size: 48,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.3),
-                                      ),
-                                      const SizedBox(height: AppSpacing.md),
-                                      Text(
-                                        isEs
-                                            ? 'Ingresa los valores para ver los resultados'
-                                            : 'Enter values above to see results',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: AppTextSize.body,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.5),
-                                        ),
-                                      ),
-                                    ],
+                                  child: CalcwiseEmptyState(
+                                    icon: Icons.account_balance_rounded,
+                                    title: isEs
+                                        ? 'Sin préstamo aún'
+                                        : 'No loans yet',
+                                    body: isEs
+                                        ? 'Ingresa los valores para ver tu plan de pago.'
+                                        : 'Enter values above to see your payoff plan.',
                                   ),
                                 ),
                         ),
