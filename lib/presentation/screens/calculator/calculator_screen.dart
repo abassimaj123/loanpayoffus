@@ -287,6 +287,33 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Container(
+                          width: double.infinity,
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.lg),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                s.appTitle,
+                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                isEs
+                                    ? 'Calcula cuándo estarás libre de deudas'
+                                    : 'See when you\'ll be debt-free',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
                         DropdownButtonFormField<LoanType>(
                           initialValue: _type,
                           decoration: InputDecoration(
@@ -960,7 +987,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                   ),
                                 ),
                         ),
-                        const SizedBox(height: 80),
+                        const SizedBox(height: AppSpacing.listBottomInset),
                       ],
                     ),
                   ), // CalcwisePageEntrance closes

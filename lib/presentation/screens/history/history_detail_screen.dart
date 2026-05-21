@@ -430,7 +430,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                           ],
                         ),
 
-                        const SizedBox(height: 80),
+                        const SizedBox(height: AppSpacing.listBottomInset),
                       ],
                     ),
                   ),

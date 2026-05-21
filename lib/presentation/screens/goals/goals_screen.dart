@@ -349,7 +349,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                     ),
                   ),
                 ],
-                const SizedBox(height: 80),
+                const SizedBox(height: AppSpacing.listBottomInset),
               ],
             ),
           ),

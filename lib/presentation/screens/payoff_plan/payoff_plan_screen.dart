@@ -2,6 +2,7 @@ import 'package:calcwise_core/calcwise_core.dart'
     show PaywallTrigger, CalcwiseAdFooter;
 import 'package:calcwise_core/calcwise_core.dart';
 import '../../../core/services/pdf_export_service.dart' show PdfExportService;
+import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -973,6 +974,7 @@ class _Cell extends StatelessWidget {
       style: TextStyle(
         fontSize: AppTextSize.xs,
         fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+        fontFeatures: const [FontFeature.tabularFigures()],
         color: color,
       ),
       textAlign: TextAlign.right,

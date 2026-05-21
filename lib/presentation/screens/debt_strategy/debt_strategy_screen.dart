@@ -1093,7 +1093,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   ),
                 ],
 
-                const SizedBox(height: 80),
+                const SizedBox(height: AppSpacing.listBottomInset),
               ],
             ),
           ),

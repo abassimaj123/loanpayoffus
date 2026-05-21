@@ -329,7 +329,7 @@ class ComparisonScreen extends ConsumerWidget {
                   fmt: fmt,
                   isEs: isEs,
                 ),
-                const SizedBox(height: 80),
+                const SizedBox(height: AppSpacing.listBottomInset),
               ],
             ),
           ),
