@@ -18,6 +18,7 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   List<Map<String, dynamic>> _rows = [];
+  bool _loading = true;
   final _fmt = NumberFormat.currency(
     locale: 'en_US',
     symbol: '\$',
@@ -40,8 +41,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void _onLangChange() => setState(() {});
 
   Future<void> _load() async {
+    setState(() => _loading = true);
     final rows = await DatabaseHelper.instance.getHistory();
-    if (mounted) setState(() => _rows = rows);
+    if (mounted) setState(() {
+      _rows = rows;
+      _loading = false;
+    });
   }
 
   Future<void> _delete(int id, {bool confirm = true}) async {
@@ -115,7 +120,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Column(
       children: [
         Expanded(
-          child: _rows.isEmpty
+          child: _loading
+              ? const _HistorySkeleton()
+              : _rows.isEmpty
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -345,4 +352,63 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ],
     ),
   );
+}
+
+class _HistorySkeleton extends StatelessWidget {
+  const _HistorySkeleton();
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        children: List.generate(3, (i) => Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.smPlus),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.mdPlus),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    _ShimmerBox(width: 100, height: 18, radius: AppRadius.sm),
+                    const Spacer(),
+                    _ShimmerBox(width: 60, height: 14, radius: AppRadius.sm),
+                  ]),
+                  const SizedBox(height: AppSpacing.smPlus),
+                  _ShimmerBox(width: 140, height: 12, radius: 4),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(children: [
+                    _ShimmerBox(width: 72, height: 24, radius: AppRadius.xxl),
+                    const SizedBox(width: AppSpacing.sm),
+                    _ShimmerBox(width: 52, height: 24, radius: AppRadius.xxl),
+                    const SizedBox(width: AppSpacing.sm),
+                    _ShimmerBox(width: 64, height: 24, radius: AppRadius.xxl),
+                  ]),
+                ],
+              ),
+            ),
+          ),
+        )),
+      ),
+    );
+  }
+}
+
+class _ShimmerBox extends StatelessWidget {
+  final double width, height, radius;
+  const _ShimmerBox({required this.width, required this.height, required this.radius});
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
 }

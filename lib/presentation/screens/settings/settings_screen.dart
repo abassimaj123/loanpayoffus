@@ -189,6 +189,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             onTap: () => _launch('https://calqwise.com'),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
+            child: Text(
+              isEs
+                  ? 'Esta aplicación es solo para fines informativos. Consulte a un profesional financiero calificado antes de tomar decisiones financieras.'
+                  : 'This app is for informational purposes only. Consult a qualified financial professional before making any financial decisions.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade500,
+                height: 1.5,
+              ),
+            ),
+          ),
         ],
       ),
     );

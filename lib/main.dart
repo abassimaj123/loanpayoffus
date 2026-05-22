@@ -123,6 +123,7 @@ class _MainShell extends StatefulWidget {
 
 class _MainShellState extends State<_MainShell> {
   int _index = 0;
+  bool _wasPremium = false;
 
   static const _screens = [
     CalculatorScreen(),
@@ -158,26 +159,36 @@ class _MainShellState extends State<_MainShell> {
   @override
   void initState() {
     super.initState();
+    _wasPremium = freemiumService.hasFullAccess;
     isSpanishNotifier.addListener(_onLangChange);
-    // Observe IAP errors and surface via Snackbar
+    freemiumService.isPremiumNotifier.addListener(_onPremiumChange);
     iapErrorNotifier.addListener(_onIapError);
-    // Record session and show paywall gate if needed
     WidgetsBinding.instance.addPostFrameCallback((_) => _recordSession());
   }
 
   @override
   void dispose() {
     isSpanishNotifier.removeListener(_onLangChange);
+    freemiumService.isPremiumNotifier.removeListener(_onPremiumChange);
     iapErrorNotifier.removeListener(_onIapError);
     super.dispose();
   }
 
   void _onLangChange() => setState(() {});
 
+  void _onPremiumChange() {
+    final now = freemiumService.hasFullAccess;
+    if (now && !_wasPremium && mounted) {
+      showPremiumWelcomeSnackBar(context, isSpanish: isSpanishNotifier.value);
+    }
+    _wasPremium = now;
+  }
+
   void _onIapError() {
     final msg = iapErrorNotifier.value;
     if (msg == null || !mounted) return;
     showIapErrorSnackBar(context, msg);
+    iapErrorNotifier.value = null;
   }
 
   Future<void> _recordSession() async {
@@ -247,6 +258,7 @@ class _MainShellState extends State<_MainShell> {
               ),
             ),
             onRewardAd: () => CalcwiseRewardAdSheet.show(context),
+            onPremium: () => PaywallHard.show(context),
           ),
         ],
       ),
