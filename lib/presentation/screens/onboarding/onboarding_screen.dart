@@ -39,6 +39,21 @@ class OnboardingScreen extends StatelessWidget {
             'Avalancha ahorra más intereses. Bola de nieve mantiene la motivación. Tú eliges.',
         pillsEs: ['Avalancha', 'Bola de nieve', 'Personalizado'],
       ),
+      OnboardingPage(
+        icon: Icons.timeline_rounded,
+        title: 'Track Your\nDebt Journey',
+        subtitle:
+            'Save your payoff plans and watch your progress toward being debt-free.',
+        pills: ['History', 'PDF Export', 'Share'],
+        titleFr: 'Suivez votre\nparcours sans dettes',
+        subtitleFr:
+            'Sauvegardez vos plans et suivez vos progrès vers la liberté financière.',
+        pillsFr: ['Historique', 'Export PDF', 'Partager'],
+        titleEs: 'Sigue tu\nrecorrido sin deudas',
+        subtitleEs:
+            'Guarda tus planes y sigue tu progreso hacia la libertad financiera.',
+        pillsEs: ['Historial', 'Exportar PDF', 'Compartir'],
+      ),
     ],
   );
 }
