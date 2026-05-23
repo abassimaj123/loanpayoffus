@@ -12,6 +12,9 @@ class DebtItem {
   final double minPayment;
   final DebtCategory category;
 
+  /// User-defined sort priority for the Custom Order strategy (0 = first).
+  final int priority;
+
   const DebtItem({
     required this.id,
     required this.name,
@@ -19,6 +22,7 @@ class DebtItem {
     required this.annualRate,
     required this.minPayment,
     this.category = DebtCategory.other,
+    this.priority = 0,
     double? originalBalance,
   }) : originalBalance = originalBalance ?? balance;
 
@@ -49,6 +53,7 @@ class DebtItem {
     double? annualRate,
     double? minPayment,
     DebtCategory? category,
+    int? priority,
   }) => DebtItem(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -57,6 +62,7 @@ class DebtItem {
     annualRate: annualRate ?? this.annualRate,
     minPayment: minPayment ?? this.minPayment,
     category: category ?? this.category,
+    priority: priority ?? this.priority,
   );
 
   Map<String, dynamic> toJson() => {
@@ -67,6 +73,7 @@ class DebtItem {
     'annualRate': annualRate,
     'minPayment': minPayment,
     'category': category.id,
+    'priority': priority,
   };
 
   factory DebtItem.fromJson(Map<String, dynamic> json) => DebtItem(
@@ -81,5 +88,6 @@ class DebtItem {
     annualRate: (json['annualRate'] as num).toDouble(),
     minPayment: (json['minPayment'] as num).toDouble(),
     category: DebtCategoryX.fromId(json['category'] as String?),
+    priority: (json['priority'] as int?) ?? 0,
   );
 }

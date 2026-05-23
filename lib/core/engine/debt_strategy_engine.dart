@@ -68,7 +68,7 @@ class EngineResult {
 // Strategy enum
 // ---------------------------------------------------------------------------
 
-enum PayoffStrategy { avalanche, snowball }
+enum PayoffStrategy { avalanche, snowball, highestPayment, highestBalance, customPriority }
 
 // ---------------------------------------------------------------------------
 // Snowflake (one-time windfall) parameters
@@ -127,6 +127,12 @@ class DebtStrategyEngine {
         return (a, b) => b.annualRate.compareTo(a.annualRate);
       case PayoffStrategy.snowball:
         return (a, b) => a.balance.compareTo(b.balance);
+      case PayoffStrategy.highestPayment:
+        return (a, b) => b.minPayment.compareTo(a.minPayment);
+      case PayoffStrategy.highestBalance:
+        return (a, b) => b.balance.compareTo(a.balance);
+      case PayoffStrategy.customPriority:
+        return (a, b) => a.priority.compareTo(b.priority);
     }
   }
 

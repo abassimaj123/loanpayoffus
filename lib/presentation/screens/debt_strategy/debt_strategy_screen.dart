@@ -70,6 +70,9 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   Map<String, double> _totalPaid = {};
   Map<String, DateTime?> _lastPaid = {};
 
+  // Custom priority reorder
+  List<String> _customOrder = []; // debt ids in user-defined order
+
   PayoffStrategy _strategy = PayoffStrategy.avalanche;
   double _extra = 0;
   double _extraSlider = 0;
@@ -125,6 +128,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
           ];
     setState(() {
       _debts = initial;
+      // Restore priority order from saved data
+      _customOrder = initial.map((d) => d.id).toList();
       _loaded = true;
     });
     await _refreshPaymentAggregates();
@@ -147,6 +152,15 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
 
   void _persist() => DebtPersistence.instance.save(_debts);
 
+  /// Returns debts with `priority` field set according to `_customOrder`.
+  List<DebtItem> get _debtsWithPriority {
+    if (_strategy != PayoffStrategy.customPriority) return _debts;
+    return _debts.map((d) {
+      final idx = _customOrder.indexOf(d.id);
+      return d.copyWith(priority: idx < 0 ? 999 : idx);
+    }).toList();
+  }
+
   void _runCalc() {
     if (_debts.isEmpty) {
       setState(() {
@@ -158,6 +172,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
       return;
     }
 
+    final debtsForCalc = _debtsWithPriority;
+
     final snowflake = _snowflakeEnabled && _snowflakeAmount > 0
         ? SnowflakePayment(
             amount: _snowflakeAmount,
@@ -167,14 +183,14 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
 
     setState(() {
       _strategyResult = DebtStrategyEngine.run(
-        debts: _debts,
+        debts: debtsForCalc,
         extraMonthly: _extra,
         strategy: _strategy,
       );
-      _minimumResult = DebtStrategyEngine.runMinimumOnly(_debts);
+      _minimumResult = DebtStrategyEngine.runMinimumOnly(debtsForCalc);
       _snowflakeResult = snowflake != null
           ? DebtStrategyEngine.run(
-              debts: _debts,
+              debts: debtsForCalc,
               extraMonthly: _extra,
               strategy: _strategy,
               snowflake: snowflake,
@@ -182,7 +198,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
           : null;
       _whatIfResult = _whatIfExtra > 0
           ? DebtStrategyEngine.run(
-              debts: _debts,
+              debts: debtsForCalc,
               extraMonthly: _extra + _whatIfExtra,
               strategy: _strategy,
             )
@@ -377,6 +393,9 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
         _debts[index] = result;
       } else {
         _debts.add(result);
+        if (!_customOrder.contains(result.id)) {
+          _customOrder.add(result.id);
+        }
       }
     });
     if (isNewDebt) {
@@ -417,7 +436,11 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   );
 
   void _deleteDebt(int index) {
-    setState(() => _debts.removeAt(index));
+    setState(() {
+      final id = _debts[index].id;
+      _debts.removeAt(index);
+      _customOrder.remove(id);
+    });
     _persist();
     _runCalc();
   }
@@ -811,57 +834,16 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   title: isEs ? 'Estrategia de Pago' : 'Payoff Strategy',
                 ),
                 const SizedBox(height: AppSpacing.smPlus),
-                SegmentedButton<PayoffStrategy>(
-                  segments: [
-                    ButtonSegment(
-                      value: PayoffStrategy.avalanche,
-                      label: Text(isEs ? 'Avalancha' : 'Avalanche'),
-                      icon: const Icon(Icons.trending_down_rounded),
-                    ),
-                    ButtonSegment(
-                      value: PayoffStrategy.snowball,
-                      label: Text(isEs ? 'Bola de Nieve' : 'Snowball'),
-                      icon: const Icon(Icons.ac_unit_rounded),
-                    ),
-                  ],
-                  selected: {_strategy},
-                  onSelectionChanged: (v) {
-                    setState(() => _strategy = v.first);
+                _StrategySelector(
+                  selected: _strategy,
+                  isEs: isEs,
+                  onChanged: (s) {
+                    setState(() => _strategy = s);
                     AnalyticsService.instance.logStrategySelected(
-                      strategy: _strategy.name,
+                      strategy: s.name,
                     );
                     _runCalc();
                   },
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return AppTheme.primary;
-                      }
-                      return null;
-                    }),
-                    foregroundColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return Colors.white;
-                      }
-                      return null;
-                    }),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  _strategy == PayoffStrategy.avalanche
-                      ? (isEs
-                            ? 'Paga primero la deuda con la tasa más alta. Ahorra más en intereses.'
-                            : 'Pay highest-rate debt first. Saves the most interest.')
-                      : (isEs
-                            ? 'Paga primero la deuda con el saldo más bajo. Victorias rápidas.'
-                            : 'Pay lowest-balance debt first. Quick wins.'),
-                  style: TextStyle(
-                    fontSize: AppTextSize.sm,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.55),
-                  ),
                 ),
 
                 const SizedBox(height: AppSpacing.xxl),
@@ -944,6 +926,120 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     minimumSize: const Size.fromHeight(44),
                   ),
                 ),
+
+                // ── Custom order drag list ─────────────────────────────────────
+                if (_strategy == PayoffStrategy.customPriority &&
+                    _debts.length > 1) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    children: [
+                      const Icon(Icons.drag_indicator_rounded,
+                          size: 16, color: AppTheme.primary),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        isEs
+                            ? 'Arrastra para ordenar prioridad'
+                            : 'Drag to set payoff priority',
+                        style: const TextStyle(
+                          fontSize: AppTextSize.sm,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  ReorderableListView(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onReorder: (oldIdx, newIdx) {
+                      setState(() {
+                        // Ensure customOrder has all current debt ids
+                        for (final d in _debts) {
+                          if (!_customOrder.contains(d.id)) {
+                            _customOrder.add(d.id);
+                          }
+                        }
+                        if (newIdx > oldIdx) newIdx--;
+                        final id = _customOrder.removeAt(oldIdx);
+                        _customOrder.insert(newIdx, id);
+                      });
+                      _runCalc();
+                    },
+                    children: [
+                      for (final id in _customOrder
+                          .where((id) => _debts.any((d) => d.id == id)))
+                        Builder(
+                          key: ValueKey(id),
+                          builder: (ctx) {
+                            final debt = _debts.firstWhere((d) => d.id == id);
+                            final rank = _customOrder
+                                    .where((i) =>
+                                        _debts.any((d) => d.id == i))
+                                    .toList()
+                                    .indexOf(id) +
+                                1;
+                            return Container(
+                              margin: const EdgeInsets.only(
+                                  bottom: AppSpacing.xs),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.mdPlus,
+                                vertical: AppSpacing.smPlus,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerLowest,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.lg),
+                                border: Border.all(
+                                  color: Theme.of(context).dividerColor,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '$rank',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.smPlus),
+                                  Icon(debt.category.icon,
+                                      size: 16, color: debt.category.color),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                    child: Text(
+                                      debt.name,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: AppTextSize.body,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(Icons.drag_handle_rounded,
+                                      size: 20, color: Colors.grey),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ],
 
                 const SizedBox(height: AppSpacing.xxl),
 
@@ -1376,9 +1472,7 @@ class _InterestBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strategyLabel = strategy == PayoffStrategy.avalanche
-        ? (isEs ? 'Avalancha' : 'Avalanche')
-        : (isEs ? 'Bola de Nieve' : 'Snowball');
+    final strategyLabel = _strategyLabel(strategy, isEs);
     final minLabel = isEs ? 'Solo Mínimos' : 'Minimum Only';
     final saved = (minimumInterest - strategyInterest).clamp(
       0.0,
@@ -2256,6 +2350,201 @@ class _WhatIfComparisonCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Strategy helpers
+// ---------------------------------------------------------------------------
+
+String _strategyLabel(PayoffStrategy s, bool isEs) {
+  switch (s) {
+    case PayoffStrategy.avalanche:
+      return isEs ? 'Avalancha' : 'Avalanche';
+    case PayoffStrategy.snowball:
+      return isEs ? 'Bola de Nieve' : 'Snowball';
+    case PayoffStrategy.highestPayment:
+      return isEs ? 'Pago Más Alto Primero' : 'Highest Payment First';
+    case PayoffStrategy.highestBalance:
+      return isEs ? 'Deuda Más Grande Primero' : 'Largest Debt First';
+    case PayoffStrategy.customPriority:
+      return isEs ? 'Orden Personalizado' : 'Custom Order';
+  }
+}
+
+String _strategyDesc(PayoffStrategy s, bool isEs) {
+  switch (s) {
+    case PayoffStrategy.avalanche:
+      return isEs
+          ? 'Paga primero la deuda con la tasa más alta. Ahorra más en intereses.'
+          : 'Pay highest-rate debt first. Saves the most interest.';
+    case PayoffStrategy.snowball:
+      return isEs
+          ? 'Paga primero la deuda con el saldo más bajo. Victorias rápidas.'
+          : 'Pay lowest-balance debt first. Quick wins.';
+    case PayoffStrategy.highestPayment:
+      return isEs
+          ? 'Libera flujo de efectivo más rápido.'
+          : 'Free up cash flow faster.';
+    case PayoffStrategy.highestBalance:
+      return isEs
+          ? 'Enfócate en tu deuda más grande.'
+          : 'Focus on your biggest debt.';
+    case PayoffStrategy.customPriority:
+      return isEs
+          ? 'Tú decides la prioridad. Arrastra las deudas para ordenarlas.'
+          : 'You decide the priority. Drag debts to reorder.';
+  }
+}
+
+IconData _strategyIcon(PayoffStrategy s) {
+  switch (s) {
+    case PayoffStrategy.avalanche:
+      return Icons.trending_down_rounded;
+    case PayoffStrategy.snowball:
+      return Icons.ac_unit_rounded;
+    case PayoffStrategy.highestPayment:
+      return Icons.payments_rounded;
+    case PayoffStrategy.highestBalance:
+      return Icons.account_balance_rounded;
+    case PayoffStrategy.customPriority:
+      return Icons.drag_indicator_rounded;
+  }
+}
+
+class _StrategySelector extends StatelessWidget {
+  final PayoffStrategy selected;
+  final bool isEs;
+  final ValueChanged<PayoffStrategy> onChanged;
+
+  const _StrategySelector({
+    required this.selected,
+    required this.isEs,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Compact dropdown card
+        InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: () async {
+            final picked = await showModalBottomSheet<PayoffStrategy>(
+              context: context,
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              builder: (_) => SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    for (final s in PayoffStrategy.values)
+                      ListTile(
+                        leading: Icon(
+                          _strategyIcon(s),
+                          color: s == selected
+                              ? AppTheme.primary
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.5),
+                        ),
+                        title: Text(
+                          _strategyLabel(s, isEs),
+                          style: TextStyle(
+                            fontWeight: s == selected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: s == selected ? AppTheme.primary : null,
+                          ),
+                        ),
+                        subtitle: Text(
+                          _strategyDesc(s, isEs),
+                          style: TextStyle(
+                            fontSize: AppTextSize.xs,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.55),
+                          ),
+                        ),
+                        trailing: s == selected
+                            ? const Icon(Icons.check_rounded,
+                                color: AppTheme.primary)
+                            : null,
+                        onTap: () => Navigator.pop(context, s),
+                      ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+                ),
+              ),
+            );
+            if (picked != null) onChanged(picked);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.mdPlus,
+              vertical: AppSpacing.smPlus,
+            ),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(
+                color: AppTheme.primary.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(_strategyIcon(selected),
+                    size: 20, color: AppTheme.primary),
+                const SizedBox(width: AppSpacing.smPlus),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _strategyLabel(selected, isEs),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTextSize.body,
+                          color: AppTheme.primaryDark,
+                        ),
+                      ),
+                      Text(
+                        _strategyDesc(selected, isEs),
+                        style: TextStyle(
+                          fontSize: AppTextSize.xs,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.expand_more_rounded, color: AppTheme.primary),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
