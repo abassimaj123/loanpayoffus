@@ -17,10 +17,12 @@ import '../../../domain/usecases/loan_calculator.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import '../../../core/language/language_notifier.dart';
+import '../../../core/utils/milestone_tracker.dart';
 import '../../providers/loan_provider.dart';
 import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
 import '../../widgets/insight_card.dart';
+import '../../widgets/milestone_celebration.dart';
 import '../../../core/utils/insight_engine.dart';
 
 double _parseNum(String v) {
@@ -50,6 +52,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   bool _biweekly = false; // toggle: monthly vs biweekly mode
   bool _validated = false; // inline validation flag
   bool _hadResult = false; // tracks first-result haptic
+  bool _celebrationShown = false; // tracks debt-free celebration
 
   // Biweekly results (computed alongside main calculation)
   Map<String, double>? _biweeklyData;
@@ -101,7 +104,10 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
       _amountCtrl.text = t.defaultAmount.toStringAsFixed(0);
       _rateCtrl.text = t.defaultRate.toString();
       _paymentCtrl.clear();
+      _celebrationShown = false;
     });
+    // Reset milestone flags since the user started a new loan type
+    MilestoneTracker.instance.reset();
     _recalculate();
   }
 
@@ -156,12 +162,6 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
       _hadResult = true;
       HapticFeedback.mediumImpact();
     }
-    // Save after 2 s of inactivity — prevents flooding history on every keystroke
-    _saveDebounce?.cancel();
-    _saveDebounce = Timer(const Duration(milliseconds: 2000), () {
-      _saveToHistory(input);
-    });
-
     // Analytics
     final result = ref.read(payoffResultProvider);
     if (result != null && amount > 0 && rate > 0) {
@@ -186,6 +186,13 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
         CalcwiseReviewService.instance.requestAfterPremium();
       }
     }
+
+    // Milestone celebrations (debounced with the save timer so UI is settled)
+    _saveDebounce?.cancel();
+    _saveDebounce = Timer(const Duration(milliseconds: 2000), () {
+      _saveToHistory(input);
+      _checkMilestones(ref.read(payoffResultProvider));
+    });
   }
 
   Future<void> _saveToHistory(LoanInput input) async {
@@ -224,6 +231,101 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
       AnalyticsService.instance.logResultSaved();
     } catch (_) {}
     adService.onSave();
+  }
+
+  // ── Milestone celebrations ─────────────────────────────────────────────────
+
+  /// Called after every recalculate cycle.
+  /// Shows a full celebration when the loan is effectively paid off,
+  /// and SnackBar nudges at 25/50/75% progress milestones.
+  Future<void> _checkMilestones(PayoffResult? result) async {
+    if (result == null || !mounted) return;
+    final isEs = isSpanishNotifier.value;
+    final normalMonths = result.normalMonths;
+    if (normalMonths <= 0) return;
+
+    // ── Full payoff celebration ──
+    // Trigger when extra payments eliminate virtually the entire remaining term.
+    final isFullyPaid =
+        result.extraMonths <= 1 || result.extraMonths <= 0;
+    if (isFullyPaid && !_celebrationShown) {
+      _celebrationShown = true;
+      final input = ref.read(loanInputProvider);
+      final debtFreeDate = DateTime.now().add(
+        Duration(days: result.extraMonths * 30),
+      );
+      final dateStr = DateFormat('MMMM yyyy').format(debtFreeDate);
+      final shareText = isEs
+          ? 'Estoy libre de deudas gracias a LoanPayoff US! '
+              'Pagué mi ${input.loanType.label} completamente. '
+              'Ahorro: ${_fmt.format(result.interestSaved)} en intereses. '
+              'Fecha libre: $dateStr'
+          : 'I\'m debt-free with LoanPayoff US! '
+              'Paid off my ${input.loanType.label}. '
+              'Saved ${_fmt.format(result.interestSaved)} in interest. '
+              'Debt-free by: $dateStr';
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          MilestoneCelebrationDialog.show(
+            context,
+            shareText: shareText,
+            isEs: isEs,
+          );
+        }
+      });
+      return;
+    } else if (!isFullyPaid) {
+      // Reset the celebration flag when user modifies inputs
+      _celebrationShown = false;
+    }
+
+    // ── Partial milestone SnackBars (25 / 50 / 75 %) ──
+    // Progress = months eliminated by extra payment / normal months
+    final progressPct = ((normalMonths - result.extraMonths) / normalMonths * 100)
+        .clamp(0, 100)
+        .toInt();
+
+    for (final milestone in [75, 50, 25]) {
+      if (progressPct >= milestone) {
+        final isNew = await MilestoneTracker.instance.claimIfNew(milestone);
+        if (isNew && mounted) {
+          final message = _milestoneMessage(milestone, isEs);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.lg)),
+              margin: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+              backgroundColor: AppTheme.primary,
+            ),
+          );
+        }
+        break; // only one milestone per recalculate
+      }
+    }
+  }
+
+  String _milestoneMessage(int pct, bool isEs) {
+    switch (pct) {
+      case 75:
+        return isEs
+            ? '\u{1F3AF} ¡75% completado! La meta está cerca.'
+            : '\u{1F3AF} 75% there! Almost done.';
+      case 50:
+        return isEs
+            ? '\u{1F3AF} ¡A mitad de camino! Sigue así.'
+            : '\u{1F3AF} Halfway there! Keep going.';
+      case 25:
+      default:
+        return isEs
+            ? '\u{1F4AA} ¡25% completado! Buen comienzo.'
+            : '\u{1F4AA} 25% done! Great start.';
+    }
   }
 
   Widget _field(

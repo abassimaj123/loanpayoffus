@@ -94,7 +94,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: de07dc28236caf30b6573e46c7a2993962ccf9e2
+      resolved-ref: "7b3322f7c4167008dd843eac4c4c43e8deede45e"
       url: "https://github.com/abassimaj123/calcwise_core.git"
     source: git
     version: "1.0.0"
