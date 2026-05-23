@@ -50,6 +50,20 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   );
   final _extraCtrl = TextEditingController(text: '0');
 
+  // ── Snowflake (one-time windfall) ─────────────────────────────────────────
+  final _snowflakeCtrl = TextEditingController();
+  final _snowflakeMonthCtrl = TextEditingController(text: '1');
+  bool _snowflakeEnabled = false;
+  double _snowflakeAmount = 0;
+  int _snowflakeMonth = 1;
+  EngineResult? _snowflakeResult; // result with snowflake applied
+
+  // ── What-If extra monthly ─────────────────────────────────────────────────
+  double _whatIfExtra = 0;
+  double _whatIfSlider = 0;
+  final _whatIfCtrl = TextEditingController(text: '0');
+  EngineResult? _whatIfResult;
+
   List<DebtItem> _debts = [];
 
   /// Per-debt-id aggregates loaded from sqlite.
@@ -80,6 +94,9 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   void dispose() {
     isSpanishNotifier.removeListener(_onLangChange);
     _extraCtrl.dispose();
+    _snowflakeCtrl.dispose();
+    _snowflakeMonthCtrl.dispose();
+    _whatIfCtrl.dispose();
     super.dispose();
   }
 
@@ -135,9 +152,19 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
       setState(() {
         _strategyResult = null;
         _minimumResult = null;
+        _snowflakeResult = null;
+        _whatIfResult = null;
       });
       return;
     }
+
+    final snowflake = _snowflakeEnabled && _snowflakeAmount > 0
+        ? SnowflakePayment(
+            amount: _snowflakeAmount,
+            month: _snowflakeMonth.clamp(1, 1200),
+          )
+        : null;
+
     setState(() {
       _strategyResult = DebtStrategyEngine.run(
         debts: _debts,
@@ -145,6 +172,21 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
         strategy: _strategy,
       );
       _minimumResult = DebtStrategyEngine.runMinimumOnly(_debts);
+      _snowflakeResult = snowflake != null
+          ? DebtStrategyEngine.run(
+              debts: _debts,
+              extraMonthly: _extra,
+              strategy: _strategy,
+              snowflake: snowflake,
+            )
+          : null;
+      _whatIfResult = _whatIfExtra > 0
+          ? DebtStrategyEngine.run(
+              debts: _debts,
+              extraMonthly: _extra + _whatIfExtra,
+              strategy: _strategy,
+            )
+          : null;
     });
   }
 
@@ -972,6 +1014,211 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   },
                 ),
 
+                const SizedBox(height: AppSpacing.xxl),
+
+                // ── Snowflake (one-time windfall payment) ─────────────────────
+                _SectionHeader(
+                  icon: Icons.auto_awesome_rounded,
+                  title: isEs
+                      ? 'Pago Único (Windfall)'
+                      : 'Windfall Payment (one-time)',
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  isEs
+                      ? 'Aplica un bono, reembolso de impuestos o fondos extra'
+                      : 'Apply a bonus, tax refund, or any extra funds',
+                  style: TextStyle(
+                    fontSize: AppTextSize.sm,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.smPlus),
+                Row(
+                  children: [
+                    Switch(
+                      value: _snowflakeEnabled,
+                      activeColor: AppTheme.primary,
+                      onChanged: (v) {
+                        setState(() => _snowflakeEnabled = v);
+                        _runCalc();
+                      },
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      isEs ? 'Activar pago único' : 'Enable windfall payment',
+                      style: const TextStyle(fontSize: AppTextSize.body),
+                    ),
+                  ],
+                ),
+                if (_snowflakeEnabled) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _field(
+                          isEs
+                              ? 'Monto (\$)'
+                              : 'Windfall Amount (\$)',
+                          _snowflakeCtrl,
+                          numeric: true,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      SizedBox(
+                        width: 110,
+                        child: _field(
+                          isEs ? 'En el mes' : 'Apply in month',
+                          _snowflakeMonthCtrl,
+                          numeric: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            final amt = _parseNum(_snowflakeCtrl.text);
+                            final mo = int.tryParse(
+                                    _snowflakeMonthCtrl.text.trim()) ??
+                                1;
+                            setState(() {
+                              _snowflakeAmount = amt;
+                              _snowflakeMonth = mo < 1 ? 1 : mo;
+                            });
+                            _runCalc();
+                          },
+                          icon: const Icon(Icons.bolt_rounded, size: 16),
+                          label: Text(
+                            isEs ? 'Aplicar pago único' : 'Apply Windfall',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.primary,
+                            side:
+                                const BorderSide(color: AppTheme.primary),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.mdPlus),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_snowflakeResult != null &&
+                      _strategyResult != null) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    _SnowflakeResultBanner(
+                      baseline: _strategyResult!,
+                      withSnowflake: _snowflakeResult!,
+                      snowflakeAmount: _snowflakeAmount,
+                      snowflakeMonth: _snowflakeMonth,
+                      fmt: _fmt,
+                      isEs: isEs,
+                    ),
+                  ],
+                ],
+
+                const SizedBox(height: AppSpacing.xxl),
+
+                // ── What-If extra monthly payment ────────────────────────────
+                _SectionHeader(
+                  icon: Icons.help_outline_rounded,
+                  title: isEs
+                      ? '¿Qué pasa si pago más?'
+                      : 'What-If Extra Payment',
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  isEs
+                      ? '¿Cuánto ahorrarías pagando más cada mes?'
+                      : 'How much would you save paying more each month?',
+                  style: TextStyle(
+                    fontSize: AppTextSize.sm,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.smPlus),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        isEs
+                            ? 'Extra por mes adicional'
+                            : 'Additional monthly payment',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: AppTextSize.body,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 100,
+                      child: TextField(
+                        controller: _whatIfCtrl,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                        ],
+                        textAlign: TextAlign.right,
+                        decoration: InputDecoration(
+                          prefixText: '\$',
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.mdPlus),
+                          ),
+                        ),
+                        onChanged: (v) {
+                          final val = _parseNum(v);
+                          setState(() {
+                            _whatIfExtra = val;
+                            _whatIfSlider = val.clamp(0, 500);
+                          });
+                          _runCalc();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: _whatIfSlider,
+                  min: 0,
+                  max: 500,
+                  divisions: 50,
+                  label: '+${_fmt.format(_whatIfSlider)}/mo',
+                  activeColor: AppTheme.accentGood,
+                  onChanged: (v) {
+                    setState(() {
+                      _whatIfExtra = v;
+                      _whatIfSlider = v;
+                      _whatIfCtrl.text = v.toInt().toString();
+                    });
+                    _runCalc();
+                  },
+                ),
+                if (_whatIfResult != null &&
+                    _strategyResult != null &&
+                    _whatIfExtra > 0) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  _WhatIfComparisonCard(
+                    baseline: _strategyResult!,
+                    withExtra: _whatIfResult!,
+                    extraAmount: _whatIfExtra,
+                    fmt: _fmt,
+                    fmtCents: _fmtCents,
+                    isEs: isEs,
+                  ),
+                ],
+
                 const SizedBox(height: AppSpacing.lg),
 
                 // ── Results ───────────────────────────────────────────────────
@@ -1663,6 +1910,351 @@ class _PayoffOrderTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Snowflake result banner
+// ---------------------------------------------------------------------------
+
+class _SnowflakeResultBanner extends StatelessWidget {
+  final EngineResult baseline;
+  final EngineResult withSnowflake;
+  final double snowflakeAmount;
+  final int snowflakeMonth;
+  final NumberFormat fmt;
+  final bool isEs;
+
+  const _SnowflakeResultBanner({
+    required this.baseline,
+    required this.withSnowflake,
+    required this.snowflakeAmount,
+    required this.snowflakeMonth,
+    required this.fmt,
+    required this.isEs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    DateTime _payoffDate(int months) =>
+        DateTime(now.year, now.month + months, now.day);
+
+    final baseDateLabel =
+        DateFormat.yMMM(isEs ? 'es' : 'en').format(_payoffDate(baseline.totalMonths));
+    final sfDateLabel = DateFormat.yMMM(isEs ? 'es' : 'en')
+        .format(_payoffDate(withSnowflake.totalMonths));
+    final monthsSaved = baseline.totalMonths - withSnowflake.totalMonths;
+    final interestSaved =
+        (baseline.totalInterest - withSnowflake.totalInterest)
+            .clamp(0.0, double.infinity);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppTheme.accentGood.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(
+          color: AppTheme.accentGood.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded,
+                  color: AppTheme.accentGood, size: 18),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  isEs
+                      ? 'Con ${fmt.format(snowflakeAmount)} en el mes $snowflakeMonth:'
+                      : 'With ${fmt.format(snowflakeAmount)} windfall in month $snowflakeMonth:',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: AppTextSize.body,
+                    color: AppTheme.accentGood,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isEs ? 'Sin windfall' : 'Without windfall',
+                      style: TextStyle(
+                        fontSize: AppTextSize.xs,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.55),
+                      ),
+                    ),
+                    Text(
+                      baseDateLabel,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: AppTextSize.body,
+                      ),
+                    ),
+                    Text(
+                      fmt.format(baseline.totalInterest),
+                      style: const TextStyle(
+                        fontSize: AppTextSize.sm,
+                        color: AppTheme.warning,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_rounded,
+                  color: AppTheme.accentGood),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      isEs ? 'Con windfall' : 'With windfall',
+                      style: const TextStyle(
+                        fontSize: AppTextSize.xs,
+                        color: AppTheme.accentGood,
+                      ),
+                    ),
+                    Text(
+                      sfDateLabel,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: AppTextSize.body,
+                        color: AppTheme.accentGood,
+                      ),
+                    ),
+                    Text(
+                      fmt.format(withSnowflake.totalInterest),
+                      style: const TextStyle(
+                        fontSize: AppTextSize.sm,
+                        color: AppTheme.accentGood,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (interestSaved > 0 || monthsSaved > 0) ...[
+            const Divider(height: AppSpacing.lg),
+            Text(
+              isEs
+                  ? 'Ahorro: ${fmt.format(interestSaved)} en intereses${monthsSaved > 0 ? " · $monthsSaved meses antes" : ""}'
+                  : 'Savings: ${fmt.format(interestSaved)} in interest${monthsSaved > 0 ? " · $monthsSaved months sooner" : ""}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.accentGood,
+                fontSize: AppTextSize.sm,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// What-If comparison card
+// ---------------------------------------------------------------------------
+
+class _WhatIfComparisonCard extends StatelessWidget {
+  final EngineResult baseline;
+  final EngineResult withExtra;
+  final double extraAmount;
+  final NumberFormat fmt;
+  final NumberFormat fmtCents;
+  final bool isEs;
+
+  const _WhatIfComparisonCard({
+    required this.baseline,
+    required this.withExtra,
+    required this.extraAmount,
+    required this.fmt,
+    required this.fmtCents,
+    required this.isEs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    DateTime _payoffDate(int months) =>
+        DateTime(now.year, now.month + months, now.day);
+
+    final baseDateLabel =
+        DateFormat.yMMM(isEs ? 'es' : 'en').format(_payoffDate(baseline.totalMonths));
+    final extraDateLabel = DateFormat.yMMM(isEs ? 'es' : 'en')
+        .format(_payoffDate(withExtra.totalMonths));
+    final interestSaved =
+        (baseline.totalInterest - withExtra.totalInterest)
+            .clamp(0.0, double.infinity);
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        side: BorderSide(
+          color: AppTheme.primary.withValues(alpha: 0.35),
+        ),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.compare_arrows_rounded,
+                    color: AppTheme.primary, size: 18),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    isEs
+                        ? '¿Qué pasa si pago +${fmt.format(extraAmount)}/mes?'
+                        : 'What if I paid +${fmtCents.format(extraAmount)}/mo?',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: AppTextSize.body,
+                      color: AppTheme.primaryDark,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // Side-by-side table
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Current plan column
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isEs ? 'Plan actual' : 'Current plan',
+                        style: TextStyle(
+                          fontSize: AppTextSize.xs,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.55),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        isEs ? 'Pago libre:' : 'Payoff:',
+                        style: const TextStyle(fontSize: AppTextSize.xs),
+                      ),
+                      Text(
+                        baseDateLabel,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: AppTextSize.body,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        isEs ? 'Interés:' : 'Interest:',
+                        style: const TextStyle(fontSize: AppTextSize.xs),
+                      ),
+                      Text(
+                        fmt.format(baseline.totalInterest),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: AppTextSize.body,
+                          color: AppTheme.warning,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const VerticalDivider(width: AppSpacing.lg),
+                // With extra payment column
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isEs
+                            ? 'Con +${fmt.format(extraAmount)}/mes'
+                            : 'With +${fmt.format(extraAmount)}/mo',
+                        style: const TextStyle(
+                          fontSize: AppTextSize.xs,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.accentGood,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        isEs ? 'Pago libre:' : 'Payoff:',
+                        style: const TextStyle(fontSize: AppTextSize.xs),
+                      ),
+                      Text(
+                        extraDateLabel,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTextSize.body,
+                          color: AppTheme.accentGood,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        isEs ? 'Interés:' : 'Interest:',
+                        style: const TextStyle(fontSize: AppTextSize.xs),
+                      ),
+                      Text(
+                        fmt.format(withExtra.totalInterest),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTextSize.body,
+                          color: AppTheme.accentGood,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (interestSaved > 0) ...[
+              const Divider(height: AppSpacing.lg),
+              Row(
+                children: [
+                  const Icon(Icons.savings_rounded,
+                      color: AppTheme.accentGood, size: 16),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      isEs
+                          ? 'Ahorros: ${fmt.format(interestSaved)}'
+                          : 'Savings: ${fmt.format(interestSaved)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.accentGood,
+                        fontSize: AppTextSize.body,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

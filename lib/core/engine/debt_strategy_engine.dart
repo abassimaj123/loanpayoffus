@@ -71,6 +71,21 @@ class EngineResult {
 enum PayoffStrategy { avalanche, snowball }
 
 // ---------------------------------------------------------------------------
+// Snowflake (one-time windfall) parameters
+// ---------------------------------------------------------------------------
+
+/// Describes a one-time extra principal payment applied in a specific month.
+class SnowflakePayment {
+  /// Dollar amount of the windfall payment.
+  final double amount;
+
+  /// 1-based month number when the payment is applied (1 = now).
+  final int month;
+
+  const SnowflakePayment({required this.amount, required this.month});
+}
+
+// ---------------------------------------------------------------------------
 // Engine
 // ---------------------------------------------------------------------------
 
@@ -83,11 +98,13 @@ class DebtStrategyEngine {
     required List<DebtItem> debts,
     required double extraMonthly,
     required PayoffStrategy strategy,
+    SnowflakePayment? snowflake,
   }) {
     return _simulate(
       debts: debts,
       extraMonthly: extraMonthly,
       comparator: _comparatorFor(strategy),
+      snowflake: snowflake,
     );
   }
 
@@ -117,6 +134,7 @@ class DebtStrategyEngine {
     required List<DebtItem> debts,
     required double extraMonthly,
     required int Function(DebtItem, DebtItem) comparator,
+    SnowflakePayment? snowflake,
   }) {
     if (debts.isEmpty) {
       return const EngineResult(
@@ -174,7 +192,12 @@ class DebtStrategyEngine {
       }
 
       // Step 2 — apply extra to priority debt (first active by strategy order)
-      double leftover = runningExtra;
+      // If this is the snowflake month, add the windfall to the extra pool.
+      double snowflakeThisMonth = 0;
+      if (snowflake != null && month == snowflake.month) {
+        snowflakeThisMonth = snowflake.amount;
+      }
+      double leftover = runningExtra + snowflakeThisMonth;
       for (final i in active) {
         if (leftover <= 0) break;
         if (balances[i] <= 0.005) continue;
