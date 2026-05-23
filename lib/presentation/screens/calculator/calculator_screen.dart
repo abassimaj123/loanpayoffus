@@ -65,7 +65,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     super.initState();
     AnalyticsService.instance.logScreenView('calculator');
     isSpanishNotifier.addListener(_onLangChange);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       // _paymentCtrl is pre-filled with '300', only auto-compute if still empty
       if (mounted && _paymentCtrl.text.isEmpty) {
         final amount = _parseNum(_amountCtrl.text);
@@ -76,6 +76,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
           _type.defaultTermMonths,
         ).toStringAsFixed(2);
       }
+      // Auto-calculate on first open so result is visible immediately
+      if (mounted) await _recalculate();
     });
   }
 
