@@ -121,7 +121,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: ButtonStyle(
                 shape: WidgetStatePropertyAll(
                   RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg)),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                  ),
                 ),
               ),
             ),

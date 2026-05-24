@@ -246,8 +246,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
 
     // ── Full payoff celebration ──
     // Trigger when extra payments eliminate virtually the entire remaining term.
-    final isFullyPaid =
-        result.extraMonths <= 1 || result.extraMonths <= 0;
+    final isFullyPaid = result.extraMonths <= 1 || result.extraMonths <= 0;
     if (isFullyPaid && !_celebrationShown) {
       _celebrationShown = true;
       final input = ref.read(loanInputProvider);
@@ -257,13 +256,13 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
       final dateStr = DateFormat('MMMM yyyy').format(debtFreeDate);
       final shareText = isEs
           ? 'Estoy libre de deudas gracias a LoanPayoff US! '
-              'Pagué mi ${input.loanType.label} completamente. '
-              'Ahorro: ${_fmt.format(result.interestSaved)} en intereses. '
-              'Fecha libre: $dateStr'
+                'Pagué mi ${input.loanType.label} completamente. '
+                'Ahorro: ${_fmt.format(result.interestSaved)} en intereses. '
+                'Fecha libre: $dateStr'
           : 'I\'m debt-free with LoanPayoff US! '
-              'Paid off my ${input.loanType.label}. '
-              'Saved ${_fmt.format(result.interestSaved)} in interest. '
-              'Debt-free by: $dateStr';
+                'Paid off my ${input.loanType.label}. '
+                'Saved ${_fmt.format(result.interestSaved)} in interest. '
+                'Debt-free by: $dateStr';
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -282,9 +281,10 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
 
     // ── Partial milestone SnackBars (25 / 50 / 75 %) ──
     // Progress = months eliminated by extra payment / normal months
-    final progressPct = ((normalMonths - result.extraMonths) / normalMonths * 100)
-        .clamp(0, 100)
-        .toInt();
+    final progressPct =
+        ((normalMonths - result.extraMonths) / normalMonths * 100)
+            .clamp(0, 100)
+            .toInt();
 
     for (final milestone in [75, 50, 25]) {
       if (progressPct >= milestone) {
@@ -293,14 +293,21 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
           final message = _milestoneMessage(milestone, isEs);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(message,
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              content: Text(
+                message,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               duration: const Duration(seconds: 3),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg)),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
               margin: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.lg,
+              ),
               backgroundColor: AppTheme.primary,
             ),
           );
@@ -394,25 +401,37 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                         Container(
                           width: double.infinity,
                           color: Theme.of(context).colorScheme.primaryContainer,
-                          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.lg),
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            AppSpacing.xl,
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 s.appTitle,
-                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: Theme.of(context).textTheme.headlineSmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimaryContainer,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                               ),
                               const SizedBox(height: AppSpacing.xs),
                               Text(
                                 isEs
                                     ? 'Calcula cuándo estarás libre de deudas'
                                     : 'See when you\'ll be debt-free',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
-                                ),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer
+                                          .withValues(alpha: 0.8),
+                                    ),
                               ),
                             ],
                           ),
@@ -779,8 +798,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                                     begin: Alignment.topLeft,
                                                     end: Alignment.bottomRight,
                                                   ),
-                                            borderRadius:
-                                                BorderRadius.circular(AppRadius.xxl),
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadius.xxl,
+                                            ),
                                           ),
                                           child: Column(
                                             children: [
@@ -971,7 +991,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                               ),
                                             ),
                                             const SizedBox(
-                                                width: AppSpacing.md),
+                                              width: AppSpacing.md,
+                                            ),
                                             if (input.extraPayment > 0)
                                               Expanded(
                                                 child: _InfoCard(

@@ -59,111 +59,115 @@ class _PaymentsHistoryScreenState extends State<PaymentsHistoryScreen> {
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
-        top: false, left: false, right: false,
+        top: false,
+        left: false,
+        right: false,
         child: FutureBuilder<List<DebtPayment>>(
-        future: _future,
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final items = snap.data ?? const <DebtPayment>[];
-          if (items.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xxxl),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.payments_rounded,
-                      size: 56,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.3),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      isEs
-                          ? 'Aún no hay pagos registrados.'
-                          : 'No payments logged yet.',
-                      style: TextStyle(
+          future: _future,
+          builder: (context, snap) {
+            if (snap.connectionState != ConnectionState.done) {
+              return const CalcwiseLoadingState();
+            }
+            final items = snap.data ?? const <DebtPayment>[];
+            if (items.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xxxl),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.payments_rounded,
+                        size: 56,
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.55),
+                        ).colorScheme.onSurface.withValues(alpha: 0.3),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        isEs
+                            ? 'Aún no hay pagos registrados.'
+                            : 'No payments logged yet.',
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.55),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
+              );
+            }
+            return RefreshIndicator(
+              onRefresh: _refresh,
+              child: ListView.separated(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                itemCount: items.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: AppSpacing.sm),
+                itemBuilder: (_, i) {
+                  final p = items[i];
+                  return Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      side: BorderSide(color: Theme.of(context).dividerColor),
+                    ),
+                    elevation: 0,
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppTheme.accentGood.withValues(
+                          alpha: 0.15,
+                        ),
+                        child: const Icon(
+                          Icons.payments_rounded,
+                          color: AppTheme.accentGood,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(
+                        p.debtName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTextSize.body,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${_date.format(p.date)}'
+                        '${(p.note ?? '').isNotEmpty ? "  •  ${p.note}" : ''}',
+                        style: const TextStyle(fontSize: AppTextSize.sm),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _money.format(p.amount),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.accentGood,
+                              fontSize: AppTextSize.body,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 18,
+                            ),
+                            color: AppTheme.dangerRed,
+                            onPressed: p.id == null
+                                ? null
+                                : () => _delete(p.id!),
+                            tooltip: isEs ? 'Eliminar' : 'Delete',
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             );
-          }
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: ListView.separated(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: items.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: AppSpacing.sm),
-              itemBuilder: (_, i) {
-                final p = items[i];
-                return Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    side: BorderSide(color: Theme.of(context).dividerColor),
-                  ),
-                  elevation: 0,
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppTheme.accentGood.withValues(
-                        alpha: 0.15,
-                      ),
-                      child: const Icon(
-                        Icons.payments_rounded,
-                        color: AppTheme.accentGood,
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(
-                      p.debtName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: AppTextSize.body,
-                      ),
-                    ),
-                    subtitle: Text(
-                      '${_date.format(p.date)}'
-                      '${(p.note ?? '').isNotEmpty ? "  •  ${p.note}" : ''}',
-                      style: const TextStyle(fontSize: AppTextSize.sm),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _money.format(p.amount),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.accentGood,
-                            fontSize: AppTextSize.body,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline_rounded,
-                            size: 18,
-                          ),
-                          color: AppTheme.dangerRed,
-                          onPressed: p.id == null ? null : () => _delete(p.id!),
-                          tooltip: isEs ? 'Eliminar' : 'Delete',
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+          },
         ),
       ),
     );

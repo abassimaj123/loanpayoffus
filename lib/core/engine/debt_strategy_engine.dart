@@ -68,7 +68,13 @@ class EngineResult {
 // Strategy enum
 // ---------------------------------------------------------------------------
 
-enum PayoffStrategy { avalanche, snowball, highestPayment, highestBalance, customPriority }
+enum PayoffStrategy {
+  avalanche,
+  snowball,
+  highestPayment,
+  highestBalance,
+  customPriority,
+}
 
 // ---------------------------------------------------------------------------
 // Snowflake (one-time windfall) parameters

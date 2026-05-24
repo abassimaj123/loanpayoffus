@@ -31,10 +31,8 @@ class MilestoneCelebrationDialog extends StatefulWidget {
       barrierLabel: 'Dismiss',
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 350),
-      pageBuilder: (_, __, ___) => MilestoneCelebrationDialog(
-        shareText: shareText,
-        isEs: isEs,
-      ),
+      pageBuilder: (_, __, ___) =>
+          MilestoneCelebrationDialog(shareText: shareText, isEs: isEs),
     );
   }
 
@@ -43,8 +41,7 @@ class MilestoneCelebrationDialog extends StatefulWidget {
       _MilestoneCelebrationDialogState();
 }
 
-class _MilestoneCelebrationDialogState
-    extends State<MilestoneCelebrationDialog>
+class _MilestoneCelebrationDialogState extends State<MilestoneCelebrationDialog>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scale;
@@ -56,10 +53,7 @@ class _MilestoneCelebrationDialogState
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _scale = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.elasticOut,
-    );
+    _scale = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
     _controller.forward();
 
     // Auto-dismiss after 3 seconds
@@ -107,10 +101,7 @@ class _MilestoneCelebrationDialogState
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Celebration emoji
-                const Text(
-                  '\u{1F389}',
-                  style: TextStyle(fontSize: 64),
-                ),
+                const Text('\u{1F389}', style: TextStyle(fontSize: 64)),
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   headline,
@@ -126,10 +117,9 @@ class _MilestoneCelebrationDialogState
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: AppTextSize.bodyMd,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -139,10 +129,11 @@ class _MilestoneCelebrationDialogState
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.lg)),
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                          ),
                           padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.md),
+                            vertical: AppSpacing.md,
+                          ),
                         ),
                         onPressed: () =>
                             Navigator.of(context, rootNavigator: true).pop(),
@@ -157,10 +148,11 @@ class _MilestoneCelebrationDialogState
                             backgroundColor: AppTheme.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.lg)),
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
+                            ),
                             padding: const EdgeInsets.symmetric(
-                                vertical: AppSpacing.md),
+                              vertical: AppSpacing.md,
+                            ),
                           ),
                           icon: const Icon(Icons.share_rounded, size: 18),
                           label: Text(shareLabel),

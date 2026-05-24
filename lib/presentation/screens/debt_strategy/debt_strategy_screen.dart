@@ -933,8 +933,11 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   const SizedBox(height: AppSpacing.lg),
                   Row(
                     children: [
-                      const Icon(Icons.drag_indicator_rounded,
-                          size: 16, color: AppTheme.primary),
+                      const Icon(
+                        Icons.drag_indicator_rounded,
+                        size: 16,
+                        color: AppTheme.primary,
+                      ),
                       const SizedBox(width: AppSpacing.xs),
                       Text(
                         isEs
@@ -967,31 +970,34 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       _runCalc();
                     },
                     children: [
-                      for (final id in _customOrder
-                          .where((id) => _debts.any((d) => d.id == id)))
+                      for (final id in _customOrder.where(
+                        (id) => _debts.any((d) => d.id == id),
+                      ))
                         Builder(
                           key: ValueKey(id),
                           builder: (ctx) {
                             final debt = _debts.firstWhere((d) => d.id == id);
-                            final rank = _customOrder
-                                    .where((i) =>
-                                        _debts.any((d) => d.id == i))
+                            final rank =
+                                _customOrder
+                                    .where((i) => _debts.any((d) => d.id == i))
                                     .toList()
                                     .indexOf(id) +
                                 1;
                             return Container(
                               margin: const EdgeInsets.only(
-                                  bottom: AppSpacing.xs),
+                                bottom: AppSpacing.xs,
+                              ),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AppSpacing.mdPlus,
                                 vertical: AppSpacing.smPlus,
                               ),
                               decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerLowest,
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.lg),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerLowest,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.lg,
+                                ),
                                 border: Border.all(
                                   color: Theme.of(context).dividerColor,
                                 ),
@@ -1017,8 +1023,11 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: AppSpacing.smPlus),
-                                  Icon(debt.category.icon,
-                                      size: 16, color: debt.category.color),
+                                  Icon(
+                                    debt.category.icon,
+                                    size: 16,
+                                    color: debt.category.color,
+                                  ),
                                   const SizedBox(width: AppSpacing.sm),
                                   Expanded(
                                     child: Text(
@@ -1030,8 +1039,11 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                                       ),
                                     ),
                                   ),
-                                  const Icon(Icons.drag_handle_rounded,
-                                      size: 20, color: Colors.grey),
+                                  const Icon(
+                                    Icons.drag_handle_rounded,
+                                    size: 20,
+                                    color: Colors.grey,
+                                  ),
                                 ],
                               ),
                             );
@@ -1126,10 +1138,9 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       : 'Apply a bonus, tax refund, or any extra funds',
                   style: TextStyle(
                     fontSize: AppTextSize.sm,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.55),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.55),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.smPlus),
@@ -1156,9 +1167,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     children: [
                       Expanded(
                         child: _field(
-                          isEs
-                              ? 'Monto (\$)'
-                              : 'Windfall Amount (\$)',
+                          isEs ? 'Monto (\$)' : 'Windfall Amount (\$)',
                           _snowflakeCtrl,
                           numeric: true,
                         ),
@@ -1180,8 +1189,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         child: OutlinedButton.icon(
                           onPressed: () {
                             final amt = _parseNum(_snowflakeCtrl.text);
-                            final mo = int.tryParse(
-                                    _snowflakeMonthCtrl.text.trim()) ??
+                            final mo =
+                                int.tryParse(_snowflakeMonthCtrl.text.trim()) ??
                                 1;
                             setState(() {
                               _snowflakeAmount = amt;
@@ -1195,19 +1204,18 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.primary,
-                            side:
-                                const BorderSide(color: AppTheme.primary),
+                            side: const BorderSide(color: AppTheme.primary),
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.mdPlus),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.mdPlus,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  if (_snowflakeResult != null &&
-                      _strategyResult != null) ...[
+                  if (_snowflakeResult != null && _strategyResult != null) ...[
                     const SizedBox(height: AppSpacing.md),
                     _SnowflakeResultBanner(
                       baseline: _strategyResult!,
@@ -1236,10 +1244,9 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       : 'How much would you save paying more each month?',
                   style: TextStyle(
                     fontSize: AppTextSize.sm,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.55),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.55),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.smPlus),
@@ -1260,8 +1267,9 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       width: 100,
                       child: TextField(
                         controller: _whatIfCtrl,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         inputFormatters: [
                           FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                         ],
@@ -1270,7 +1278,9 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                           prefixText: '\$',
                           isDense: true,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.mdPlus),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.mdPlus,
+                            ),
                           ),
                         ),
                         onChanged: (v) {
@@ -2036,31 +2046,33 @@ class _SnowflakeResultBanner extends StatelessWidget {
     DateTime _payoffDate(int months) =>
         DateTime(now.year, now.month + months, now.day);
 
-    final baseDateLabel =
-        DateFormat.yMMM(isEs ? 'es' : 'en').format(_payoffDate(baseline.totalMonths));
-    final sfDateLabel = DateFormat.yMMM(isEs ? 'es' : 'en')
-        .format(_payoffDate(withSnowflake.totalMonths));
+    final baseDateLabel = DateFormat.yMMM(
+      isEs ? 'es' : 'en',
+    ).format(_payoffDate(baseline.totalMonths));
+    final sfDateLabel = DateFormat.yMMM(
+      isEs ? 'es' : 'en',
+    ).format(_payoffDate(withSnowflake.totalMonths));
     final monthsSaved = baseline.totalMonths - withSnowflake.totalMonths;
-    final interestSaved =
-        (baseline.totalInterest - withSnowflake.totalInterest)
-            .clamp(0.0, double.infinity);
+    final interestSaved = (baseline.totalInterest - withSnowflake.totalInterest)
+        .clamp(0.0, double.infinity);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppTheme.accentGood.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(
-          color: AppTheme.accentGood.withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: AppTheme.accentGood.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome_rounded,
-                  color: AppTheme.accentGood, size: 18),
+              const Icon(
+                Icons.auto_awesome_rounded,
+                color: AppTheme.accentGood,
+                size: 18,
+              ),
               const SizedBox(width: AppSpacing.xs),
               Expanded(
                 child: Text(
@@ -2087,10 +2099,9 @@ class _SnowflakeResultBanner extends StatelessWidget {
                       isEs ? 'Sin windfall' : 'Without windfall',
                       style: TextStyle(
                         fontSize: AppTextSize.xs,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.55),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.55),
                       ),
                     ),
                     Text(
@@ -2110,8 +2121,10 @@ class _SnowflakeResultBanner extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_rounded,
-                  color: AppTheme.accentGood),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                color: AppTheme.accentGood,
+              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -2189,20 +2202,19 @@ class _WhatIfComparisonCard extends StatelessWidget {
     DateTime _payoffDate(int months) =>
         DateTime(now.year, now.month + months, now.day);
 
-    final baseDateLabel =
-        DateFormat.yMMM(isEs ? 'es' : 'en').format(_payoffDate(baseline.totalMonths));
-    final extraDateLabel = DateFormat.yMMM(isEs ? 'es' : 'en')
-        .format(_payoffDate(withExtra.totalMonths));
-    final interestSaved =
-        (baseline.totalInterest - withExtra.totalInterest)
-            .clamp(0.0, double.infinity);
+    final baseDateLabel = DateFormat.yMMM(
+      isEs ? 'es' : 'en',
+    ).format(_payoffDate(baseline.totalMonths));
+    final extraDateLabel = DateFormat.yMMM(
+      isEs ? 'es' : 'en',
+    ).format(_payoffDate(withExtra.totalMonths));
+    final interestSaved = (baseline.totalInterest - withExtra.totalInterest)
+        .clamp(0.0, double.infinity);
 
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        side: BorderSide(
-          color: AppTheme.primary.withValues(alpha: 0.35),
-        ),
+        side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.35)),
       ),
       elevation: 0,
       child: Padding(
@@ -2212,8 +2224,11 @@ class _WhatIfComparisonCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.compare_arrows_rounded,
-                    color: AppTheme.primary, size: 18),
+                const Icon(
+                  Icons.compare_arrows_rounded,
+                  color: AppTheme.primary,
+                  size: 18,
+                ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
@@ -2244,10 +2259,9 @@ class _WhatIfComparisonCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: AppTextSize.xs,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.55),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.55),
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
@@ -2329,8 +2343,11 @@ class _WhatIfComparisonCard extends StatelessWidget {
               const Divider(height: AppSpacing.lg),
               Row(
                 children: [
-                  const Icon(Icons.savings_rounded,
-                      color: AppTheme.accentGood, size: 16),
+                  const Icon(
+                    Icons.savings_rounded,
+                    color: AppTheme.accentGood,
+                    size: 16,
+                  ),
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
@@ -2445,12 +2462,13 @@ class _StrategySelector extends StatelessWidget {
                     Container(
                       width: 36,
                       height: 4,
-                      margin: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                      margin: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.md,
+                      ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.2),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -2460,10 +2478,9 @@ class _StrategySelector extends StatelessWidget {
                           _strategyIcon(s),
                           color: s == selected
                               ? AppTheme.primary
-                              : Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.5),
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.5),
                         ),
                         title: Text(
                           _strategyLabel(s, isEs),
@@ -2478,15 +2495,16 @@ class _StrategySelector extends StatelessWidget {
                           _strategyDesc(s, isEs),
                           style: TextStyle(
                             fontSize: AppTextSize.xs,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.55),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.55),
                           ),
                         ),
                         trailing: s == selected
-                            ? const Icon(Icons.check_rounded,
-                                color: AppTheme.primary)
+                            ? const Icon(
+                                Icons.check_rounded,
+                                color: AppTheme.primary,
+                              )
                             : null,
                         onTap: () => Navigator.pop(context, s),
                       ),
@@ -2511,8 +2529,11 @@ class _StrategySelector extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(_strategyIcon(selected),
-                    size: 20, color: AppTheme.primary),
+                Icon(
+                  _strategyIcon(selected),
+                  size: 20,
+                  color: AppTheme.primary,
+                ),
                 const SizedBox(width: AppSpacing.smPlus),
                 Expanded(
                   child: Column(
@@ -2530,10 +2551,9 @@ class _StrategySelector extends StatelessWidget {
                         _strategyDesc(selected, isEs),
                         style: TextStyle(
                           fontSize: AppTextSize.xs,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.55),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.55),
                         ),
                       ),
                     ],

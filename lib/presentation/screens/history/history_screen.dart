@@ -43,10 +43,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     final rows = await DatabaseHelper.instance.getHistory();
-    if (mounted) setState(() {
-      _rows = rows;
-      _loading = false;
-    });
+    if (mounted)
+      setState(() {
+        _rows = rows;
+        _loading = false;
+      });
   }
 
   Future<void> _delete(int id, {bool confirm = true}) async {
@@ -361,34 +362,61 @@ class _HistorySkeleton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
-        children: List.generate(3, (i) => Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.smPlus),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.mdPlus),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    _ShimmerBox(width: 100, height: 18, radius: AppRadius.sm),
-                    const Spacer(),
-                    _ShimmerBox(width: 60, height: 14, radius: AppRadius.sm),
-                  ]),
-                  const SizedBox(height: AppSpacing.smPlus),
-                  _ShimmerBox(width: 140, height: 12, radius: 4),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(children: [
-                    _ShimmerBox(width: 72, height: 24, radius: AppRadius.xxl),
-                    const SizedBox(width: AppSpacing.sm),
-                    _ShimmerBox(width: 52, height: 24, radius: AppRadius.xxl),
-                    const SizedBox(width: AppSpacing.sm),
-                    _ShimmerBox(width: 64, height: 24, radius: AppRadius.xxl),
-                  ]),
-                ],
+        children: List.generate(
+          3,
+          (i) => Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.smPlus),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.mdPlus),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        _ShimmerBox(
+                          width: 100,
+                          height: 18,
+                          radius: AppRadius.sm,
+                        ),
+                        const Spacer(),
+                        _ShimmerBox(
+                          width: 60,
+                          height: 14,
+                          radius: AppRadius.sm,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.smPlus),
+                    _ShimmerBox(width: 140, height: 12, radius: 4),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        _ShimmerBox(
+                          width: 72,
+                          height: 24,
+                          radius: AppRadius.xxl,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        _ShimmerBox(
+                          width: 52,
+                          height: 24,
+                          radius: AppRadius.xxl,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        _ShimmerBox(
+                          width: 64,
+                          height: 24,
+                          radius: AppRadius.xxl,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        )),
+        ),
       ),
     );
   }
@@ -396,7 +424,11 @@ class _HistorySkeleton extends StatelessWidget {
 
 class _ShimmerBox extends StatelessWidget {
   final double width, height, radius;
-  const _ShimmerBox({required this.width, required this.height, required this.radius});
+  const _ShimmerBox({
+    required this.width,
+    required this.height,
+    required this.radius,
+  });
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
