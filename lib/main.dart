@@ -25,6 +25,7 @@ import 'presentation/screens/debt_strategy/debt_strategy_screen.dart';
 import 'presentation/widgets/paywall_soft.dart';
 import 'presentation/widgets/paywall_hard.dart';
 import 'presentation/screens/splash/splash_screen.dart';
+import 'core/services/loan_notification_service.dart';
 
 final paywallSession = PaywallSessionService(appKey: 'loanpayoffus');
 
@@ -53,6 +54,8 @@ Future<void> main() async {
   await loadSavedLanguage();
   await themeModeService.initialize();
   await freemiumService.initialize();
+  await LoanNotificationService.initialize();
+  await LoanNotificationService.scheduleMonthlyCheckin(isSpanishNotifier.value);
   await paywallSession.initialize();
   await IAPService.instance.initialize();
   await requestCalcwiseConsent();

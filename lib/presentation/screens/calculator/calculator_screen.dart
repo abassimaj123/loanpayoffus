@@ -39,7 +39,8 @@ class CalculatorScreen extends ConsumerStatefulWidget {
   ConsumerState<CalculatorScreen> createState() => _CalculatorScreenState();
 }
 
-class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
+class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
+    with CalcwiseAutoCalcMixin {
   LoanType _type = LoanType.mortgage;
   final _amountCtrl = TextEditingController(text: '15000');
   final _rateCtrl = TextEditingController(text: '5.5');
@@ -364,7 +365,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
       ),
-      onChanged: (_) => _recalculate(),
+      onChanged: (_) => scheduleCalc(_recalculate),
     ),
   );
 

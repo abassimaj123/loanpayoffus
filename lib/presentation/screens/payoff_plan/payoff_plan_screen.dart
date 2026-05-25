@@ -22,6 +22,11 @@ import '../../../l10n/strings_es.dart';
 import '../../providers/loan_provider.dart';
 import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
+import '../../widgets/streak_card.dart';
+import '../../widgets/next_victory_card.dart';
+import '../../../core/db/debt_persistence.dart';
+import '../../../core/services/streak_service.dart';
+import '../../../domain/models/debt_item.dart';
 
 class PayoffPlanScreen extends ConsumerWidget {
   const PayoffPlanScreen({super.key});
@@ -486,6 +491,29 @@ class PayoffPlanScreen extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+
+        // ── Streak & Next Victory ──
+        const StreakCard(),
+        FutureBuilder<List<DebtItem>>(
+          future: DebtPersistence.instance.load(),
+          builder: (context, snap) {
+            final debts = snap.data ?? const [];
+            final debtMaps = debts
+                .map(
+                  (d) => <String, dynamic>{
+                    'id': d.id,
+                    'name': d.name,
+                    'balance': d.balance,
+                    'monthlyPayment': d.minPayment,
+                    'rate': d.annualRate,
+                  },
+                )
+                .toList();
+            return NextVictoryCard(
+              nextVictory: StreakService.nextVictory(debtMaps),
+            );
+          },
         ),
 
         // ── Balance over time chart ──
