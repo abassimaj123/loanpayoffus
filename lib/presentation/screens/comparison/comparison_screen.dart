@@ -295,7 +295,7 @@ class ComparisonScreen extends ConsumerWidget {
                               final extra = scenarios[idx].$1;
                               return Text(
                                 extra == 0 ? '\$0' : '+\$${extra.toInt()}',
-                                style: const TextStyle(fontSize: 10),
+                                style: const TextStyle(fontSize: AppTextSize.xs),
                               );
                             },
                           ),
@@ -306,7 +306,7 @@ class ComparisonScreen extends ConsumerWidget {
                             reservedSize: 60,
                             getTitlesWidget: (v, _) => Text(
                               '\$${(v / 1000).toStringAsFixed(0)}k',
-                              style: const TextStyle(fontSize: 10),
+                              style: const TextStyle(fontSize: AppTextSize.xs),
                             ),
                           ),
                         ),

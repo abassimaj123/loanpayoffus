@@ -1016,7 +1016,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                                         '$rank',
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 11,
+                                          fontSize: AppTextSize.xs,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -1574,7 +1574,7 @@ class _InterestBarChart extends StatelessWidget {
                         getTitlesWidget: (v, _) => Text(
                           fmt.format(v),
                           style: TextStyle(
-                            fontSize: 9,
+                            fontSize: AppTextSize.xxs,
                             color: Theme.of(
                               context,
                             ).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -1597,7 +1597,7 @@ class _InterestBarChart extends StatelessWidget {
                             child: Text(
                               labels[i],
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: AppTextSize.xs,
                                 fontWeight: FontWeight.w600,
                                 color: Theme.of(
                                   context,
@@ -1807,7 +1807,7 @@ class _DebtTile extends StatelessWidget {
                             child: Text(
                               cat.label(isEs),
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: AppTextSize.xs,
                                 fontWeight: FontWeight.w600,
                                 color: cat.color,
                               ),

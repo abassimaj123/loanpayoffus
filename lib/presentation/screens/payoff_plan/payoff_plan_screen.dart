@@ -565,7 +565,7 @@ class PayoffPlanScreen extends ConsumerWidget {
                           reservedSize: 56,
                           getTitlesWidget: (v, _) => Text(
                             '\$${(v / 1000).toStringAsFixed(0)}k',
-                            style: const TextStyle(fontSize: 9),
+                            style: const TextStyle(fontSize: AppTextSize.xxs),
                           ),
                         ),
                       ),
@@ -577,7 +577,7 @@ class PayoffPlanScreen extends ConsumerWidget {
                             if (yr == 0 || v % 24 != 0) return const SizedBox();
                             return Text(
                               'Y$yr',
-                              style: const TextStyle(fontSize: 9),
+                              style: const TextStyle(fontSize: AppTextSize.xxs),
                             );
                           },
                         ),
@@ -921,7 +921,7 @@ class _LegendDot extends StatelessWidget {
       Text(
         label,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: AppTextSize.xs,
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
           fontWeight: FontWeight.w600,
         ),
@@ -943,7 +943,7 @@ class _MiniChip extends StatelessWidget {
     ),
     child: Text(
       label,
-      style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600),
+      style: TextStyle(color: color, fontSize: AppTextSize.xs, fontWeight: FontWeight.w600),
     ),
   );
 }
@@ -984,7 +984,7 @@ class _HCell extends StatelessWidget {
       style: TextStyle(
         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
         fontWeight: FontWeight.bold,
-        fontSize: 10,
+        fontSize: AppTextSize.xs,
       ),
       textAlign: TextAlign.right,
     ),

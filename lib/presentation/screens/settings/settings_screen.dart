@@ -203,7 +203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : 'This app is for informational purposes only. Consult a qualified financial professional before making any financial decisions.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: AppTextSize.xs,
                 color: Colors.grey.shade500,
                 height: 1.5,
               ),
