@@ -102,7 +102,10 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       buf.writeln('${r.label}$pad${r.value}');
     }
     buf.writeln(sep);
-    buf.write(s.calculatedWith);
+    buf.writeln(s.calculatedWith);
+    buf.write(s is AppStringsES
+        ? '\n📄 Exporta el reporte completo en PDF →'
+        : '\n📄 Export the full PDF report in the app →');
     return buf.toString();
   }
 

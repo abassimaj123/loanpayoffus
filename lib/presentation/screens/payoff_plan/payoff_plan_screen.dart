@@ -76,7 +76,10 @@ class PayoffPlanScreen extends ConsumerWidget {
       buf.writeln('${s.saved}: ${fmt.format(result.interestSaved)}');
     }
     buf.writeln(sep);
-    buf.write(s.calculatedWith);
+    buf.writeln(s.calculatedWith);
+    buf.write(isEs
+        ? '\n📄 Exporta el reporte completo en PDF →'
+        : '\n📄 Export the full PDF report in the app →');
 
     try {
       await Share.share(
