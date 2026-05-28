@@ -179,7 +179,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                             borderRadius: BorderRadius.circular(AppRadius.xxl),
                           ),
                           child: Text(
-                            '${AmountFormatter.format(result.interestSaved, 'USD')} ${isEs ? "en interés ahorrado" : "in interest saved"}',
+                            '${AmountFormatter.ui(result.interestSaved, 'USD')} ${isEs ? "en interés ahorrado" : "in interest saved"}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: AppTextSize.md,
@@ -228,7 +228,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
-                          'Loan: ${AmountFormatter.format(loanAmt, 'USD')} @ ${input.interestRatePct}%',
+                          'Loan: ${AmountFormatter.ui(loanAmt, 'USD')} @ ${input.interestRatePct}%',
                           style: TextStyle(
                             color: Theme.of(
                               context,
@@ -270,7 +270,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                     ),
                     title: Text(s.interestSavedExtra),
                     subtitle: Text(
-                      AmountFormatter.format(result.interestSaved, 'USD'),
+                      AmountFormatter.ui(result.interestSaved, 'USD'),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.accentGood,
@@ -321,7 +321,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
-                          AmountFormatter.format(_requiredExtra!, 'USD'),
+                          AmountFormatter.ui(_requiredExtra!, 'USD'),
                           style: const TextStyle(
                             fontSize: AppTextSize.display,
                             fontWeight: FontWeight.bold,

@@ -171,7 +171,7 @@ class ComparisonScreen extends ConsumerWidget {
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                  extra == 0 ? s.none : AmountFormatter.format(extra, 'USD'),
+                                  extra == 0 ? s.none : AmountFormatter.ui(extra, 'USD'),
                                   style: TextStyle(
                                     fontWeight: isHighlight
                                         ? FontWeight.bold
@@ -197,7 +197,7 @@ class ComparisonScreen extends ConsumerWidget {
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                  AmountFormatter.format(r.interestExtra, 'USD'),
+                                  AmountFormatter.ui(r.interestExtra, 'USD'),
                                   textAlign: TextAlign.right,
                                   style: TextStyle(
                                     color: AppTheme.warning,
@@ -210,7 +210,7 @@ class ComparisonScreen extends ConsumerWidget {
                                 child: Text(
                                   extra == 0
                                       ? '-'
-                                      : AmountFormatter.format(r.interestSaved, 'USD'),
+                                      : AmountFormatter.ui(r.interestSaved, 'USD'),
                                   textAlign: TextAlign.right,
                                   style: const TextStyle(
                                     color: AppTheme.accentGood,
@@ -397,14 +397,14 @@ class _CostBreakdownCard extends StatelessWidget {
                     _BreakdownLeg(
                       color: AppTheme.primary,
                       label: isEs ? 'Capital' : 'Principal',
-                      amount: AmountFormatter.format(principal, 'USD'),
+                      amount: AmountFormatter.ui(principal, 'USD'),
                       pct: '${(pPct * 100).toStringAsFixed(0)}%',
                     ),
                     const SizedBox(width: AppSpacing.md),
                     _BreakdownLeg(
                       color: AppTheme.warning,
                       label: isEs ? 'Interés Total' : 'Total Interest',
-                      amount: AmountFormatter.format(interest, 'USD'),
+                      amount: AmountFormatter.ui(interest, 'USD'),
                       pct: '${(iPct * 100).toStringAsFixed(0)}%',
                     ),
                   ],
@@ -434,7 +434,7 @@ class _CostBreakdownCard extends StatelessWidget {
                         const SizedBox(width: AppSpacing.xs),
                         Text(
                           '${isEs ? "Con pago extra, ahorras" : "With extra payment you save"} '
-                          '${AmountFormatter.format(result.interestSaved, 'USD')} '
+                          '${AmountFormatter.ui(result.interestSaved, 'USD')} '
                           '${isEs ? "en interés" : "in interest"}',
                           style: const TextStyle(
                             color: AppTheme.accentGood,

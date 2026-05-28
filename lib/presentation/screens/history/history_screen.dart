@@ -175,7 +175,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ValueListenableBuilder<bool>(
-        valueListenable: freemiumService.isPremiumNotifier,
+        valueListenable: freemiumService.hasFullAccessNotifier,
         builder: (_, isPremium, __) => Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -293,7 +293,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 const SizedBox(height: AppSpacing.smPlus),
                 Row(
                   children: [
-                    _chip(AmountFormatter.format(amount, 'USD'), Icons.attach_money),
+                    _chip(AmountFormatter.ui(amount, 'USD'), Icons.attach_money),
                     const SizedBox(width: AppSpacing.sm),
                     _chip('$rate%', Icons.percent),
                     const SizedBox(width: AppSpacing.sm),
@@ -307,8 +307,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     extra > 0
-                        ? '${s.extraSaved}: ${AmountFormatter.format(extra, 'USD')}/mo → saved ${AmountFormatter.format(saved, 'USD')}'
-                        : '${s.interestLabel}: ${AmountFormatter.format(saved, 'USD')}',
+                        ? '${s.extraSaved}: ${AmountFormatter.ui(extra, 'USD')}/mo → saved ${AmountFormatter.ui(saved, 'USD')}'
+                        : '${s.interestLabel}: ${AmountFormatter.ui(saved, 'USD')}',
                     style: const TextStyle(
                       color: AppTheme.accentGood,
                       fontWeight: FontWeight.w600,

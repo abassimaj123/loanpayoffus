@@ -55,17 +55,17 @@ class PayoffPlanScreen extends ConsumerWidget {
     buf.writeln(
       '${s.payoff}: ${result.normalMonths ~/ 12}y ${result.normalMonths % 12}m',
     );
-    buf.writeln('${s.interest}: ${AmountFormatter.format(result.interestNormal, 'USD')}');
-    buf.writeln('${s.totalPaid}: ${AmountFormatter.format(result.totalPaidNormal, 'USD')}');
+    buf.writeln('${s.interest}: ${AmountFormatter.ui(result.interestNormal, 'USD')}');
+    buf.writeln('${s.totalPaid}: ${AmountFormatter.ui(result.totalPaidNormal, 'USD')}');
     if (result.monthsSaved > 0) {
       buf.writeln(sep);
       buf.writeln(s.withExtraLabel);
       buf.writeln(
         '${s.payoff}: ${result.extraMonths ~/ 12}y ${result.extraMonths % 12}m',
       );
-      buf.writeln('${s.interest}: ${AmountFormatter.format(result.interestExtra, 'USD')}');
-      buf.writeln('${s.totalPaid}: ${AmountFormatter.format(result.totalPaidExtra, 'USD')}');
-      buf.writeln('${s.saved}: ${AmountFormatter.format(result.interestSaved, 'USD')}');
+      buf.writeln('${s.interest}: ${AmountFormatter.ui(result.interestExtra, 'USD')}');
+      buf.writeln('${s.totalPaid}: ${AmountFormatter.ui(result.totalPaidExtra, 'USD')}');
+      buf.writeln('${s.saved}: ${AmountFormatter.ui(result.interestSaved, 'USD')}');
     }
     buf.writeln(sep);
     buf.writeln(s.calculatedWith);
@@ -163,11 +163,11 @@ class PayoffPlanScreen extends ConsumerWidget {
                 ),
                 _pdfSummaryRow(
                   s.interest,
-                  AmountFormatter.format(result.interestNormal, 'USD'),
+                  AmountFormatter.ui(result.interestNormal, 'USD'),
                 ),
                 _pdfSummaryRow(
                   s.totalPaid,
-                  AmountFormatter.format(result.totalPaidNormal, 'USD'),
+                  AmountFormatter.ui(result.totalPaidNormal, 'USD'),
                 ),
                 if (result.monthsSaved > 0) ...[
                   pw.Divider(color: PdfColors.grey400),
@@ -185,15 +185,15 @@ class PayoffPlanScreen extends ConsumerWidget {
                   ),
                   _pdfSummaryRow(
                     s.interest,
-                    AmountFormatter.format(result.interestExtra, 'USD'),
+                    AmountFormatter.ui(result.interestExtra, 'USD'),
                   ),
                   _pdfSummaryRow(
                     s.totalPaid,
-                    AmountFormatter.format(result.totalPaidExtra, 'USD'),
+                    AmountFormatter.ui(result.totalPaidExtra, 'USD'),
                   ),
                   _pdfSummaryRow(
                     s.saved,
-                    AmountFormatter.format(result.interestSaved, 'USD'),
+                    AmountFormatter.ui(result.interestSaved, 'USD'),
                     highlight: true,
                   ),
                 ],
@@ -243,10 +243,10 @@ class PayoffPlanScreen extends ConsumerWidget {
                   decoration: pw.BoxDecoration(color: bg),
                   children: [
                     _pdfCell('${r.month}'),
-                    _pdfCell(AmountFormatter.format(r.payment, 'USD')),
-                    _pdfCell(AmountFormatter.format(r.principal, 'USD')),
-                    _pdfCell(AmountFormatter.format(r.interest, 'USD')),
-                    _pdfCell(AmountFormatter.format(r.balance, 'USD'), bold: r.balance < 0.01),
+                    _pdfCell(AmountFormatter.ui(r.payment, 'USD')),
+                    _pdfCell(AmountFormatter.ui(r.principal, 'USD')),
+                    _pdfCell(AmountFormatter.ui(r.interest, 'USD')),
+                    _pdfCell(AmountFormatter.ui(r.balance, 'USD'), bold: r.balance < 0.01),
                   ],
                 );
               }),
@@ -413,7 +413,7 @@ class PayoffPlanScreen extends ConsumerWidget {
               _HeaderStat(s.months, '${result.extraMonths}', Colors.white),
               _HeaderStat(
                 s.interest,
-                AmountFormatter.format(result.interestExtra, 'USD'),
+                AmountFormatter.ui(result.interestExtra, 'USD'),
                 Colors.white70,
               ),
               _HeaderStat(
@@ -447,7 +447,7 @@ class PayoffPlanScreen extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: ValueListenableBuilder<bool>(
-                  valueListenable: freemiumService.isPremiumNotifier,
+                  valueListenable: freemiumService.hasFullAccessNotifier,
                   builder: (_, isPremium, __) => FilledButton.icon(
                     onPressed: () => _exportPdf(context, result, isEs),
                     icon: isPremium
@@ -768,7 +768,7 @@ class _MonthGroupState extends State<_MonthGroup>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${s.balance}: ${AmountFormatter.format(widget.endBalance, 'USD')}',
+                          '${s.balance}: ${AmountFormatter.ui(widget.endBalance, 'USD')}',
                           style: TextStyle(
                             fontSize: AppTextSize.xs,
                             color: Theme.of(
@@ -784,13 +784,13 @@ class _MonthGroupState extends State<_MonthGroup>
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       _MiniChip(
-                        label: AmountFormatter.format(widget.totalPayment, 'USD'),
+                        label: AmountFormatter.ui(widget.totalPayment, 'USD'),
                         color: AppTheme.primaryDark,
                       ),
                       const SizedBox(height: 3),
                       _MiniChip(
                         label:
-                            '${AmountFormatter.format(widget.totalInterest, 'USD')} int',
+                            '${AmountFormatter.ui(widget.totalInterest, 'USD')} int',
                         color: AppTheme.warning,
                       ),
                     ],
@@ -845,15 +845,15 @@ class _MonthGroupState extends State<_MonthGroup>
                 child: Row(
                   children: [
                     _Cell('${e.month}', 1, bold: last),
-                    _Cell(AmountFormatter.format(e.payment, 'USD'), 2, bold: last),
-                    _Cell(AmountFormatter.format(e.principal, 'USD'), 2, bold: last),
+                    _Cell(AmountFormatter.ui(e.payment, 'USD'), 2, bold: last),
+                    _Cell(AmountFormatter.ui(e.principal, 'USD'), 2, bold: last),
                     _Cell(
-                      AmountFormatter.format(e.interest, 'USD'),
+                      AmountFormatter.ui(e.interest, 'USD'),
                       2,
                       color: AppTheme.warning,
                     ),
                     _Cell(
-                      AmountFormatter.format(e.balance, 'USD'),
+                      AmountFormatter.ui(e.balance, 'USD'),
                       2,
                       bold: last,
                       color: last ? AppTheme.accentGood : null,

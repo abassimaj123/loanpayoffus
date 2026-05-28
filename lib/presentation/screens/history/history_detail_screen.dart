@@ -40,16 +40,16 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
   List<({String label, String value})> _inputRows(AppStrings s) => [
     (label: s.loanTypeLabel, value: (_e['loan_type'] as String? ?? '—')),
-    (label: s.loanAmount, value: AmountFormatter.format(_d('loan_amount'), 'USD')),
+    (label: s.loanAmount, value: AmountFormatter.ui(_d('loan_amount'), 'USD')),
     (
       label: s.interestRate,
       value: '${_d('interest_rate').toStringAsFixed(2)}%',
     ),
-    (label: s.monthlyPayment, value: AmountFormatter.format(_d('monthly_payment'), 'USD')),
+    (label: s.monthlyPayment, value: AmountFormatter.ui(_d('monthly_payment'), 'USD')),
     if (_d('extra_payment') > 0)
       (
         label: s.extraPayment,
-        value: '${AmountFormatter.format(_d('extra_payment'), 'USD')}/mo',
+        value: '${AmountFormatter.ui(_d('extra_payment'), 'USD')}/mo',
       ),
   ];
 
@@ -60,7 +60,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       (label: s.payoff, value: '${months ~/ 12}y ${months % 12}m'),
       (
         label: s.interestLabel,
-        value: AmountFormatter.format(
+        value: AmountFormatter.ui(
           _d('interest_rate') > 0
               ? _d('loan_amount') * _d('interest_rate') / 100 * months / 12
               : 0,
@@ -68,7 +68,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         ),
       ),
       if (saved > 0)
-        (label: s.interestSavedExtra, value: AmountFormatter.format(saved, 'USD')),
+        (label: s.interestSavedExtra, value: AmountFormatter.ui(saved, 'USD')),
     ];
   }
 
@@ -280,7 +280,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         final ts = DateTime.tryParse(_e['created_at'] as String? ?? '');
 
         return ValueListenableBuilder<bool>(
-          valueListenable: freemiumService.isPremiumNotifier,
+          valueListenable: freemiumService.hasFullAccessNotifier,
           builder: (context, isPremium, _) {
             return Scaffold(
               appBar: AppBar(

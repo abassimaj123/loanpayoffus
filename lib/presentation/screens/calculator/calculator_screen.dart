@@ -252,11 +252,11 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
       final shareText = isEs
           ? 'Estoy libre de deudas gracias a LoanPayoff US! '
                 'Pagué mi ${input.loanType.label} completamente. '
-                'Ahorro: ${AmountFormatter.format(result.interestSaved, 'USD')} en intereses. '
+                'Ahorro: ${AmountFormatter.ui(result.interestSaved, 'USD')} en intereses. '
                 'Fecha libre: $dateStr'
           : 'I\'m debt-free with LoanPayoff US! '
                 'Paid off my ${input.loanType.label}. '
-                'Saved ${AmountFormatter.format(result.interestSaved, 'USD')} in interest. '
+                'Saved ${AmountFormatter.ui(result.interestSaved, 'USD')} in interest. '
                 'Debt-free by: $dateStr';
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -615,8 +615,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                               ),
                               child: Text(
                                 _extraOneTime
-                                    ? AmountFormatter.format(_extra, 'USD')
-                                    : '${AmountFormatter.format(_extra, 'USD')}/mo',
+                                    ? AmountFormatter.ui(_extra, 'USD')
+                                    : '${AmountFormatter.ui(_extra, 'USD')}/mo',
                                 style: TextStyle(
                                   color: _extra > 0
                                       ? Colors.white
@@ -642,7 +642,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                             max: _extraOneTime ? 10000 : 500,
                             divisions: _extraOneTime ? 100 : 50,
                             label:
-                                '${AmountFormatter.format(_extraSlider, 'USD')}${_extraOneTime ? '' : '/mo'}',
+                                '${AmountFormatter.ui(_extraSlider, 'USD')}${_extraOneTime ? '' : '/mo'}',
                             activeColor: AppTheme.primary,
                             onChanged: (v) {
                               // Snap to meaningful ticks when in monthly mode
@@ -826,7 +826,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                                   height: AppSpacing.sm,
                                                 ),
                                                 Text(
-                                                  AmountFormatter.format(result.interestSaved, 'USD'),
+                                                  AmountFormatter.ui(result.interestSaved, 'USD'),
                                                   style: const TextStyle(
                                                     color: Colors.white,
                                                     fontSize: AppTextSize.hero,
@@ -965,11 +965,11 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                                   ),
                                                   (
                                                     s.interest,
-                                                    AmountFormatter.format(result.interestNormal, 'USD'),
+                                                    AmountFormatter.ui(result.interestNormal, 'USD'),
                                                   ),
                                                   (
                                                     s.totalPaid,
-                                                    AmountFormatter.format(result.totalPaidNormal, 'USD'),
+                                                    AmountFormatter.ui(result.totalPaidNormal, 'USD'),
                                                   ),
                                                 ],
                                                 color: Theme.of(
@@ -985,8 +985,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                               Expanded(
                                                 child: _InfoCard(
                                                   title: _extraOneTime
-                                                      ? '${AmountFormatter.format(_extra, 'USD')} ${isEs ? "único" : "one-time"}'
-                                                      : '+${AmountFormatter.format(_extra, 'USD')}/mo',
+                                                      ? '${AmountFormatter.ui(_extra, 'USD')} ${isEs ? "único" : "one-time"}'
+                                                      : '+${AmountFormatter.ui(_extra, 'USD')}/mo',
                                                   rows: [
                                                     (
                                                       s.payoff,
@@ -994,11 +994,11 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                                     ),
                                                     (
                                                       s.interest,
-                                                      AmountFormatter.format(result.interestExtra, 'USD'),
+                                                      AmountFormatter.ui(result.interestExtra, 'USD'),
                                                     ),
                                                     (
                                                       s.totalPaid,
-                                                      AmountFormatter.format(result.totalPaidExtra, 'USD'),
+                                                      AmountFormatter.ui(result.totalPaidExtra, 'USD'),
                                                     ),
                                                   ],
                                                   color: AppTheme.accentGood,
@@ -1210,8 +1210,8 @@ class _DebtFreeDateBanner extends StatelessWidget {
     final yrs = result.monthsSaved ~/ 12;
     final mos = result.monthsSaved % 12;
     final soonerLabel = isEs
-        ? '${yrs > 0 ? "${yrs}a " : ""}${mos}m antes — ahorras ${AmountFormatter.format(result.interestSaved, 'USD')}'
-        : '${yrs > 0 ? "${yrs}y " : ""}${mos}m sooner — save ${AmountFormatter.format(result.interestSaved, 'USD')}';
+        ? '${yrs > 0 ? "${yrs}a " : ""}${mos}m antes — ahorras ${AmountFormatter.ui(result.interestSaved, 'USD')}'
+        : '${yrs > 0 ? "${yrs}y " : ""}${mos}m sooner — save ${AmountFormatter.ui(result.interestSaved, 'USD')}';
     final headerLabel = isEs ? 'LIBRE DE DEUDA EL' : 'DEBT-FREE BY';
 
     return Container(
@@ -1602,14 +1602,14 @@ class _BiweeklyCard extends StatelessWidget {
               Expanded(
                 child: _BwRow(
                   label: isEs ? 'Pago c/2 semanas' : 'Payment every 2 wks',
-                  value: AmountFormatter.format(biweeklyPayment, 'USD'),
+                  value: AmountFormatter.ui(biweeklyPayment, 'USD'),
                   color: AppTheme.primary,
                 ),
               ),
               Expanded(
                 child: _BwRow(
                   label: isEs ? 'Total en interés' : 'Total interest',
-                  value: AmountFormatter.format(totalInterest, 'USD'),
+                  value: AmountFormatter.ui(totalInterest, 'USD'),
                   color: AppTheme.warning,
                 ),
               ),
@@ -1628,7 +1628,7 @@ class _BiweeklyCard extends StatelessWidget {
               Expanded(
                 child: _BwRow(
                   label: isEs ? 'Interés ahorrado' : 'Interest saved',
-                  value: AmountFormatter.format(interestSaved, 'USD'),
+                  value: AmountFormatter.ui(interestSaved, 'USD'),
                   color: AppTheme.accentGood,
                 ),
               ),
