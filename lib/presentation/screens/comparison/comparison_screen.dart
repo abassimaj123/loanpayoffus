@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../../domain/models/loan_input.dart';
@@ -10,7 +9,6 @@ import '../../../domain/usecases/loan_calculator.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import '../../providers/loan_provider.dart';
-import 'package:calcwise_core/calcwise_core.dart' show CalcwiseAdFooter;
 import 'package:calcwise_core/calcwise_core.dart';
 
 class ComparisonScreen extends ConsumerWidget {
@@ -34,11 +32,6 @@ class ComparisonScreen extends ConsumerWidget {
     bool isEs,
   ) {
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
-    final fmt = NumberFormat.currency(
-      locale: 'en_US',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
 
     if (result == null) {
       return Column(
@@ -178,7 +171,7 @@ class ComparisonScreen extends ConsumerWidget {
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                  extra == 0 ? s.none : fmt.format(extra),
+                                  extra == 0 ? s.none : AmountFormatter.ui(extra, 'USD'),
                                   style: TextStyle(
                                     fontWeight: isHighlight
                                         ? FontWeight.bold
@@ -204,7 +197,7 @@ class ComparisonScreen extends ConsumerWidget {
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                  fmt.format(r.interestExtra),
+                                  AmountFormatter.ui(r.interestExtra, 'USD'),
                                   textAlign: TextAlign.right,
                                   style: TextStyle(
                                     color: AppTheme.warning,
@@ -217,7 +210,7 @@ class ComparisonScreen extends ConsumerWidget {
                                 child: Text(
                                   extra == 0
                                       ? '-'
-                                      : fmt.format(r.interestSaved),
+                                      : AmountFormatter.ui(r.interestSaved, 'USD'),
                                   textAlign: TextAlign.right,
                                   style: const TextStyle(
                                     color: AppTheme.accentGood,
@@ -295,7 +288,7 @@ class ComparisonScreen extends ConsumerWidget {
                               final extra = scenarios[idx].$1;
                               return Text(
                                 extra == 0 ? '\$0' : '+\$${extra.toInt()}',
-                                style: const TextStyle(fontSize: 10),
+                                style: const TextStyle(fontSize: AppTextSize.xs),
                               );
                             },
                           ),
@@ -306,7 +299,7 @@ class ComparisonScreen extends ConsumerWidget {
                             reservedSize: 60,
                             getTitlesWidget: (v, _) => Text(
                               '\$${(v / 1000).toStringAsFixed(0)}k',
-                              style: const TextStyle(fontSize: 10),
+                              style: const TextStyle(fontSize: AppTextSize.xs),
                             ),
                           ),
                         ),
@@ -326,10 +319,9 @@ class ComparisonScreen extends ConsumerWidget {
                 _CostBreakdownCard(
                   result: result,
                   input: input,
-                  fmt: fmt,
                   isEs: isEs,
                 ),
-                const SizedBox(height: 80),
+                const SizedBox(height: AppSpacing.listBottomInset),
               ],
             ),
           ),
@@ -344,12 +336,10 @@ class ComparisonScreen extends ConsumerWidget {
 class _CostBreakdownCard extends StatelessWidget {
   final PayoffResult result;
   final LoanInput input;
-  final NumberFormat fmt;
   final bool isEs;
   const _CostBreakdownCard({
     required this.result,
     required this.input,
-    required this.fmt,
     required this.isEs,
   });
 
@@ -407,14 +397,14 @@ class _CostBreakdownCard extends StatelessWidget {
                     _BreakdownLeg(
                       color: AppTheme.primary,
                       label: isEs ? 'Capital' : 'Principal',
-                      amount: fmt.format(principal),
+                      amount: AmountFormatter.ui(principal, 'USD'),
                       pct: '${(pPct * 100).toStringAsFixed(0)}%',
                     ),
                     const SizedBox(width: AppSpacing.md),
                     _BreakdownLeg(
                       color: AppTheme.warning,
                       label: isEs ? 'Interés Total' : 'Total Interest',
-                      amount: fmt.format(interest),
+                      amount: AmountFormatter.ui(interest, 'USD'),
                       pct: '${(iPct * 100).toStringAsFixed(0)}%',
                     ),
                   ],
@@ -444,7 +434,7 @@ class _CostBreakdownCard extends StatelessWidget {
                         const SizedBox(width: AppSpacing.xs),
                         Text(
                           '${isEs ? "Con pago extra, ahorras" : "With extra payment you save"} '
-                          '${fmt.format(result.interestSaved)} '
+                          '${AmountFormatter.ui(result.interestSaved, 'USD')} '
                           '${isEs ? "en interés" : "in interest"}',
                           style: const TextStyle(
                             color: AppTheme.accentGood,

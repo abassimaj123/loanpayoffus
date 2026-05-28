@@ -1,8 +1,6 @@
-import 'package:calcwise_core/calcwise_core.dart'
-    show PaywallTrigger, CalcwiseAdFooter;
-import 'package:calcwise_core/calcwise_core.dart';
+import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -26,16 +24,6 @@ class HistoryDetailScreen extends StatefulWidget {
 }
 
 class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
-  final _fmtCur = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: '\$',
-    decimalDigits: 2,
-  );
-  final _fmtInt = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: '\$',
-    decimalDigits: 0,
-  );
   final _fmtDate = DateFormat('MMM d, yyyy · h:mm a');
 
   Map<String, dynamic> get _e => widget.entry;
@@ -52,16 +40,16 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
   List<({String label, String value})> _inputRows(AppStrings s) => [
     (label: s.loanTypeLabel, value: (_e['loan_type'] as String? ?? '—')),
-    (label: s.loanAmount, value: _fmtInt.format(_d('loan_amount'))),
+    (label: s.loanAmount, value: AmountFormatter.ui(_d('loan_amount'), 'USD')),
     (
       label: s.interestRate,
       value: '${_d('interest_rate').toStringAsFixed(2)}%',
     ),
-    (label: s.monthlyPayment, value: _fmtCur.format(_d('monthly_payment'))),
+    (label: s.monthlyPayment, value: AmountFormatter.ui(_d('monthly_payment'), 'USD')),
     if (_d('extra_payment') > 0)
       (
         label: s.extraPayment,
-        value: '${_fmtCur.format(_d('extra_payment'))}/mo',
+        value: '${AmountFormatter.ui(_d('extra_payment'), 'USD')}/mo',
       ),
   ];
 
@@ -72,14 +60,15 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       (label: s.payoff, value: '${months ~/ 12}y ${months % 12}m'),
       (
         label: s.interestLabel,
-        value: _fmtCur.format(
+        value: AmountFormatter.ui(
           _d('interest_rate') > 0
               ? _d('loan_amount') * _d('interest_rate') / 100 * months / 12
               : 0,
+          'USD',
         ),
       ),
       if (saved > 0)
-        (label: s.interestSavedExtra, value: _fmtInt.format(saved)),
+        (label: s.interestSavedExtra, value: AmountFormatter.ui(saved, 'USD')),
     ];
   }
 
@@ -102,7 +91,10 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       buf.writeln('${r.label}$pad${r.value}');
     }
     buf.writeln(sep);
-    buf.write(s.calculatedWith);
+    buf.writeln(s.calculatedWith);
+    buf.write(s is AppStringsES
+        ? '\n📄 Exporta el reporte completo en PDF →'
+        : '\n📄 Export the full PDF report in the app →');
     return buf.toString();
   }
 
@@ -288,7 +280,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         final ts = DateTime.tryParse(_e['created_at'] as String? ?? '');
 
         return ValueListenableBuilder<bool>(
-          valueListenable: freemiumService.isPremiumNotifier,
+          valueListenable: freemiumService.hasFullAccessNotifier,
           builder: (context, isPremium, _) {
             return Scaffold(
               appBar: AppBar(
@@ -304,13 +296,6 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                     icon: const Icon(Icons.share_rounded),
                     tooltip: s.shareLabel,
                     onPressed: () => _share(context, s),
-                  ),
-                  IconButton(
-                    icon: isPremium
-                        ? const Icon(Icons.picture_as_pdf_rounded)
-                        : const Icon(Icons.lock_outline),
-                    tooltip: s.exportPdf,
-                    onPressed: () => _exportPdf(context, s),
                   ),
                 ],
               ),
@@ -430,7 +415,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                           ],
                         ),
 
-                        const SizedBox(height: 80),
+                        const SizedBox(height: AppSpacing.listBottomInset),
                       ],
                     ),
                   ),

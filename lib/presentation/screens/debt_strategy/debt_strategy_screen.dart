@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/freemium/freemium_service.dart';
@@ -14,7 +14,6 @@ import '../../../domain/models/debt_payment.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../widgets/paywall_soft.dart';
 import 'payments_history_screen.dart';
-import 'package:calcwise_core/calcwise_core.dart' show CalcwiseAdFooter;
 import 'package:calcwise_core/calcwise_core.dart';
 
 // ---------------------------------------------------------------------------
@@ -39,23 +38,30 @@ class DebtStrategyScreen extends StatefulWidget {
 }
 
 class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
-  final _fmt = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: '\$',
-    decimalDigits: 0,
-  );
-  final _fmtCents = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: '\$',
-    decimalDigits: 2,
-  );
   final _extraCtrl = TextEditingController(text: '0');
+
+  // ── Snowflake (one-time windfall) ─────────────────────────────────────────
+  final _snowflakeCtrl = TextEditingController();
+  final _snowflakeMonthCtrl = TextEditingController(text: '1');
+  bool _snowflakeEnabled = false;
+  double _snowflakeAmount = 0;
+  int _snowflakeMonth = 1;
+  EngineResult? _snowflakeResult; // result with snowflake applied
+
+  // ── What-If extra monthly ─────────────────────────────────────────────────
+  double _whatIfExtra = 0;
+  double _whatIfSlider = 0;
+  final _whatIfCtrl = TextEditingController(text: '0');
+  EngineResult? _whatIfResult;
 
   List<DebtItem> _debts = [];
 
   /// Per-debt-id aggregates loaded from sqlite.
   Map<String, double> _totalPaid = {};
   Map<String, DateTime?> _lastPaid = {};
+
+  // Custom priority reorder
+  List<String> _customOrder = []; // debt ids in user-defined order
 
   PayoffStrategy _strategy = PayoffStrategy.avalanche;
   double _extra = 0;
@@ -81,6 +87,9 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   void dispose() {
     isSpanishNotifier.removeListener(_onLangChange);
     _extraCtrl.dispose();
+    _snowflakeCtrl.dispose();
+    _snowflakeMonthCtrl.dispose();
+    _whatIfCtrl.dispose();
     super.dispose();
   }
 
@@ -109,6 +118,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
           ];
     setState(() {
       _debts = initial;
+      // Restore priority order from saved data
+      _customOrder = initial.map((d) => d.id).toList();
       _loaded = true;
     });
     await _refreshPaymentAggregates();
@@ -131,21 +142,57 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
 
   void _persist() => DebtPersistence.instance.save(_debts);
 
+  /// Returns debts with `priority` field set according to `_customOrder`.
+  List<DebtItem> get _debtsWithPriority {
+    if (_strategy != PayoffStrategy.customPriority) return _debts;
+    return _debts.map((d) {
+      final idx = _customOrder.indexOf(d.id);
+      return d.copyWith(priority: idx < 0 ? 999 : idx);
+    }).toList();
+  }
+
   void _runCalc() {
     if (_debts.isEmpty) {
       setState(() {
         _strategyResult = null;
         _minimumResult = null;
+        _snowflakeResult = null;
+        _whatIfResult = null;
       });
       return;
     }
+
+    final debtsForCalc = _debtsWithPriority;
+
+    final snowflake = _snowflakeEnabled && _snowflakeAmount > 0
+        ? SnowflakePayment(
+            amount: _snowflakeAmount,
+            month: _snowflakeMonth.clamp(1, 1200),
+          )
+        : null;
+
     setState(() {
       _strategyResult = DebtStrategyEngine.run(
-        debts: _debts,
+        debts: debtsForCalc,
         extraMonthly: _extra,
         strategy: _strategy,
       );
-      _minimumResult = DebtStrategyEngine.runMinimumOnly(_debts);
+      _minimumResult = DebtStrategyEngine.runMinimumOnly(debtsForCalc);
+      _snowflakeResult = snowflake != null
+          ? DebtStrategyEngine.run(
+              debts: debtsForCalc,
+              extraMonthly: _extra,
+              strategy: _strategy,
+              snowflake: snowflake,
+            )
+          : null;
+      _whatIfResult = _whatIfExtra > 0
+          ? DebtStrategyEngine.run(
+              debts: debtsForCalc,
+              extraMonthly: _extra + _whatIfExtra,
+              strategy: _strategy,
+            )
+          : null;
     });
   }
 
@@ -336,6 +383,9 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
         _debts[index] = result;
       } else {
         _debts.add(result);
+        if (!_customOrder.contains(result.id)) {
+          _customOrder.add(result.id);
+        }
       }
     });
     if (isNewDebt) {
@@ -371,16 +421,16 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.mdPlus,
-          vertical: AppSpacing.md,
-        ),
       ),
     ),
   );
 
   void _deleteDebt(int index) {
-    setState(() => _debts.removeAt(index));
+    setState(() {
+      final id = _debts[index].id;
+      _debts.removeAt(index);
+      _customOrder.remove(id);
+    });
     _persist();
     _runCalc();
   }
@@ -556,8 +606,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
       SnackBar(
         content: Text(
           isSpanishNotifier.value
-              ? 'Pago registrado: ${_fmtCents.format(saved.amount)}'
-              : 'Payment logged: ${_fmtCents.format(saved.amount)}',
+              ? 'Pago registrado: ${AmountFormatter.ui(saved.amount, 'USD')}'
+              : 'Payment logged: ${AmountFormatter.ui(saved.amount, 'USD')}',
         ),
         backgroundColor: AppTheme.accentGood,
         duration: const Duration(seconds: 2),
@@ -682,7 +732,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         SizedBox(
                           width: 70,
                           child: Text(
-                            _fmt.format(a.interest),
+                            AmountFormatter.ui(a.interest, 'USD'),
                             textAlign: TextAlign.right,
                             style: const TextStyle(
                               fontSize: AppTextSize.xs,
@@ -693,7 +743,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         SizedBox(
                           width: 70,
                           child: Text(
-                            _fmt.format(a.principal),
+                            AmountFormatter.ui(a.principal, 'USD'),
                             textAlign: TextAlign.right,
                             style: const TextStyle(
                               fontSize: AppTextSize.xs,
@@ -706,7 +756,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                           child: Text(
                             a.endingBalance < 1
                                 ? (isEs ? '¡Pagado!' : 'Paid off!')
-                                : _fmt.format(a.endingBalance),
+                                : AmountFormatter.ui(a.endingBalance, 'USD'),
                             textAlign: TextAlign.right,
                             style: TextStyle(
                               fontSize: AppTextSize.xs,
@@ -752,7 +802,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     final isEs = isSpanishNotifier.value;
 
     if (!_loaded) {
-      return const Center(child: CircularProgressIndicator());
+      return const _DebtStrategySkeleton();
     }
 
     final interestSaved = (_minimumResult != null && _strategyResult != null)
@@ -774,57 +824,16 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   title: isEs ? 'Estrategia de Pago' : 'Payoff Strategy',
                 ),
                 const SizedBox(height: AppSpacing.smPlus),
-                SegmentedButton<PayoffStrategy>(
-                  segments: [
-                    ButtonSegment(
-                      value: PayoffStrategy.avalanche,
-                      label: Text(isEs ? 'Avalancha' : 'Avalanche'),
-                      icon: const Icon(Icons.trending_down_rounded),
-                    ),
-                    ButtonSegment(
-                      value: PayoffStrategy.snowball,
-                      label: Text(isEs ? 'Bola de Nieve' : 'Snowball'),
-                      icon: const Icon(Icons.ac_unit_rounded),
-                    ),
-                  ],
-                  selected: {_strategy},
-                  onSelectionChanged: (v) {
-                    setState(() => _strategy = v.first);
+                _StrategySelector(
+                  selected: _strategy,
+                  isEs: isEs,
+                  onChanged: (s) {
+                    setState(() => _strategy = s);
                     AnalyticsService.instance.logStrategySelected(
-                      strategy: _strategy.name,
+                      strategy: s.name,
                     );
                     _runCalc();
                   },
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return AppTheme.primary;
-                      }
-                      return null;
-                    }),
-                    foregroundColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return Colors.white;
-                      }
-                      return null;
-                    }),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  _strategy == PayoffStrategy.avalanche
-                      ? (isEs
-                            ? 'Paga primero la deuda con la tasa más alta. Ahorra más en intereses.'
-                            : 'Pay highest-rate debt first. Saves the most interest.')
-                      : (isEs
-                            ? 'Paga primero la deuda con el saldo más bajo. Victorias rápidas.'
-                            : 'Pay lowest-balance debt first. Quick wins.'),
-                  style: TextStyle(
-                    fontSize: AppTextSize.sm,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.55),
-                  ),
                 ),
 
                 const SizedBox(height: AppSpacing.xxl),
@@ -881,7 +890,6 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     onDismissed: (_) => _deleteDebt(e.key),
                     child: _DebtTile(
                       debt: e.value,
-                      fmt: _fmt,
                       totalPaid: _totalPaid[e.value.id] ?? 0,
                       lastPaid: _lastPaid[e.value.id],
                       isEs: isEs,
@@ -907,6 +915,132 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     minimumSize: const Size.fromHeight(44),
                   ),
                 ),
+
+                // ── Custom order drag list ─────────────────────────────────────
+                if (_strategy == PayoffStrategy.customPriority &&
+                    _debts.length > 1) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.drag_indicator_rounded,
+                        size: 16,
+                        color: AppTheme.primary,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        isEs
+                            ? 'Arrastra para ordenar prioridad'
+                            : 'Drag to set payoff priority',
+                        style: const TextStyle(
+                          fontSize: AppTextSize.sm,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  ReorderableListView(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onReorder: (oldIdx, newIdx) {
+                      setState(() {
+                        // Ensure customOrder has all current debt ids
+                        for (final d in _debts) {
+                          if (!_customOrder.contains(d.id)) {
+                            _customOrder.add(d.id);
+                          }
+                        }
+                        if (newIdx > oldIdx) newIdx--;
+                        final id = _customOrder.removeAt(oldIdx);
+                        _customOrder.insert(newIdx, id);
+                      });
+                      _runCalc();
+                    },
+                    children: [
+                      for (final id in _customOrder.where(
+                        (id) => _debts.any((d) => d.id == id),
+                      ))
+                        Builder(
+                          key: ValueKey(id),
+                          builder: (ctx) {
+                            final debt = _debts.firstWhere((d) => d.id == id);
+                            final rank =
+                                _customOrder
+                                    .where((i) => _debts.any((d) => d.id == i))
+                                    .toList()
+                                    .indexOf(id) +
+                                1;
+                            return Container(
+                              margin: const EdgeInsets.only(
+                                bottom: AppSpacing.xs,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.mdPlus,
+                                vertical: AppSpacing.smPlus,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerLowest,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.lg,
+                                ),
+                                border: Border.all(
+                                  color: Theme.of(context).dividerColor,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '$rank',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: AppTextSize.xs,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.smPlus),
+                                  Icon(
+                                    debt.category.icon,
+                                    size: 16,
+                                    color: debt.category.color,
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                    child: Text(
+                                      debt.name,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: AppTextSize.body,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.drag_handle_rounded,
+                                    size: 20,
+                                    color: Colors.grey,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ],
 
                 const SizedBox(height: AppSpacing.xxl),
 
@@ -942,10 +1076,6 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         decoration: InputDecoration(
                           prefixText: '\$',
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.smPlus,
-                            vertical: AppSpacing.sm,
-                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(
                               AppRadius.mdPlus,
@@ -969,7 +1099,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   min: 0,
                   max: 1000,
                   divisions: 100,
-                  label: _fmt.format(_extraSlider),
+                  label: AmountFormatter.ui(_extraSlider, 'USD'),
                   activeColor: AppTheme.primary,
                   onChanged: (v) {
                     setState(() {
@@ -980,6 +1110,206 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     _runCalc();
                   },
                 ),
+
+                const SizedBox(height: AppSpacing.xxl),
+
+                // ── Snowflake (one-time windfall payment) ─────────────────────
+                _SectionHeader(
+                  icon: Icons.auto_awesome_rounded,
+                  title: isEs
+                      ? 'Pago Único (Windfall)'
+                      : 'Windfall Payment (one-time)',
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  isEs
+                      ? 'Aplica un bono, reembolso de impuestos o fondos extra'
+                      : 'Apply a bonus, tax refund, or any extra funds',
+                  style: TextStyle(
+                    fontSize: AppTextSize.sm,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.smPlus),
+                Row(
+                  children: [
+                    Switch(
+                      value: _snowflakeEnabled,
+                      activeColor: AppTheme.primary,
+                      onChanged: (v) {
+                        setState(() => _snowflakeEnabled = v);
+                        _runCalc();
+                      },
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      isEs ? 'Activar pago único' : 'Enable windfall payment',
+                      style: const TextStyle(fontSize: AppTextSize.body),
+                    ),
+                  ],
+                ),
+                if (_snowflakeEnabled) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _field(
+                          isEs ? 'Monto (\$)' : 'Windfall Amount (\$)',
+                          _snowflakeCtrl,
+                          numeric: true,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      SizedBox(
+                        width: 110,
+                        child: _field(
+                          isEs ? 'En el mes' : 'Apply in month',
+                          _snowflakeMonthCtrl,
+                          numeric: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            final amt = _parseNum(_snowflakeCtrl.text);
+                            final mo =
+                                int.tryParse(_snowflakeMonthCtrl.text.trim()) ??
+                                1;
+                            setState(() {
+                              _snowflakeAmount = amt;
+                              _snowflakeMonth = mo < 1 ? 1 : mo;
+                            });
+                            _runCalc();
+                          },
+                          icon: const Icon(Icons.bolt_rounded, size: 16),
+                          label: Text(
+                            isEs ? 'Aplicar pago único' : 'Apply Windfall',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.primary,
+                            side: const BorderSide(color: AppTheme.primary),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.mdPlus,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_snowflakeResult != null && _strategyResult != null) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    _SnowflakeResultBanner(
+                      baseline: _strategyResult!,
+                      withSnowflake: _snowflakeResult!,
+                      snowflakeAmount: _snowflakeAmount,
+                      snowflakeMonth: _snowflakeMonth,
+                      isEs: isEs,
+                    ),
+                  ],
+                ],
+
+                const SizedBox(height: AppSpacing.xxl),
+
+                // ── What-If extra monthly payment ────────────────────────────
+                _SectionHeader(
+                  icon: Icons.help_outline_rounded,
+                  title: isEs
+                      ? '¿Qué pasa si pago más?'
+                      : 'What-If Extra Payment',
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  isEs
+                      ? '¿Cuánto ahorrarías pagando más cada mes?'
+                      : 'How much would you save paying more each month?',
+                  style: TextStyle(
+                    fontSize: AppTextSize.sm,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.smPlus),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        isEs
+                            ? 'Extra por mes adicional'
+                            : 'Additional monthly payment',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: AppTextSize.body,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 100,
+                      child: TextField(
+                        controller: _whatIfCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                        ],
+                        textAlign: TextAlign.right,
+                        decoration: InputDecoration(
+                          prefixText: '\$',
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.mdPlus,
+                            ),
+                          ),
+                        ),
+                        onChanged: (v) {
+                          final val = _parseNum(v);
+                          setState(() {
+                            _whatIfExtra = val;
+                            _whatIfSlider = val.clamp(0, 500);
+                          });
+                          _runCalc();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: _whatIfSlider,
+                  min: 0,
+                  max: 500,
+                  divisions: 50,
+                  label: '+${AmountFormatter.ui(_whatIfSlider, 'USD')}/mo',
+                  activeColor: AppTheme.accentGood,
+                  onChanged: (v) {
+                    setState(() {
+                      _whatIfExtra = v;
+                      _whatIfSlider = v;
+                      _whatIfCtrl.text = v.toInt().toString();
+                    });
+                    _runCalc();
+                  },
+                ),
+                if (_whatIfResult != null &&
+                    _strategyResult != null &&
+                    _whatIfExtra > 0) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  _WhatIfComparisonCard(
+                    baseline: _strategyResult!,
+                    withExtra: _whatIfResult!,
+                    extraAmount: _whatIfExtra,
+                    isEs: isEs,
+                  ),
+                ],
 
                 const SizedBox(height: AppSpacing.lg),
 
@@ -1014,7 +1344,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                             : 'Debt-free: $dateLabel';
                         return Semantics(
                           label:
-                              '${isEs ? "Libre de deudas en" : "Debt-free in"} $timeLabel. ${isEs ? "Interés total" : "Total interest"}: ${_fmt.format(interest)}${interestSaved > 0 && _extra > 0 ? ". ${isEs ? "Ahorras" : "You save"} ${_fmt.format(interestSaved)}" : ""}',
+                              '${isEs ? "Libre de deudas en" : "Debt-free in"} $timeLabel. ${isEs ? "Interés total" : "Total interest"}: ${AmountFormatter.ui(interest, 'USD')}${interestSaved > 0 && _extra > 0 ? ". ${isEs ? "Ahorras" : "You save"} ${AmountFormatter.ui(interestSaved, 'USD')}" : ""}',
                           child: CalcwiseHeroCard(
                             label: isEs ? 'LIBRE DE DEUDAS EN' : 'DEBT-FREE IN',
                             value: timeLabel,
@@ -1024,14 +1354,14 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                                 label: isEs
                                     ? 'Interés total'
                                     : 'Total interest',
-                                value: _fmt.format(interest),
+                                value: AmountFormatter.ui(interest, 'USD'),
                               ),
                               if (interestSaved > 0 && _extra > 0)
                                 (
                                   label: isEs
                                       ? 'Ahorro vs mínimos'
                                       : 'Saved vs minimum',
-                                  value: _fmt.format(interestSaved),
+                                  value: AmountFormatter.ui(interestSaved, 'USD'),
                                 ),
                             ],
                           ),
@@ -1046,7 +1376,6 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     _InterestBarChart(
                       minimumInterest: _minimumResult!.totalInterest,
                       strategyInterest: _strategyResult!.totalInterest,
-                      fmt: _fmt,
                       isEs: isEs,
                       strategy: _strategy,
                     ),
@@ -1062,7 +1391,6 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     (e) => _PayoffOrderTile(
                       rank: e.key + 1,
                       summary: e.value,
-                      fmt: _fmt,
                       isEs: isEs,
                     ),
                   ),
@@ -1102,7 +1430,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   ),
                 ],
 
-                const SizedBox(height: 80),
+                const SizedBox(height: AppSpacing.listBottomInset),
               ],
             ),
           ),
@@ -1124,23 +1452,19 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
 class _InterestBarChart extends StatelessWidget {
   final double minimumInterest;
   final double strategyInterest;
-  final NumberFormat fmt;
   final bool isEs;
   final PayoffStrategy strategy;
 
   const _InterestBarChart({
     required this.minimumInterest,
     required this.strategyInterest,
-    required this.fmt,
     required this.isEs,
     required this.strategy,
   });
 
   @override
   Widget build(BuildContext context) {
-    final strategyLabel = strategy == PayoffStrategy.avalanche
-        ? (isEs ? 'Avalancha' : 'Avalanche')
-        : (isEs ? 'Bola de Nieve' : 'Snowball');
+    final strategyLabel = _strategyLabel(strategy, isEs);
     final minLabel = isEs ? 'Solo Mínimos' : 'Minimum Only';
     final saved = (minimumInterest - strategyInterest).clamp(
       0.0,
@@ -1191,7 +1515,7 @@ class _InterestBarChart extends StatelessWidget {
                   left: AppSpacing.xxl,
                 ),
                 child: Text(
-                  '${isEs ? "Ahorras" : "You save"} ${fmt.format(saved)}',
+                  '${isEs ? "Ahorras" : "You save"} ${AmountFormatter.ui(saved, 'USD')}',
                   style: const TextStyle(
                     color: AppTheme.accentGood,
                     fontWeight: FontWeight.bold,
@@ -1230,9 +1554,9 @@ class _InterestBarChart extends StatelessWidget {
                         showTitles: true,
                         reservedSize: 52,
                         getTitlesWidget: (v, _) => Text(
-                          fmt.format(v),
+                          AmountFormatter.ui(v, 'USD'),
                           style: TextStyle(
-                            fontSize: 9,
+                            fontSize: AppTextSize.xxs,
                             color: Theme.of(
                               context,
                             ).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -1255,7 +1579,7 @@ class _InterestBarChart extends StatelessWidget {
                             child: Text(
                               labels[i],
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: AppTextSize.xs,
                                 fontWeight: FontWeight.w600,
                                 color: Theme.of(
                                   context,
@@ -1316,7 +1640,7 @@ class _InterestBarChart extends StatelessWidget {
                       getTooltipItem: (group, _, rod, __) {
                         final label = group.x == 0 ? minLabel : strategyLabel;
                         return BarTooltipItem(
-                          '$label\n${fmt.format(rod.toY)}',
+                          '$label\n${AmountFormatter.ui(rod.toY, 'USD')}',
                           TextStyle(
                             color: Theme.of(
                               context,
@@ -1366,7 +1690,6 @@ class _SectionHeader extends StatelessWidget {
 
 class _DebtTile extends StatelessWidget {
   final DebtItem debt;
-  final NumberFormat fmt;
   final double totalPaid;
   final DateTime? lastPaid;
   final bool isEs;
@@ -1376,7 +1699,6 @@ class _DebtTile extends StatelessWidget {
 
   const _DebtTile({
     required this.debt,
-    required this.fmt,
     required this.totalPaid,
     required this.lastPaid,
     required this.isEs,
@@ -1465,7 +1787,7 @@ class _DebtTile extends StatelessWidget {
                             child: Text(
                               cat.label(isEs),
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: AppTextSize.xs,
                                 fontWeight: FontWeight.w600,
                                 color: cat.color,
                               ),
@@ -1475,9 +1797,9 @@ class _DebtTile extends StatelessWidget {
                       ),
                       const SizedBox(height: AppSpacing.xxs),
                       Text(
-                        '${fmt.format(debt.balance)}  •  '
+                        '${AmountFormatter.ui(debt.balance, 'USD')}  •  '
                         '${debt.annualRate.toStringAsFixed(2)}%  •  '
-                        '${fmt.format(debt.minPayment)}/mo',
+                        '${AmountFormatter.ui(debt.minPayment, 'USD')}/mo',
                         style: TextStyle(
                           fontSize: AppTextSize.xs,
                           color: Theme.of(
@@ -1529,7 +1851,7 @@ class _DebtTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     totalPaid > 0
-                        ? '${isEs ? "Pagado" : "Paid"}: ${fmt.format(totalPaid)} / ${fmt.format(orig)}'
+                        ? '${isEs ? "Pagado" : "Paid"}: ${AmountFormatter.ui(totalPaid, 'USD')} / ${AmountFormatter.ui(orig, 'USD')}'
                         : (isEs
                               ? 'Sin pagos registrados'
                               : 'No payments logged'),
@@ -1589,13 +1911,11 @@ class _DebtTile extends StatelessWidget {
 class _PayoffOrderTile extends StatelessWidget {
   final int rank;
   final DebtPayoffSummary summary;
-  final NumberFormat fmt;
   final bool isEs;
 
   const _PayoffOrderTile({
     required this.rank,
     required this.summary,
-    required this.fmt,
     required this.isEs,
   });
 
@@ -1652,7 +1972,7 @@ class _PayoffOrderTile extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${isEs ? "Interés" : "Interest"}: ${fmt.format(summary.interestPaid)}',
+                  '${isEs ? "Interés" : "Interest"}: ${AmountFormatter.ui(summary.interestPaid, 'USD')}',
                   style: TextStyle(
                     fontSize: AppTextSize.xs,
                     color: Theme.of(
@@ -1670,6 +1990,630 @@ class _PayoffOrderTile extends StatelessWidget {
               color: color,
               fontWeight: FontWeight.bold,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Snowflake result banner
+// ---------------------------------------------------------------------------
+
+class _SnowflakeResultBanner extends StatelessWidget {
+  final EngineResult baseline;
+  final EngineResult withSnowflake;
+  final double snowflakeAmount;
+  final int snowflakeMonth;
+  final bool isEs;
+
+  const _SnowflakeResultBanner({
+    required this.baseline,
+    required this.withSnowflake,
+    required this.snowflakeAmount,
+    required this.snowflakeMonth,
+    required this.isEs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    DateTime _payoffDate(int months) =>
+        DateTime(now.year, now.month + months, now.day);
+
+    final baseDateLabel = DateFormat.yMMM(
+      isEs ? 'es' : 'en',
+    ).format(_payoffDate(baseline.totalMonths));
+    final sfDateLabel = DateFormat.yMMM(
+      isEs ? 'es' : 'en',
+    ).format(_payoffDate(withSnowflake.totalMonths));
+    final monthsSaved = baseline.totalMonths - withSnowflake.totalMonths;
+    final interestSaved = (baseline.totalInterest - withSnowflake.totalInterest)
+        .clamp(0.0, double.infinity);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppTheme.accentGood.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppTheme.accentGood.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.auto_awesome_rounded,
+                color: AppTheme.accentGood,
+                size: 18,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  isEs
+                      ? 'Con ${AmountFormatter.ui(snowflakeAmount, 'USD')} en el mes $snowflakeMonth:'
+                      : 'With ${AmountFormatter.ui(snowflakeAmount, 'USD')} windfall in month $snowflakeMonth:',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: AppTextSize.body,
+                    color: AppTheme.accentGood,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isEs ? 'Sin windfall' : 'Without windfall',
+                      style: TextStyle(
+                        fontSize: AppTextSize.xs,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.55),
+                      ),
+                    ),
+                    Text(
+                      baseDateLabel,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: AppTextSize.body,
+                      ),
+                    ),
+                    Text(
+                      AmountFormatter.ui(baseline.totalInterest, 'USD'),
+                      style: const TextStyle(
+                        fontSize: AppTextSize.sm,
+                        color: AppTheme.warning,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                color: AppTheme.accentGood,
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      isEs ? 'Con windfall' : 'With windfall',
+                      style: const TextStyle(
+                        fontSize: AppTextSize.xs,
+                        color: AppTheme.accentGood,
+                      ),
+                    ),
+                    Text(
+                      sfDateLabel,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: AppTextSize.body,
+                        color: AppTheme.accentGood,
+                      ),
+                    ),
+                    Text(
+                      AmountFormatter.ui(withSnowflake.totalInterest, 'USD'),
+                      style: const TextStyle(
+                        fontSize: AppTextSize.sm,
+                        color: AppTheme.accentGood,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (interestSaved > 0 || monthsSaved > 0) ...[
+            const Divider(height: AppSpacing.lg),
+            Text(
+              isEs
+                  ? 'Ahorro: ${AmountFormatter.ui(interestSaved, 'USD')} en intereses${monthsSaved > 0 ? " · $monthsSaved meses antes" : ""}'
+                  : 'Savings: ${AmountFormatter.ui(interestSaved, 'USD')} in interest${monthsSaved > 0 ? " · $monthsSaved months sooner" : ""}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.accentGood,
+                fontSize: AppTextSize.sm,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// What-If comparison card
+// ---------------------------------------------------------------------------
+
+class _WhatIfComparisonCard extends StatelessWidget {
+  final EngineResult baseline;
+  final EngineResult withExtra;
+  final double extraAmount;
+  final bool isEs;
+
+  const _WhatIfComparisonCard({
+    required this.baseline,
+    required this.withExtra,
+    required this.extraAmount,
+    required this.isEs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    DateTime _payoffDate(int months) =>
+        DateTime(now.year, now.month + months, now.day);
+
+    final baseDateLabel = DateFormat.yMMM(
+      isEs ? 'es' : 'en',
+    ).format(_payoffDate(baseline.totalMonths));
+    final extraDateLabel = DateFormat.yMMM(
+      isEs ? 'es' : 'en',
+    ).format(_payoffDate(withExtra.totalMonths));
+    final interestSaved = (baseline.totalInterest - withExtra.totalInterest)
+        .clamp(0.0, double.infinity);
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.35)),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.compare_arrows_rounded,
+                  color: AppTheme.primary,
+                  size: 18,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    isEs
+                        ? '¿Qué pasa si pago +${AmountFormatter.ui(extraAmount, 'USD')}/mes?'
+                        : 'What if I paid +${AmountFormatter.ui(extraAmount, 'USD')}/mo?',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: AppTextSize.body,
+                      color: AppTheme.primaryDark,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // Side-by-side table
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Current plan column
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isEs ? 'Plan actual' : 'Current plan',
+                        style: TextStyle(
+                          fontSize: AppTextSize.xs,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.55),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        isEs ? 'Pago libre:' : 'Payoff:',
+                        style: const TextStyle(fontSize: AppTextSize.xs),
+                      ),
+                      Text(
+                        baseDateLabel,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: AppTextSize.body,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        isEs ? 'Interés:' : 'Interest:',
+                        style: const TextStyle(fontSize: AppTextSize.xs),
+                      ),
+                      Text(
+                        AmountFormatter.ui(baseline.totalInterest, 'USD'),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: AppTextSize.body,
+                          color: AppTheme.warning,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const VerticalDivider(width: AppSpacing.lg),
+                // With extra payment column
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isEs
+                            ? 'Con +${AmountFormatter.ui(extraAmount, 'USD')}/mes'
+                            : 'With +${AmountFormatter.ui(extraAmount, 'USD')}/mo',
+                        style: const TextStyle(
+                          fontSize: AppTextSize.xs,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.accentGood,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        isEs ? 'Pago libre:' : 'Payoff:',
+                        style: const TextStyle(fontSize: AppTextSize.xs),
+                      ),
+                      Text(
+                        extraDateLabel,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTextSize.body,
+                          color: AppTheme.accentGood,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        isEs ? 'Interés:' : 'Interest:',
+                        style: const TextStyle(fontSize: AppTextSize.xs),
+                      ),
+                      Text(
+                        AmountFormatter.ui(withExtra.totalInterest, 'USD'),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTextSize.body,
+                          color: AppTheme.accentGood,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (interestSaved > 0) ...[
+              const Divider(height: AppSpacing.lg),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.savings_rounded,
+                    color: AppTheme.accentGood,
+                    size: 16,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      isEs
+                          ? 'Ahorros: ${AmountFormatter.ui(interestSaved, 'USD')}'
+                          : 'Savings: ${AmountFormatter.ui(interestSaved, 'USD')}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.accentGood,
+                        fontSize: AppTextSize.body,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Strategy helpers
+// ---------------------------------------------------------------------------
+
+String _strategyLabel(PayoffStrategy s, bool isEs) {
+  switch (s) {
+    case PayoffStrategy.avalanche:
+      return isEs ? 'Avalancha' : 'Avalanche';
+    case PayoffStrategy.snowball:
+      return isEs ? 'Bola de Nieve' : 'Snowball';
+    case PayoffStrategy.highestPayment:
+      return isEs ? 'Pago Más Alto Primero' : 'Highest Payment First';
+    case PayoffStrategy.highestBalance:
+      return isEs ? 'Deuda Más Grande Primero' : 'Largest Debt First';
+    case PayoffStrategy.customPriority:
+      return isEs ? 'Orden Personalizado' : 'Custom Order';
+  }
+}
+
+String _strategyDesc(PayoffStrategy s, bool isEs) {
+  switch (s) {
+    case PayoffStrategy.avalanche:
+      return isEs
+          ? 'Paga primero la deuda con la tasa más alta. Ahorra más en intereses.'
+          : 'Pay highest-rate debt first. Saves the most interest.';
+    case PayoffStrategy.snowball:
+      return isEs
+          ? 'Paga primero la deuda con el saldo más bajo. Victorias rápidas.'
+          : 'Pay lowest-balance debt first. Quick wins.';
+    case PayoffStrategy.highestPayment:
+      return isEs
+          ? 'Libera flujo de efectivo más rápido.'
+          : 'Free up cash flow faster.';
+    case PayoffStrategy.highestBalance:
+      return isEs
+          ? 'Enfócate en tu deuda más grande.'
+          : 'Focus on your biggest debt.';
+    case PayoffStrategy.customPriority:
+      return isEs
+          ? 'Tú decides la prioridad. Arrastra las deudas para ordenarlas.'
+          : 'You decide the priority. Drag debts to reorder.';
+  }
+}
+
+IconData _strategyIcon(PayoffStrategy s) {
+  switch (s) {
+    case PayoffStrategy.avalanche:
+      return Icons.trending_down_rounded;
+    case PayoffStrategy.snowball:
+      return Icons.ac_unit_rounded;
+    case PayoffStrategy.highestPayment:
+      return Icons.payments_rounded;
+    case PayoffStrategy.highestBalance:
+      return Icons.account_balance_rounded;
+    case PayoffStrategy.customPriority:
+      return Icons.drag_indicator_rounded;
+  }
+}
+
+class _StrategySelector extends StatelessWidget {
+  final PayoffStrategy selected;
+  final bool isEs;
+  final ValueChanged<PayoffStrategy> onChanged;
+
+  const _StrategySelector({
+    required this.selected,
+    required this.isEs,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Compact dropdown card
+        InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: () async {
+            final picked = await showModalBottomSheet<PayoffStrategy>(
+              context: context,
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              builder: (_) => SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.md,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    for (final s in PayoffStrategy.values)
+                      ListTile(
+                        leading: Icon(
+                          _strategyIcon(s),
+                          color: s == selected
+                              ? AppTheme.primary
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                        title: Text(
+                          _strategyLabel(s, isEs),
+                          style: TextStyle(
+                            fontWeight: s == selected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: s == selected ? AppTheme.primary : null,
+                          ),
+                        ),
+                        subtitle: Text(
+                          _strategyDesc(s, isEs),
+                          style: TextStyle(
+                            fontSize: AppTextSize.xs,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.55),
+                          ),
+                        ),
+                        trailing: s == selected
+                            ? const Icon(
+                                Icons.check_rounded,
+                                color: AppTheme.primary,
+                              )
+                            : null,
+                        onTap: () => Navigator.pop(context, s),
+                      ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+                ),
+              ),
+            );
+            if (picked != null) onChanged(picked);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.mdPlus,
+              vertical: AppSpacing.smPlus,
+            ),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(
+                color: AppTheme.primary.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _strategyIcon(selected),
+                  size: 20,
+                  color: AppTheme.primary,
+                ),
+                const SizedBox(width: AppSpacing.smPlus),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _strategyLabel(selected, isEs),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTextSize.body,
+                          color: AppTheme.primaryDark,
+                        ),
+                      ),
+                      Text(
+                        _strategyDesc(selected, isEs),
+                        style: TextStyle(
+                          fontSize: AppTextSize.xs,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.expand_more_rounded, color: AppTheme.primary),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Skeleton loading placeholder for DebtStrategyScreen
+// ---------------------------------------------------------------------------
+class _DebtStrategySkeleton extends StatefulWidget {
+  const _DebtStrategySkeleton();
+  @override
+  State<_DebtStrategySkeleton> createState() => _DebtStrategySkeletonState();
+}
+
+class _DebtStrategySkeletonState extends State<_DebtStrategySkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Widget _shimmer({double? width, required double height}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final base = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8);
+    final shine = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF5F5F5);
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Color.lerp(base, shine, _anim.value),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Hero card placeholder
+          _shimmer(height: 100),
+          const SizedBox(height: AppSpacing.xxl),
+          // Section title placeholder
+          _shimmer(width: 140, height: 14),
+          const SizedBox(height: AppSpacing.lg),
+          // Debt tiles
+          for (int i = 0; i < 3; i++) ...[
+            _shimmer(height: 72),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          // Extra payment row placeholder
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _shimmer(width: 160, height: 14),
+              _shimmer(width: 80, height: 14),
+            ],
           ),
         ],
       ),

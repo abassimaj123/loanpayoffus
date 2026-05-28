@@ -50,74 +50,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       bottomNavigationBar: const CalcwiseAdFooter(),
       body: ListView(
         children: [
-          // ── Language ──
-          _SectionHeader(s.language),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.xs,
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.language, color: AppTheme.primary),
-                const SizedBox(width: AppSpacing.lg),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        s.language,
-                        style: const TextStyle(fontSize: AppTextSize.bodyMd),
-                      ),
-                      Text(
-                        isEs ? 'Español' : 'English',
-                        style: TextStyle(
-                          fontSize: AppTextSize.sm,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.55),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: isEs,
-                  activeColor: AppTheme.primary,
-                  onChanged: (v) => isSpanishNotifier.value = v,
-                ),
-                Text(
-                  isEs ? 'ES' : 'EN',
-                  style: TextStyle(
-                    color: AppTheme.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: AppTextSize.md,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Theme toggle
-          ValueListenableBuilder<ThemeMode>(
-            valueListenable: themeModeService.notifier,
-            builder: (_, mode, __) => ListTile(
-              leading: Icon(themeModeService.icon, color: AppTheme.primary),
-              title: Text(themeModeService.label(isSpanish: isEs)),
-              trailing: Icon(
-                Icons.chevron_right_rounded,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.45),
-              ),
-              onTap: () => themeModeService.toggle(),
-            ),
-          ),
-          const Divider(),
-
           // ── Premium ──
           _SectionHeader('Premium'),
           ValueListenableBuilder<bool>(
-            valueListenable: freemiumService.isPremiumNotifier,
+            valueListenable: freemiumService.hasFullAccessNotifier,
             builder: (context, isPremium, _) => isPremium
                 ? ListTile(
                     leading: const Icon(
@@ -167,6 +103,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const Divider(),
 
+          // ── Language ──
+          _SectionHeader(s.language),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
+            child: SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'en', label: Text('English')),
+                ButtonSegment(value: 'es', label: Text('Español')),
+              ],
+              selected: {isEs ? 'es' : 'en'},
+              onSelectionChanged: (s) =>
+                  isSpanishNotifier.value = s.first == 'es',
+              style: ButtonStyle(
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Theme toggle
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: themeModeService.notifier,
+            builder: (_, mode, __) => ListTile(
+              leading: Icon(themeModeService.icon, color: AppTheme.primary),
+              title: Text(themeModeService.label(isSpanish: isEs)),
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.45),
+              ),
+              onTap: () => themeModeService.toggle(),
+            ),
+          ),
+          const Divider(),
+
           // ── Support ──
           _SectionHeader(s.support),
           ListTile(
@@ -212,6 +189,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ).colorScheme.onSurface.withValues(alpha: 0.45),
             ),
             onTap: () => _launch('https://calqwise.com'),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
+            child: Text(
+              isEs
+                  ? 'Esta aplicación es solo para fines informativos. Consulte a un profesional financiero calificado antes de tomar decisiones financieras.'
+                  : 'This app is for informational purposes only. Consult a qualified financial professional before making any financial decisions.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: AppTextSize.xs,
+                color: Colors.grey.shade500,
+                height: 1.5,
+              ),
+            ),
           ),
         ],
       ),

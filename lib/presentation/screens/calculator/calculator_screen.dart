@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:calcwise_core/calcwise_core.dart';
+import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/db/database_helper.dart';
@@ -17,10 +17,12 @@ import '../../../domain/usecases/loan_calculator.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import '../../../core/language/language_notifier.dart';
+import '../../../core/utils/milestone_tracker.dart';
 import '../../providers/loan_provider.dart';
 import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
 import '../../widgets/insight_card.dart';
+import '../../widgets/milestone_celebration.dart';
 import '../../../core/utils/insight_engine.dart';
 
 double _parseNum(String v) {
@@ -37,7 +39,8 @@ class CalculatorScreen extends ConsumerStatefulWidget {
   ConsumerState<CalculatorScreen> createState() => _CalculatorScreenState();
 }
 
-class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
+class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
+    with CalcwiseAutoCalcMixin {
   LoanType _type = LoanType.mortgage;
   final _amountCtrl = TextEditingController(text: '15000');
   final _rateCtrl = TextEditingController(text: '5.5');
@@ -50,21 +53,17 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   bool _biweekly = false; // toggle: monthly vs biweekly mode
   bool _validated = false; // inline validation flag
   bool _hadResult = false; // tracks first-result haptic
+  bool _celebrationShown = false; // tracks debt-free celebration
 
   // Biweekly results (computed alongside main calculation)
   Map<String, double>? _biweeklyData;
 
-  final _fmt = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: '\$',
-    decimalDigits: 0,
-  );
-
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.logScreenView('calculator');
     isSpanishNotifier.addListener(_onLangChange);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       // _paymentCtrl is pre-filled with '300', only auto-compute if still empty
       if (mounted && _paymentCtrl.text.isEmpty) {
         final amount = _parseNum(_amountCtrl.text);
@@ -75,6 +74,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
           _type.defaultTermMonths,
         ).toStringAsFixed(2);
       }
+      // Auto-calculate on first open so result is visible immediately
+      if (mounted) await _recalculate();
     });
   }
 
@@ -98,7 +99,10 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
       _amountCtrl.text = t.defaultAmount.toStringAsFixed(0);
       _rateCtrl.text = t.defaultRate.toString();
       _paymentCtrl.clear();
+      _celebrationShown = false;
     });
+    // Reset milestone flags since the user started a new loan type
+    MilestoneTracker.instance.reset();
     _recalculate();
   }
 
@@ -153,12 +157,6 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
       _hadResult = true;
       HapticFeedback.mediumImpact();
     }
-    // Save after 2 s of inactivity — prevents flooding history on every keystroke
-    _saveDebounce?.cancel();
-    _saveDebounce = Timer(const Duration(milliseconds: 2000), () {
-      _saveToHistory(input);
-    });
-
     // Analytics
     final result = ref.read(payoffResultProvider);
     if (result != null && amount > 0 && rate > 0) {
@@ -183,6 +181,13 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
         CalcwiseReviewService.instance.requestAfterPremium();
       }
     }
+
+    // Milestone celebrations (debounced with the save timer so UI is settled)
+    _saveDebounce?.cancel();
+    _saveDebounce = Timer(const Duration(milliseconds: 2000), () {
+      _saveToHistory(input);
+      _checkMilestones(ref.read(payoffResultProvider));
+    });
   }
 
   Future<void> _saveToHistory(LoanInput input) async {
@@ -223,6 +228,108 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     adService.onSave();
   }
 
+  // ── Milestone celebrations ─────────────────────────────────────────────────
+
+  /// Called after every recalculate cycle.
+  /// Shows a full celebration when the loan is effectively paid off,
+  /// and SnackBar nudges at 25/50/75% progress milestones.
+  Future<void> _checkMilestones(PayoffResult? result) async {
+    if (result == null || !mounted) return;
+    final isEs = isSpanishNotifier.value;
+    final normalMonths = result.normalMonths;
+    if (normalMonths <= 0) return;
+
+    // ── Full payoff celebration ──
+    // Trigger when extra payments eliminate virtually the entire remaining term.
+    final isFullyPaid = result.extraMonths <= 1 || result.extraMonths <= 0;
+    if (isFullyPaid && !_celebrationShown) {
+      _celebrationShown = true;
+      final input = ref.read(loanInputProvider);
+      final debtFreeDate = DateTime.now().add(
+        Duration(days: result.extraMonths * 30),
+      );
+      final dateStr = DateFormat('MMMM yyyy').format(debtFreeDate);
+      final shareText = isEs
+          ? 'Estoy libre de deudas gracias a LoanPayoff US! '
+                'Pagué mi ${input.loanType.label} completamente. '
+                'Ahorro: ${AmountFormatter.ui(result.interestSaved, 'USD')} en intereses. '
+                'Fecha libre: $dateStr'
+          : 'I\'m debt-free with LoanPayoff US! '
+                'Paid off my ${input.loanType.label}. '
+                'Saved ${AmountFormatter.ui(result.interestSaved, 'USD')} in interest. '
+                'Debt-free by: $dateStr';
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          MilestoneCelebrationDialog.show(
+            context,
+            shareText: shareText,
+            isEs: isEs,
+          );
+        }
+      });
+      return;
+    } else if (!isFullyPaid) {
+      // Reset the celebration flag when user modifies inputs
+      _celebrationShown = false;
+    }
+
+    // ── Partial milestone SnackBars (25 / 50 / 75 %) ──
+    // Progress = months eliminated by extra payment / normal months
+    final progressPct =
+        ((normalMonths - result.extraMonths) / normalMonths * 100)
+            .clamp(0, 100)
+            .toInt();
+
+    for (final milestone in [75, 50, 25]) {
+      if (progressPct >= milestone) {
+        final isNew = await MilestoneTracker.instance.claimIfNew(milestone);
+        if (isNew && mounted) {
+          final message = _milestoneMessage(milestone, isEs);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                message,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              margin: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.lg,
+              ),
+              backgroundColor: AppTheme.primary,
+            ),
+          );
+        }
+        break; // only one milestone per recalculate
+      }
+    }
+  }
+
+  String _milestoneMessage(int pct, bool isEs) {
+    switch (pct) {
+      case 75:
+        return isEs
+            ? '\u{1F3AF} ¡75% completado! La meta está cerca.'
+            : '\u{1F3AF} 75% there! Almost done.';
+      case 50:
+        return isEs
+            ? '\u{1F3AF} ¡A mitad de camino! Sigue así.'
+            : '\u{1F3AF} Halfway there! Keep going.';
+      case 25:
+      default:
+        return isEs
+            ? '\u{1F4AA} ¡25% completado! Buen comienzo.'
+            : '\u{1F4AA} 25% done! Great start.';
+    }
+  }
+
   Widget _field(
     String label,
     TextEditingController ctrl, {
@@ -246,17 +353,13 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
         suffixText: suffix,
         hintText: hint.isEmpty ? null : hint,
         helperText: errorText == null ? helperText : null,
-        helperStyle: const TextStyle(fontSize: 10),
+        helperStyle: const TextStyle(fontSize: AppTextSize.xs),
         errorText: errorText,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.mdPlus,
-        ),
       ),
-      onChanged: (_) => _recalculate(),
+      onChanged: (_) => scheduleCalc(_recalculate),
     ),
   );
 
@@ -290,16 +393,51 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Container(
+                          width: double.infinity,
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            AppSpacing.xl,
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                s.appTitle,
+                                style: Theme.of(context).textTheme.headlineSmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimaryContainer,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                isEs
+                                    ? 'Calcula cuándo estarás libre de deudas'
+                                    : 'See when you\'ll be debt-free',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer
+                                          .withValues(alpha: 0.8),
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
                         DropdownButtonFormField<LoanType>(
                           initialValue: _type,
                           decoration: InputDecoration(
                             labelText: s.loanType,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(AppRadius.lg),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg,
-                              vertical: AppSpacing.mdPlus,
                             ),
                           ),
                           items: LoanType.values
@@ -401,7 +539,6 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                           const SizedBox(height: AppSpacing.md),
                           _BiweeklyCard(
                             data: _biweeklyData!,
-                            fmt: _fmt,
                             isEs: isEs,
                           ),
                         ],
@@ -478,8 +615,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                               ),
                               child: Text(
                                 _extraOneTime
-                                    ? _fmt.format(_extra)
-                                    : '${_fmt.format(_extra)}/mo',
+                                    ? AmountFormatter.ui(_extra, 'USD')
+                                    : '${AmountFormatter.ui(_extra, 'USD')}/mo',
                                 style: TextStyle(
                                   color: _extra > 0
                                       ? Colors.white
@@ -505,7 +642,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                             max: _extraOneTime ? 10000 : 500,
                             divisions: _extraOneTime ? 100 : 50,
                             label:
-                                '${_fmt.format(_extraSlider)}${_extraOneTime ? '' : '/mo'}',
+                                '${AmountFormatter.ui(_extraSlider, 'USD')}${_extraOneTime ? '' : '/mo'}',
                             activeColor: AppTheme.primary,
                             onChanged: (v) {
                               // Snap to meaningful ticks when in monthly mode
@@ -547,7 +684,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                         (t) => Text(
                                           t,
                                           style: TextStyle(
-                                            fontSize: 9,
+                                            fontSize: AppTextSize.xxs,
                                             color: Theme.of(context)
                                                 .colorScheme
                                                 .onSurface
@@ -626,291 +763,305 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       // Hero savings card with debt-free date
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: AppSpacing.xxl,
-                                          horizontal: AppSpacing.xl,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          gradient: result.monthsSaved > 0
-                                              ? const LinearGradient(
-                                                  colors: [
-                                                    CalcwiseSemanticColors
-                                                        .successDeep,
-                                                    CalcwiseSemanticColors
-                                                        .successDark,
-                                                  ],
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                )
-                                              : const LinearGradient(
-                                                  colors: [
-                                                    AppTheme.primary,
-                                                    AppTheme.primaryDark,
-                                                  ],
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                ),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
+                                      // index 0 — Hero savings card
+                                      CalcwiseStaggerItem(
+                                        index: 0,
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: AppSpacing.xxl,
+                                            horizontal: AppSpacing.xl,
                                           ),
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            if (result.monthsSaved > 0) ...[
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  const Icon(
-                                                    Icons.savings_rounded,
-                                                    color: Colors.white70,
-                                                    size: 18,
+                                          decoration: BoxDecoration(
+                                            gradient: result.monthsSaved > 0
+                                                ? const LinearGradient(
+                                                    colors: [
+                                                      CalcwiseSemanticColors
+                                                          .successDeep,
+                                                      CalcwiseSemanticColors
+                                                          .successDark,
+                                                    ],
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                  )
+                                                : const LinearGradient(
+                                                    colors: [
+                                                      AppTheme.primary,
+                                                      AppTheme.primaryDark,
+                                                    ],
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
                                                   ),
-                                                  const SizedBox(
-                                                    width: AppSpacing.xs,
-                                                  ),
-                                                  Text(
-                                                    s.youCouldSave,
-                                                    style: const TextStyle(
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadius.xxl,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              if (result.monthsSaved > 0) ...[
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.savings_rounded,
                                                       color: Colors.white70,
-                                                      fontSize: AppTextSize.md,
-                                                      letterSpacing: 1.2,
+                                                      size: 18,
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(
-                                                height: AppSpacing.sm,
-                                              ),
-                                              Text(
-                                                _fmt.format(
-                                                  result.interestSaved,
-                                                ),
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: AppTextSize.hero,
-                                                  fontWeight: FontWeight.w800,
-                                                  letterSpacing: -1.5,
-                                                ),
-                                              ),
-                                              const SizedBox(
-                                                height: AppSpacing.xs,
-                                              ),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal:
-                                                          AppSpacing.mdPlus,
-                                                      vertical: 5,
+                                                    const SizedBox(
+                                                      width: AppSpacing.xs,
                                                     ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white
-                                                      .withValues(alpha: 0.2),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        AppRadius.xxl,
+                                                    Text(
+                                                      s.youCouldSave,
+                                                      style: const TextStyle(
+                                                        color: Colors.white70,
+                                                        fontSize:
+                                                            AppTextSize.md,
+                                                        letterSpacing: 1.2,
                                                       ),
+                                                    ),
+                                                  ],
                                                 ),
-                                                child: Text(
-                                                  '${s.inInterest}  •  ${result.yearsSaved}y ${result.remMonthsSaved}m ${s.faster}',
+                                                const SizedBox(
+                                                  height: AppSpacing.sm,
+                                                ),
+                                                Text(
+                                                  AmountFormatter.ui(result.interestSaved, 'USD'),
                                                   style: const TextStyle(
                                                     color: Colors.white,
-                                                    fontSize: AppTextSize.md,
-                                                    fontWeight: FontWeight.w500,
+                                                    fontSize: AppTextSize.hero,
+                                                    fontWeight: FontWeight.w800,
+                                                    letterSpacing: -1.5,
                                                   ),
                                                 ),
-                                              ),
-                                            ] else ...[
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  const Icon(
-                                                    Icons.schedule_rounded,
-                                                    color: Colors.white70,
-                                                    size: 18,
+                                                const SizedBox(
+                                                  height: AppSpacing.xs,
+                                                ),
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal:
+                                                            AppSpacing.mdPlus,
+                                                        vertical: 5,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.2),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          AppRadius.xxl,
+                                                        ),
                                                   ),
-                                                  const SizedBox(
-                                                    width: AppSpacing.xs,
-                                                  ),
-                                                  Text(
-                                                    s.payoffTimeline,
+                                                  child: Text(
+                                                    '${s.inInterest}  •  ${result.yearsSaved}y ${result.remMonthsSaved}m ${s.faster}',
                                                     style: const TextStyle(
-                                                      color: Colors.white70,
+                                                      color: Colors.white,
                                                       fontSize: AppTextSize.md,
-                                                      letterSpacing: 1.2,
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                     ),
                                                   ),
-                                                ],
-                                              ),
-                                              const SizedBox(
-                                                height: AppSpacing.smPlus,
-                                              ),
-                                              Text(
-                                                '${result.normalMonths ~/ 12} yrs ${result.normalMonths % 12} mos',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 30,
-                                                  fontWeight: FontWeight.bold,
                                                 ),
-                                              ),
-                                            ],
-                                            // ── Debt-free date chip ──
-                                            if (debtFreeDateStr.isNotEmpty) ...[
-                                              const SizedBox(
-                                                height: AppSpacing.smPlus,
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  const Icon(
-                                                    Icons
-                                                        .event_available_rounded,
-                                                    color: Colors.white60,
-                                                    size: 15,
+                                              ] else ...[
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.schedule_rounded,
+                                                      color: Colors.white70,
+                                                      size: 18,
+                                                    ),
+                                                    const SizedBox(
+                                                      width: AppSpacing.xs,
+                                                    ),
+                                                    Text(
+                                                      s.payoffTimeline,
+                                                      style: const TextStyle(
+                                                        color: Colors.white70,
+                                                        fontSize:
+                                                            AppTextSize.md,
+                                                        letterSpacing: 1.2,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(
+                                                  height: AppSpacing.smPlus,
+                                                ),
+                                                Text(
+                                                  '${result.normalMonths ~/ 12} yrs ${result.normalMonths % 12} mos',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: AppTextSize.hero,
+                                                    fontWeight: FontWeight.bold,
                                                   ),
-                                                  const SizedBox(
-                                                    width: AppSpacing.xs,
-                                                  ),
-                                                  Text(
-                                                    '${s.debtFreeDate}: $debtFreeDateStr',
-                                                    style: const TextStyle(
+                                                ),
+                                              ],
+                                              // ── Debt-free date chip ──
+                                              if (debtFreeDateStr
+                                                  .isNotEmpty) ...[
+                                                const SizedBox(
+                                                  height: AppSpacing.smPlus,
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons
+                                                          .event_available_rounded,
                                                       color: Colors.white60,
-                                                      fontSize: AppTextSize.sm,
+                                                      size: 15,
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                            // ── Interest-to-loan ratio insight ──
-                                            if (result.interestNormal > 0 &&
-                                                input.loanAmount > 0) ...[
-                                              const SizedBox(
-                                                height: AppSpacing.xs,
-                                              ),
-                                              Text(
-                                                '${isEs ? "Pagas" : "You pay"} ${((result.interestNormal / input.loanAmount) * 100).toStringAsFixed(0)}% '
-                                                '${isEs ? "del préstamo en intereses" : "of loan amount in interest"}',
-                                                style: const TextStyle(
-                                                  color: Colors.white60,
-                                                  fontSize: AppTextSize.xs,
+                                                    const SizedBox(
+                                                      width: AppSpacing.xs,
+                                                    ),
+                                                    Text(
+                                                      '${s.debtFreeDate}: $debtFreeDateStr',
+                                                      style: const TextStyle(
+                                                        color: Colors.white60,
+                                                        fontSize:
+                                                            AppTextSize.sm,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                                textAlign: TextAlign.center,
-                                              ),
+                                              ],
+                                              // ── Interest-to-loan ratio insight ──
+                                              if (result.interestNormal > 0 &&
+                                                  input.loanAmount > 0) ...[
+                                                const SizedBox(
+                                                  height: AppSpacing.xs,
+                                                ),
+                                                Text(
+                                                  '${isEs ? "Pagas" : "You pay"} ${((result.interestNormal / input.loanAmount) * 100).toStringAsFixed(0)}% '
+                                                  '${isEs ? "del préstamo en intereses" : "of loan amount in interest"}',
+                                                  style: const TextStyle(
+                                                    color: Colors.white60,
+                                                    fontSize: AppTextSize.xs,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ],
                                             ],
-                                          ],
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(height: AppSpacing.lg),
 
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: _InfoCard(
-                                              title: s.withoutExtra,
-                                              rows: [
-                                                (
-                                                  s.payoff,
-                                                  '${result.normalMonths ~/ 12}y ${result.normalMonths % 12}m',
-                                                ),
-                                                (
-                                                  s.interest,
-                                                  _fmt.format(
-                                                    result.interestNormal,
-                                                  ),
-                                                ),
-                                                (
-                                                  s.totalPaid,
-                                                  _fmt.format(
-                                                    result.totalPaidNormal,
-                                                  ),
-                                                ),
-                                              ],
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.outline,
-                                              isNeutral: true,
-                                            ),
-                                          ),
-                                          const SizedBox(width: AppSpacing.md),
-                                          if (input.extraPayment > 0)
+                                      // index 1 — Comparison info cards
+                                      CalcwiseStaggerItem(
+                                        index: 1,
+                                        child: Row(
+                                          children: [
                                             Expanded(
                                               child: _InfoCard(
-                                                title: _extraOneTime
-                                                    ? '${_fmt.format(_extra)} ${isEs ? "único" : "one-time"}'
-                                                    : '+${_fmt.format(_extra)}/mo',
+                                                title: s.withoutExtra,
                                                 rows: [
                                                   (
                                                     s.payoff,
-                                                    '${result.extraMonths ~/ 12}y ${result.extraMonths % 12}m',
+                                                    '${result.normalMonths ~/ 12}y ${result.normalMonths % 12}m',
                                                   ),
                                                   (
                                                     s.interest,
-                                                    _fmt.format(
-                                                      result.interestExtra,
-                                                    ),
+                                                    AmountFormatter.ui(result.interestNormal, 'USD'),
                                                   ),
                                                   (
                                                     s.totalPaid,
-                                                    _fmt.format(
-                                                      result.totalPaidExtra,
-                                                    ),
+                                                    AmountFormatter.ui(result.totalPaidNormal, 'USD'),
                                                   ),
                                                 ],
-                                                color: AppTheme.accentGood,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.outline,
+                                                isNeutral: true,
                                               ),
                                             ),
-                                        ],
+                                            const SizedBox(
+                                              width: AppSpacing.md,
+                                            ),
+                                            if (input.extraPayment > 0)
+                                              Expanded(
+                                                child: _InfoCard(
+                                                  title: _extraOneTime
+                                                      ? '${AmountFormatter.ui(_extra, 'USD')} ${isEs ? "único" : "one-time"}'
+                                                      : '+${AmountFormatter.ui(_extra, 'USD')}/mo',
+                                                  rows: [
+                                                    (
+                                                      s.payoff,
+                                                      '${result.extraMonths ~/ 12}y ${result.extraMonths % 12}m',
+                                                    ),
+                                                    (
+                                                      s.interest,
+                                                      AmountFormatter.ui(result.interestExtra, 'USD'),
+                                                    ),
+                                                    (
+                                                      s.totalPaid,
+                                                      AmountFormatter.ui(result.totalPaidExtra, 'USD'),
+                                                    ),
+                                                  ],
+                                                  color: AppTheme.accentGood,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
                                       ),
                                       // ── Debt-Free Date Banner ──
                                       if (result.monthsSaved > 0) ...[
                                         const SizedBox(height: AppSpacing.lg),
-                                        _DebtFreeDateBanner(
-                                          result: result,
-                                          isEs: isEs,
-                                          fmt: _fmt,
+                                        CalcwiseStaggerItem(
+                                          index: 2,
+                                          child: _DebtFreeDateBanner(
+                                            result: result,
+                                            isEs: isEs,
+                                          ),
                                         ),
                                       ],
 
                                       // ── Balance Over Time chart ──
                                       ...[
                                         const SizedBox(height: AppSpacing.lg),
-                                        _BalanceChart(
-                                          result: result,
-                                          isEs: isEs,
+                                        CalcwiseStaggerItem(
+                                          index: 3,
+                                          child: _BalanceChart(
+                                            result: result,
+                                            isEs: isEs,
+                                          ),
                                         ),
                                       ],
 
                                       // ── Smart Insights ──
                                       ...[
                                         const SizedBox(height: AppSpacing.lg),
-                                        InsightCard(
-                                          isSpanish: isEs,
-                                          insights: InsightEngine.generate(
-                                            balance: input.loanAmount,
-                                            annualRatePct:
-                                                input.interestRatePct,
-                                            monthlyPayment:
-                                                input.monthlyPayment,
-                                            monthsToPayoff: result.normalMonths,
-                                            totalInterest:
-                                                result.interestNormal,
-                                            extraMonthlyPayment:
-                                                input.extraPayment > 0
-                                                ? input.extraPayment
-                                                : null,
-                                            monthsSavedWithExtra:
-                                                input.extraPayment > 0
-                                                ? result.monthsSaved
-                                                : null,
-                                            interestSavedWithExtra:
-                                                input.extraPayment > 0
-                                                ? result.interestSaved
-                                                : null,
-                                            isEs: isEs,
+                                        CalcwiseStaggerItem(
+                                          index: 4,
+                                          child: InsightCard(
+                                            isSpanish: isEs,
+                                            insights: InsightEngine.generate(
+                                              balance: input.loanAmount,
+                                              annualRatePct:
+                                                  input.interestRatePct,
+                                              monthlyPayment:
+                                                  input.monthlyPayment,
+                                              monthsToPayoff:
+                                                  result.normalMonths,
+                                              totalInterest:
+                                                  result.interestNormal,
+                                              extraMonthlyPayment:
+                                                  input.extraPayment > 0
+                                                  ? input.extraPayment
+                                                  : null,
+                                              monthsSavedWithExtra:
+                                                  input.extraPayment > 0
+                                                  ? result.monthsSaved
+                                                  : null,
+                                              interestSavedWithExtra:
+                                                  input.extraPayment > 0
+                                                  ? result.interestSaved
+                                                  : null,
+                                              isEs: isEs,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(height: AppSpacing.sm),
@@ -920,7 +1071,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                               : 'For informational purposes only. Not financial advice.',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
-                                            fontSize: 10,
+                                            fontSize: AppTextSize.xs,
                                             color: Theme.of(context)
                                                 .colorScheme
                                                 .onSurface
@@ -931,40 +1082,20 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                                     ],
                                   ),
                                 )
-                              : Padding(
+                              : KeyedSubtree(
                                   key: const ValueKey('empty'),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.xxxl,
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Icon(
-                                        Icons.account_balance_rounded,
-                                        size: 48,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.3),
-                                      ),
-                                      const SizedBox(height: AppSpacing.md),
-                                      Text(
-                                        isEs
-                                            ? 'Ingresa los valores para ver los resultados'
-                                            : 'Enter values above to see results',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: AppTextSize.body,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.5),
-                                        ),
-                                      ),
-                                    ],
+                                  child: CalcwiseEmptyState(
+                                    icon: Icons.account_balance_rounded,
+                                    title: isEs
+                                        ? 'Sin préstamo aún'
+                                        : 'No loans yet',
+                                    body: isEs
+                                        ? 'Ingresa los valores para ver tu plan de pago.'
+                                        : 'Enter values above to see your payoff plan.',
                                   ),
                                 ),
                         ),
-                        const SizedBox(height: 80),
+                        const SizedBox(height: AppSpacing.listBottomInset),
                       ],
                     ),
                   ), // CalcwisePageEntrance closes
@@ -1064,12 +1195,10 @@ class _InfoCard extends StatelessWidget {
 class _DebtFreeDateBanner extends StatelessWidget {
   final PayoffResult result;
   final bool isEs;
-  final NumberFormat fmt;
 
   const _DebtFreeDateBanner({
     required this.result,
     required this.isEs,
-    required this.fmt,
   });
 
   @override
@@ -1081,8 +1210,8 @@ class _DebtFreeDateBanner extends StatelessWidget {
     final yrs = result.monthsSaved ~/ 12;
     final mos = result.monthsSaved % 12;
     final soonerLabel = isEs
-        ? '${yrs > 0 ? "${yrs}a " : ""}${mos}m antes — ahorras ${fmt.format(result.interestSaved)}'
-        : '${yrs > 0 ? "${yrs}y " : ""}${mos}m sooner — save ${fmt.format(result.interestSaved)}';
+        ? '${yrs > 0 ? "${yrs}a " : ""}${mos}m antes — ahorras ${AmountFormatter.ui(result.interestSaved, 'USD')}'
+        : '${yrs > 0 ? "${yrs}y " : ""}${mos}m sooner — save ${AmountFormatter.ui(result.interestSaved, 'USD')}';
     final headerLabel = isEs ? 'LIBRE DE DEUDA EL' : 'DEBT-FREE BY';
 
     return Container(
@@ -1318,7 +1447,7 @@ class _BalanceChart extends StatelessWidget {
                         getTitlesWidget: (v, _) => Text(
                           '\$${v.toStringAsFixed(0)}K',
                           style: TextStyle(
-                            fontSize: 9,
+                            fontSize: AppTextSize.xxs,
                             color: Theme.of(
                               context,
                             ).colorScheme.onSurface.withValues(alpha: 0.45),
@@ -1336,7 +1465,7 @@ class _BalanceChart extends StatelessWidget {
                             return Text(
                               '${(v / 12).toInt()}y',
                               style: TextStyle(
-                                fontSize: 9,
+                                fontSize: AppTextSize.xxs,
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurface.withValues(alpha: 0.45),
@@ -1418,12 +1547,10 @@ class _LegendDot extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _BiweeklyCard extends StatelessWidget {
   final Map<String, double> data;
-  final NumberFormat fmt;
   final bool isEs;
 
   const _BiweeklyCard({
     required this.data,
-    required this.fmt,
     required this.isEs,
   });
 
@@ -1475,14 +1602,14 @@ class _BiweeklyCard extends StatelessWidget {
               Expanded(
                 child: _BwRow(
                   label: isEs ? 'Pago c/2 semanas' : 'Payment every 2 wks',
-                  value: fmt.format(biweeklyPayment),
+                  value: AmountFormatter.ui(biweeklyPayment, 'USD'),
                   color: AppTheme.primary,
                 ),
               ),
               Expanded(
                 child: _BwRow(
                   label: isEs ? 'Total en interés' : 'Total interest',
-                  value: fmt.format(totalInterest),
+                  value: AmountFormatter.ui(totalInterest, 'USD'),
                   color: AppTheme.warning,
                 ),
               ),
@@ -1501,7 +1628,7 @@ class _BiweeklyCard extends StatelessWidget {
               Expanded(
                 child: _BwRow(
                   label: isEs ? 'Interés ahorrado' : 'Interest saved',
-                  value: fmt.format(interestSaved),
+                  value: AmountFormatter.ui(interestSaved, 'USD'),
                   color: AppTheme.accentGood,
                 ),
               ),
@@ -1526,7 +1653,7 @@ class _BwRow extends StatelessWidget {
       Text(
         label,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: AppTextSize.xs,
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
         ),
       ),

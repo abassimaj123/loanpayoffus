@@ -1,4 +1,4 @@
-import 'package:calcwise_core/calcwise_core.dart' hide CrashlyticsService;
+import 'package:calcwise_core/calcwise_core.dart' hide CrashlyticsService, PaywallHard;
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
@@ -25,8 +25,12 @@ import 'presentation/screens/debt_strategy/debt_strategy_screen.dart';
 import 'presentation/widgets/paywall_soft.dart';
 import 'presentation/widgets/paywall_hard.dart';
 import 'presentation/screens/splash/splash_screen.dart';
+import 'core/services/loan_notification_service.dart';
 
-final paywallSession = PaywallSessionService(appKey: 'loanpayoffus');
+final paywallSession = PaywallSessionService(
+  appKey: 'loanpayoffus',
+  hasFullAccess: () => freemiumService.hasFullAccess,
+);
 
 final adService = CalcwiseAdService(
   config: CalcwiseAdConfig(
@@ -53,6 +57,8 @@ Future<void> main() async {
   await loadSavedLanguage();
   await themeModeService.initialize();
   await freemiumService.initialize();
+  await LoanNotificationService.initialize();
+  await LoanNotificationService.scheduleMonthlyCheckin(isSpanishNotifier.value);
   await paywallSession.initialize();
   await IAPService.instance.initialize();
   await requestCalcwiseConsent();
@@ -94,6 +100,20 @@ class LoanPayoffUSApp extends StatelessWidget {
                 ? const SplashScreen(child: _MainShell())
                 : const _MainShell(),
             debugShowCheckedModeBanner: false,
+            builder: (context, child) {
+              if (!MediaQuery.of(context).disableAnimations) return child!;
+              return Theme(
+                data: Theme.of(context).copyWith(
+                  pageTransitionsTheme: const PageTransitionsTheme(
+                    builders: {
+                      TargetPlatform.android: _NoAnimPageTransitionsBuilder(),
+                      TargetPlatform.iOS: _NoAnimPageTransitionsBuilder(),
+                    },
+                  ),
+                ),
+                child: child!,
+              );
+            },
           ),
         );
       },
@@ -109,6 +129,7 @@ class _MainShell extends StatefulWidget {
 
 class _MainShellState extends State<_MainShell> {
   int _index = 0;
+  bool _wasPremium = false;
 
   static const _screens = [
     CalculatorScreen(),
@@ -144,26 +165,36 @@ class _MainShellState extends State<_MainShell> {
   @override
   void initState() {
     super.initState();
+    _wasPremium = freemiumService.hasFullAccess;
     isSpanishNotifier.addListener(_onLangChange);
-    // Observe IAP errors and surface via Snackbar
+    freemiumService.isPremiumNotifier.addListener(_onPremiumChange);
     iapErrorNotifier.addListener(_onIapError);
-    // Record session and show paywall gate if needed
     WidgetsBinding.instance.addPostFrameCallback((_) => _recordSession());
   }
 
   @override
   void dispose() {
     isSpanishNotifier.removeListener(_onLangChange);
+    freemiumService.isPremiumNotifier.removeListener(_onPremiumChange);
     iapErrorNotifier.removeListener(_onIapError);
     super.dispose();
   }
 
   void _onLangChange() => setState(() {});
 
+  void _onPremiumChange() {
+    final now = freemiumService.hasFullAccess;
+    if (now && !_wasPremium && mounted) {
+      showPremiumWelcomeSnackBar(context, isSpanish: isSpanishNotifier.value);
+    }
+    _wasPremium = now;
+  }
+
   void _onIapError() {
     final msg = iapErrorNotifier.value;
     if (msg == null || !mounted) return;
     showIapErrorSnackBar(context, msg);
+    iapErrorNotifier.value = null;
   }
 
   Future<void> _recordSession() async {
@@ -233,6 +264,7 @@ class _MainShellState extends State<_MainShell> {
               ),
             ),
             onRewardAd: () => CalcwiseRewardAdSheet.show(context),
+            onPremium: () => PaywallHard.show(context),
           ),
         ],
       ),
@@ -262,4 +294,16 @@ class _MainShellState extends State<_MainShell> {
       ),
     );
   }
+}
+
+class _NoAnimPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _NoAnimPageTransitionsBuilder();
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) => child;
 }

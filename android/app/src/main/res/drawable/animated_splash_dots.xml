@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/splash_dots">
+    <target android:name="dot1" android:animation="@animator/splash_dot1"/>
+    <target android:name="dot2" android:animation="@animator/splash_dot2"/>
+    <target android:name="dot3" android:animation="@animator/splash_dot3"/>
+</animated-vector>

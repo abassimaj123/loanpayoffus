@@ -8,14 +8,13 @@ environment:
 
 dependencies:
   calcwise_core:
-    git:
-      url: https://github.com/abassimaj123/calcwise_core.git
-      ref: main
+    path: ../packages/calcwise_core
   flutter:
     sdk: flutter
 
   flutter_riverpod: ^2.5.1
   flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.0
   google_mobile_ads: ^5.1.0
   fl_chart: ^0.69.0
   sqflite: ^2.3.3
@@ -43,6 +42,8 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.1
   flutter_native_splash: ^2.4.0
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
 

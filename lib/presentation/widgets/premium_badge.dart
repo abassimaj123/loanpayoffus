@@ -11,7 +11,7 @@ class PremiumBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
-      valueListenable: freemiumService.isPremiumNotifier,
+      valueListenable: freemiumService.hasFullAccessNotifier,
       builder: (context, isPremium, _) {
         if (isPremium) {
           return Padding(
