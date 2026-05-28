@@ -4,10 +4,8 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Solid fill matching splash background. Android renders this (valid path),
-         but it is visually invisible against the matching window background.
-         Only the Flutter SplashScreen animation is perceived by the user. -->
+    <!-- Solid circle = splash background color. Invisible zoom animation on Samsung. -->
     <path
         android:fillColor="#512DA8"
-        android:pathData="M0,0 L108,0 L108,108 L0,108 Z"/>
+        android:pathData="M54,54 m-54,0 a54,54 0 1,0 108,0 a54,54 0 1,0 -108,0"/>
 </vector>

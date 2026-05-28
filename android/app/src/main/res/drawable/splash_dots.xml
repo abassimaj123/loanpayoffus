@@ -8,15 +8,15 @@
         android:name="dot1"
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.3"
-        android:pathData="M32,54 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0"/>
+        android:pathData="M27,54 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"/>
     <path
         android:name="dot2"
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.3"
-        android:pathData="M54,54 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0"/>
+        android:pathData="M51,54 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0"/>
     <path
         android:name="dot3"
         android:fillColor="#FFFFFF"
         android:fillAlpha="0.3"
-        android:pathData="M76,54 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0"/>
+        android:pathData="M78,54 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0"/>
 </vector>

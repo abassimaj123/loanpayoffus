@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import '../../../core/db/database_helper.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/freemium/iap_service.dart';
@@ -19,11 +19,6 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   List<Map<String, dynamic>> _rows = [];
   bool _loading = true;
-  final _fmt = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: '\$',
-    decimalDigits: 0,
-  );
 
   @override
   void initState() {
@@ -298,7 +293,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 const SizedBox(height: AppSpacing.smPlus),
                 Row(
                   children: [
-                    _chip(_fmt.format(amount), Icons.attach_money),
+                    _chip(AmountFormatter.format(amount, 'USD'), Icons.attach_money),
                     const SizedBox(width: AppSpacing.sm),
                     _chip('$rate%', Icons.percent),
                     const SizedBox(width: AppSpacing.sm),
@@ -312,8 +307,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     extra > 0
-                        ? '${s.extraSaved}: ${_fmt.format(extra)}/mo → saved ${_fmt.format(saved)}'
-                        : '${s.interestLabel}: ${_fmt.format(saved)}',
+                        ? '${s.extraSaved}: ${AmountFormatter.format(extra, 'USD')}/mo → saved ${AmountFormatter.format(saved, 'USD')}'
+                        : '${s.interestLabel}: ${AmountFormatter.format(saved, 'USD')}',
                     style: const TextStyle(
                       color: AppTheme.accentGood,
                       fontWeight: FontWeight.w600,

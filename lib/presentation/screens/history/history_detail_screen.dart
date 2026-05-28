@@ -1,8 +1,6 @@
-import 'package:calcwise_core/calcwise_core.dart'
-    show PaywallTrigger, CalcwiseAdFooter;
-import 'package:calcwise_core/calcwise_core.dart';
+import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -26,16 +24,6 @@ class HistoryDetailScreen extends StatefulWidget {
 }
 
 class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
-  final _fmtCur = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: '\$',
-    decimalDigits: 2,
-  );
-  final _fmtInt = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: '\$',
-    decimalDigits: 0,
-  );
   final _fmtDate = DateFormat('MMM d, yyyy · h:mm a');
 
   Map<String, dynamic> get _e => widget.entry;
@@ -52,16 +40,16 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
   List<({String label, String value})> _inputRows(AppStrings s) => [
     (label: s.loanTypeLabel, value: (_e['loan_type'] as String? ?? '—')),
-    (label: s.loanAmount, value: _fmtInt.format(_d('loan_amount'))),
+    (label: s.loanAmount, value: AmountFormatter.format(_d('loan_amount'), 'USD')),
     (
       label: s.interestRate,
       value: '${_d('interest_rate').toStringAsFixed(2)}%',
     ),
-    (label: s.monthlyPayment, value: _fmtCur.format(_d('monthly_payment'))),
+    (label: s.monthlyPayment, value: AmountFormatter.format(_d('monthly_payment'), 'USD')),
     if (_d('extra_payment') > 0)
       (
         label: s.extraPayment,
-        value: '${_fmtCur.format(_d('extra_payment'))}/mo',
+        value: '${AmountFormatter.format(_d('extra_payment'), 'USD')}/mo',
       ),
   ];
 
@@ -72,14 +60,15 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       (label: s.payoff, value: '${months ~/ 12}y ${months % 12}m'),
       (
         label: s.interestLabel,
-        value: _fmtCur.format(
+        value: AmountFormatter.format(
           _d('interest_rate') > 0
               ? _d('loan_amount') * _d('interest_rate') / 100 * months / 12
               : 0,
+          'USD',
         ),
       ),
       if (saved > 0)
-        (label: s.interestSavedExtra, value: _fmtInt.format(saved)),
+        (label: s.interestSavedExtra, value: AmountFormatter.format(saved, 'USD')),
     ];
   }
 

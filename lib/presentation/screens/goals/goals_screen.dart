@@ -1,9 +1,7 @@
-import 'package:calcwise_core/calcwise_core.dart'
-    show PaywallSoft, PaywallHard, PaywallTrigger;
 import 'package:calcwise_core/calcwise_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/language/language_notifier.dart';
@@ -13,7 +11,6 @@ import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import '../../../main.dart' show paywallSession;
 import '../../providers/loan_provider.dart';
-import 'package:calcwise_core/calcwise_core.dart' show CalcwiseAdFooter;
 
 class GoalsScreen extends ConsumerStatefulWidget {
   const GoalsScreen({super.key});
@@ -24,11 +21,6 @@ class GoalsScreen extends ConsumerStatefulWidget {
 class _GoalsScreenState extends ConsumerState<GoalsScreen> {
   DateTime? _deadline;
   double? _requiredExtra;
-  final _fmt = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: '\$',
-    decimalDigits: 0,
-  );
 
   @override
   void initState() {
@@ -187,7 +179,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                             borderRadius: BorderRadius.circular(AppRadius.xxl),
                           ),
                           child: Text(
-                            '${_fmt.format(result.interestSaved)} ${isEs ? "en interés ahorrado" : "in interest saved"}',
+                            '${AmountFormatter.format(result.interestSaved, 'USD')} ${isEs ? "en interés ahorrado" : "in interest saved"}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: AppTextSize.md,
@@ -236,7 +228,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
-                          'Loan: ${_fmt.format(loanAmt)} @ ${input.interestRatePct}%',
+                          'Loan: ${AmountFormatter.format(loanAmt, 'USD')} @ ${input.interestRatePct}%',
                           style: TextStyle(
                             color: Theme.of(
                               context,
@@ -278,7 +270,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                     ),
                     title: Text(s.interestSavedExtra),
                     subtitle: Text(
-                      _fmt.format(result.interestSaved),
+                      AmountFormatter.format(result.interestSaved, 'USD'),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.accentGood,
@@ -329,7 +321,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
-                          _fmt.format(_requiredExtra),
+                          AmountFormatter.format(_requiredExtra!, 'USD'),
                           style: const TextStyle(
                             fontSize: AppTextSize.display,
                             fontWeight: FontWeight.bold,

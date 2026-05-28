@@ -1,12 +1,10 @@
-import 'package:calcwise_core/calcwise_core.dart'
-    show PaywallTrigger, CalcwiseAdFooter;
-import 'package:calcwise_core/calcwise_core.dart';
+import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import '../../../core/services/pdf_export_service.dart' show PdfExportService;
 import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -37,12 +35,6 @@ class PayoffPlanScreen extends ConsumerWidget {
     bool isEs,
   ) async {
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
-    final fmt = NumberFormat.currency(
-      locale: 'en_US',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
-
     if (!freemiumService.hasFullAccess) {
       final gate = await paywallSession.recordAction();
       if (!context.mounted) return;
@@ -63,17 +55,17 @@ class PayoffPlanScreen extends ConsumerWidget {
     buf.writeln(
       '${s.payoff}: ${result.normalMonths ~/ 12}y ${result.normalMonths % 12}m',
     );
-    buf.writeln('${s.interest}: ${fmt.format(result.interestNormal)}');
-    buf.writeln('${s.totalPaid}: ${fmt.format(result.totalPaidNormal)}');
+    buf.writeln('${s.interest}: ${AmountFormatter.format(result.interestNormal, 'USD')}');
+    buf.writeln('${s.totalPaid}: ${AmountFormatter.format(result.totalPaidNormal, 'USD')}');
     if (result.monthsSaved > 0) {
       buf.writeln(sep);
       buf.writeln(s.withExtraLabel);
       buf.writeln(
         '${s.payoff}: ${result.extraMonths ~/ 12}y ${result.extraMonths % 12}m',
       );
-      buf.writeln('${s.interest}: ${fmt.format(result.interestExtra)}');
-      buf.writeln('${s.totalPaid}: ${fmt.format(result.totalPaidExtra)}');
-      buf.writeln('${s.saved}: ${fmt.format(result.interestSaved)}');
+      buf.writeln('${s.interest}: ${AmountFormatter.format(result.interestExtra, 'USD')}');
+      buf.writeln('${s.totalPaid}: ${AmountFormatter.format(result.totalPaidExtra, 'USD')}');
+      buf.writeln('${s.saved}: ${AmountFormatter.format(result.interestSaved, 'USD')}');
     }
     buf.writeln(sep);
     buf.writeln(s.calculatedWith);
@@ -113,16 +105,6 @@ class PayoffPlanScreen extends ConsumerWidget {
     bool isEs,
   ) async {
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
-    final fmt = NumberFormat.currency(
-      locale: 'en_US',
-      symbol: '\$',
-      decimalDigits: 2,
-    );
-    final fmtInt = NumberFormat.currency(
-      locale: 'en_US',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
     final pdf = pw.Document();
 
     pdf.addPage(
@@ -181,11 +163,11 @@ class PayoffPlanScreen extends ConsumerWidget {
                 ),
                 _pdfSummaryRow(
                   s.interest,
-                  fmtInt.format(result.interestNormal),
+                  AmountFormatter.format(result.interestNormal, 'USD'),
                 ),
                 _pdfSummaryRow(
                   s.totalPaid,
-                  fmtInt.format(result.totalPaidNormal),
+                  AmountFormatter.format(result.totalPaidNormal, 'USD'),
                 ),
                 if (result.monthsSaved > 0) ...[
                   pw.Divider(color: PdfColors.grey400),
@@ -203,15 +185,15 @@ class PayoffPlanScreen extends ConsumerWidget {
                   ),
                   _pdfSummaryRow(
                     s.interest,
-                    fmtInt.format(result.interestExtra),
+                    AmountFormatter.format(result.interestExtra, 'USD'),
                   ),
                   _pdfSummaryRow(
                     s.totalPaid,
-                    fmtInt.format(result.totalPaidExtra),
+                    AmountFormatter.format(result.totalPaidExtra, 'USD'),
                   ),
                   _pdfSummaryRow(
                     s.saved,
-                    fmtInt.format(result.interestSaved),
+                    AmountFormatter.format(result.interestSaved, 'USD'),
                     highlight: true,
                   ),
                 ],
@@ -261,10 +243,10 @@ class PayoffPlanScreen extends ConsumerWidget {
                   decoration: pw.BoxDecoration(color: bg),
                   children: [
                     _pdfCell('${r.month}'),
-                    _pdfCell(fmt.format(r.payment)),
-                    _pdfCell(fmt.format(r.principal)),
-                    _pdfCell(fmt.format(r.interest)),
-                    _pdfCell(fmtInt.format(r.balance), bold: r.balance < 0.01),
+                    _pdfCell(AmountFormatter.format(r.payment, 'USD')),
+                    _pdfCell(AmountFormatter.format(r.principal, 'USD')),
+                    _pdfCell(AmountFormatter.format(r.interest, 'USD')),
+                    _pdfCell(AmountFormatter.format(r.balance, 'USD'), bold: r.balance < 0.01),
                   ],
                 );
               }),
@@ -371,16 +353,6 @@ class PayoffPlanScreen extends ConsumerWidget {
     bool isEs,
   ) {
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
-    final fmt = NumberFormat.currency(
-      locale: 'en_US',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
-    final fmtFull = NumberFormat.currency(
-      locale: 'en_US',
-      symbol: '\$',
-      decimalDigits: 2,
-    );
 
     if (result == null) {
       return Column(
@@ -441,7 +413,7 @@ class PayoffPlanScreen extends ConsumerWidget {
               _HeaderStat(s.months, '${result.extraMonths}', Colors.white),
               _HeaderStat(
                 s.interest,
-                fmt.format(result.interestExtra),
+                AmountFormatter.format(result.interestExtra, 'USD'),
                 Colors.white70,
               ),
               _HeaderStat(
@@ -669,8 +641,6 @@ class PayoffPlanScreen extends ConsumerWidget {
                 endBalance: endBal,
                 isLastGroup: isLastGrp,
                 entries: group,
-                fmt: fmt,
-                fmtFull: fmtFull,
                 s: s,
               );
             },
@@ -688,7 +658,6 @@ class _MonthGroup extends StatefulWidget {
   final double totalPayment, totalPrincipal, totalInterest, endBalance;
   final bool isLastGroup;
   final List<AmortizationEntry> entries;
-  final NumberFormat fmt, fmtFull;
   final AppStrings s;
 
   const _MonthGroup({
@@ -701,8 +670,6 @@ class _MonthGroup extends StatefulWidget {
     required this.endBalance,
     required this.isLastGroup,
     required this.entries,
-    required this.fmt,
-    required this.fmtFull,
     required this.s,
   });
 
@@ -801,7 +768,7 @@ class _MonthGroupState extends State<_MonthGroup>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${s.balance}: ${widget.fmt.format(widget.endBalance)}',
+                          '${s.balance}: ${AmountFormatter.format(widget.endBalance, 'USD')}',
                           style: TextStyle(
                             fontSize: AppTextSize.xs,
                             color: Theme.of(
@@ -817,13 +784,13 @@ class _MonthGroupState extends State<_MonthGroup>
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       _MiniChip(
-                        label: widget.fmtFull.format(widget.totalPayment),
+                        label: AmountFormatter.format(widget.totalPayment, 'USD'),
                         color: AppTheme.primaryDark,
                       ),
                       const SizedBox(height: 3),
                       _MiniChip(
                         label:
-                            '${widget.fmtFull.format(widget.totalInterest)} int',
+                            '${AmountFormatter.format(widget.totalInterest, 'USD')} int',
                         color: AppTheme.warning,
                       ),
                     ],
@@ -878,15 +845,15 @@ class _MonthGroupState extends State<_MonthGroup>
                 child: Row(
                   children: [
                     _Cell('${e.month}', 1, bold: last),
-                    _Cell(widget.fmtFull.format(e.payment), 2, bold: last),
-                    _Cell(widget.fmtFull.format(e.principal), 2, bold: last),
+                    _Cell(AmountFormatter.format(e.payment, 'USD'), 2, bold: last),
+                    _Cell(AmountFormatter.format(e.principal, 'USD'), 2, bold: last),
                     _Cell(
-                      widget.fmtFull.format(e.interest),
+                      AmountFormatter.format(e.interest, 'USD'),
                       2,
                       color: AppTheme.warning,
                     ),
                     _Cell(
-                      widget.fmt.format(e.balance),
+                      AmountFormatter.format(e.balance, 'USD'),
                       2,
                       bold: last,
                       color: last ? AppTheme.accentGood : null,

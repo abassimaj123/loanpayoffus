@@ -1,4 +1,4 @@
-import 'package:calcwise_core/calcwise_core.dart' hide CrashlyticsService;
+import 'package:calcwise_core/calcwise_core.dart' hide CrashlyticsService, PaywallHard;
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
@@ -27,7 +27,10 @@ import 'presentation/widgets/paywall_hard.dart';
 import 'presentation/screens/splash/splash_screen.dart';
 import 'core/services/loan_notification_service.dart';
 
-final paywallSession = PaywallSessionService(appKey: 'loanpayoffus');
+final paywallSession = PaywallSessionService(
+  appKey: 'loanpayoffus',
+  hasFullAccess: () => freemiumService.hasFullAccess,
+);
 
 final adService = CalcwiseAdService(
   config: CalcwiseAdConfig(

@@ -92,11 +92,9 @@ packages:
   calcwise_core:
     dependency: "direct main"
     description:
-      path: "."
-      ref: main
-      resolved-ref: "6aac16e3f5030fceacdcbadc7e7b98159eb1dc60"
-      url: "https://github.com/abassimaj123/calcwise_core.git"
-    source: git
+      path: "../packages/calcwise_core"
+      relative: true
+    source: path
     version: "1.0.0"
   calcwise_lint:
     dependency: "direct dev"

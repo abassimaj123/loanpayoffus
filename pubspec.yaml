@@ -8,9 +8,7 @@ environment:
 
 dependencies:
   calcwise_core:
-    git:
-      url: https://github.com/abassimaj123/calcwise_core.git
-      ref: main
+    path: ../packages/calcwise_core
   flutter:
     sdk: flutter
 

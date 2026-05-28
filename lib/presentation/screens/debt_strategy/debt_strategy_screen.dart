@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/freemium/freemium_service.dart';
@@ -38,16 +38,6 @@ class DebtStrategyScreen extends StatefulWidget {
 }
 
 class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
-  final _fmt = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: '\$',
-    decimalDigits: 0,
-  );
-  final _fmtCents = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: '\$',
-    decimalDigits: 2,
-  );
   final _extraCtrl = TextEditingController(text: '0');
 
   // ── Snowflake (one-time windfall) ─────────────────────────────────────────
@@ -616,8 +606,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
       SnackBar(
         content: Text(
           isSpanishNotifier.value
-              ? 'Pago registrado: ${_fmtCents.format(saved.amount)}'
-              : 'Payment logged: ${_fmtCents.format(saved.amount)}',
+              ? 'Pago registrado: ${AmountFormatter.format(saved.amount, 'USD')}'
+              : 'Payment logged: ${AmountFormatter.format(saved.amount, 'USD')}',
         ),
         backgroundColor: AppTheme.accentGood,
         duration: const Duration(seconds: 2),
@@ -742,7 +732,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         SizedBox(
                           width: 70,
                           child: Text(
-                            _fmt.format(a.interest),
+                            AmountFormatter.format(a.interest, 'USD'),
                             textAlign: TextAlign.right,
                             style: const TextStyle(
                               fontSize: AppTextSize.xs,
@@ -753,7 +743,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         SizedBox(
                           width: 70,
                           child: Text(
-                            _fmt.format(a.principal),
+                            AmountFormatter.format(a.principal, 'USD'),
                             textAlign: TextAlign.right,
                             style: const TextStyle(
                               fontSize: AppTextSize.xs,
@@ -766,7 +756,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                           child: Text(
                             a.endingBalance < 1
                                 ? (isEs ? '¡Pagado!' : 'Paid off!')
-                                : _fmt.format(a.endingBalance),
+                                : AmountFormatter.format(a.endingBalance, 'USD'),
                             textAlign: TextAlign.right,
                             style: TextStyle(
                               fontSize: AppTextSize.xs,
@@ -900,7 +890,6 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     onDismissed: (_) => _deleteDebt(e.key),
                     child: _DebtTile(
                       debt: e.value,
-                      fmt: _fmt,
                       totalPaid: _totalPaid[e.value.id] ?? 0,
                       lastPaid: _lastPaid[e.value.id],
                       isEs: isEs,
@@ -1110,7 +1099,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   min: 0,
                   max: 1000,
                   divisions: 100,
-                  label: _fmt.format(_extraSlider),
+                  label: AmountFormatter.format(_extraSlider, 'USD'),
                   activeColor: AppTheme.primary,
                   onChanged: (v) {
                     setState(() {
@@ -1222,7 +1211,6 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       withSnowflake: _snowflakeResult!,
                       snowflakeAmount: _snowflakeAmount,
                       snowflakeMonth: _snowflakeMonth,
-                      fmt: _fmt,
                       isEs: isEs,
                     ),
                   ],
@@ -1300,7 +1288,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   min: 0,
                   max: 500,
                   divisions: 50,
-                  label: '+${_fmt.format(_whatIfSlider)}/mo',
+                  label: '+${AmountFormatter.format(_whatIfSlider, 'USD')}/mo',
                   activeColor: AppTheme.accentGood,
                   onChanged: (v) {
                     setState(() {
@@ -1319,8 +1307,6 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     baseline: _strategyResult!,
                     withExtra: _whatIfResult!,
                     extraAmount: _whatIfExtra,
-                    fmt: _fmt,
-                    fmtCents: _fmtCents,
                     isEs: isEs,
                   ),
                 ],
@@ -1358,7 +1344,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                             : 'Debt-free: $dateLabel';
                         return Semantics(
                           label:
-                              '${isEs ? "Libre de deudas en" : "Debt-free in"} $timeLabel. ${isEs ? "Interés total" : "Total interest"}: ${_fmt.format(interest)}${interestSaved > 0 && _extra > 0 ? ". ${isEs ? "Ahorras" : "You save"} ${_fmt.format(interestSaved)}" : ""}',
+                              '${isEs ? "Libre de deudas en" : "Debt-free in"} $timeLabel. ${isEs ? "Interés total" : "Total interest"}: ${AmountFormatter.format(interest, 'USD')}${interestSaved > 0 && _extra > 0 ? ". ${isEs ? "Ahorras" : "You save"} ${AmountFormatter.format(interestSaved, 'USD')}" : ""}',
                           child: CalcwiseHeroCard(
                             label: isEs ? 'LIBRE DE DEUDAS EN' : 'DEBT-FREE IN',
                             value: timeLabel,
@@ -1368,14 +1354,14 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                                 label: isEs
                                     ? 'Interés total'
                                     : 'Total interest',
-                                value: _fmt.format(interest),
+                                value: AmountFormatter.format(interest, 'USD'),
                               ),
                               if (interestSaved > 0 && _extra > 0)
                                 (
                                   label: isEs
                                       ? 'Ahorro vs mínimos'
                                       : 'Saved vs minimum',
-                                  value: _fmt.format(interestSaved),
+                                  value: AmountFormatter.format(interestSaved, 'USD'),
                                 ),
                             ],
                           ),
@@ -1390,7 +1376,6 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     _InterestBarChart(
                       minimumInterest: _minimumResult!.totalInterest,
                       strategyInterest: _strategyResult!.totalInterest,
-                      fmt: _fmt,
                       isEs: isEs,
                       strategy: _strategy,
                     ),
@@ -1406,7 +1391,6 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     (e) => _PayoffOrderTile(
                       rank: e.key + 1,
                       summary: e.value,
-                      fmt: _fmt,
                       isEs: isEs,
                     ),
                   ),
@@ -1468,14 +1452,12 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
 class _InterestBarChart extends StatelessWidget {
   final double minimumInterest;
   final double strategyInterest;
-  final NumberFormat fmt;
   final bool isEs;
   final PayoffStrategy strategy;
 
   const _InterestBarChart({
     required this.minimumInterest,
     required this.strategyInterest,
-    required this.fmt,
     required this.isEs,
     required this.strategy,
   });
@@ -1533,7 +1515,7 @@ class _InterestBarChart extends StatelessWidget {
                   left: AppSpacing.xxl,
                 ),
                 child: Text(
-                  '${isEs ? "Ahorras" : "You save"} ${fmt.format(saved)}',
+                  '${isEs ? "Ahorras" : "You save"} ${AmountFormatter.format(saved, 'USD')}',
                   style: const TextStyle(
                     color: AppTheme.accentGood,
                     fontWeight: FontWeight.bold,
@@ -1572,7 +1554,7 @@ class _InterestBarChart extends StatelessWidget {
                         showTitles: true,
                         reservedSize: 52,
                         getTitlesWidget: (v, _) => Text(
-                          fmt.format(v),
+                          AmountFormatter.format(v, 'USD'),
                           style: TextStyle(
                             fontSize: AppTextSize.xxs,
                             color: Theme.of(
@@ -1658,7 +1640,7 @@ class _InterestBarChart extends StatelessWidget {
                       getTooltipItem: (group, _, rod, __) {
                         final label = group.x == 0 ? minLabel : strategyLabel;
                         return BarTooltipItem(
-                          '$label\n${fmt.format(rod.toY)}',
+                          '$label\n${AmountFormatter.format(rod.toY, 'USD')}',
                           TextStyle(
                             color: Theme.of(
                               context,
@@ -1708,7 +1690,6 @@ class _SectionHeader extends StatelessWidget {
 
 class _DebtTile extends StatelessWidget {
   final DebtItem debt;
-  final NumberFormat fmt;
   final double totalPaid;
   final DateTime? lastPaid;
   final bool isEs;
@@ -1718,7 +1699,6 @@ class _DebtTile extends StatelessWidget {
 
   const _DebtTile({
     required this.debt,
-    required this.fmt,
     required this.totalPaid,
     required this.lastPaid,
     required this.isEs,
@@ -1817,9 +1797,9 @@ class _DebtTile extends StatelessWidget {
                       ),
                       const SizedBox(height: AppSpacing.xxs),
                       Text(
-                        '${fmt.format(debt.balance)}  •  '
+                        '${AmountFormatter.format(debt.balance, 'USD')}  •  '
                         '${debt.annualRate.toStringAsFixed(2)}%  •  '
-                        '${fmt.format(debt.minPayment)}/mo',
+                        '${AmountFormatter.format(debt.minPayment, 'USD')}/mo',
                         style: TextStyle(
                           fontSize: AppTextSize.xs,
                           color: Theme.of(
@@ -1871,7 +1851,7 @@ class _DebtTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     totalPaid > 0
-                        ? '${isEs ? "Pagado" : "Paid"}: ${fmt.format(totalPaid)} / ${fmt.format(orig)}'
+                        ? '${isEs ? "Pagado" : "Paid"}: ${AmountFormatter.format(totalPaid, 'USD')} / ${AmountFormatter.format(orig, 'USD')}'
                         : (isEs
                               ? 'Sin pagos registrados'
                               : 'No payments logged'),
@@ -1931,13 +1911,11 @@ class _DebtTile extends StatelessWidget {
 class _PayoffOrderTile extends StatelessWidget {
   final int rank;
   final DebtPayoffSummary summary;
-  final NumberFormat fmt;
   final bool isEs;
 
   const _PayoffOrderTile({
     required this.rank,
     required this.summary,
-    required this.fmt,
     required this.isEs,
   });
 
@@ -1994,7 +1972,7 @@ class _PayoffOrderTile extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${isEs ? "Interés" : "Interest"}: ${fmt.format(summary.interestPaid)}',
+                  '${isEs ? "Interés" : "Interest"}: ${AmountFormatter.format(summary.interestPaid, 'USD')}',
                   style: TextStyle(
                     fontSize: AppTextSize.xs,
                     color: Theme.of(
@@ -2028,7 +2006,6 @@ class _SnowflakeResultBanner extends StatelessWidget {
   final EngineResult withSnowflake;
   final double snowflakeAmount;
   final int snowflakeMonth;
-  final NumberFormat fmt;
   final bool isEs;
 
   const _SnowflakeResultBanner({
@@ -2036,7 +2013,6 @@ class _SnowflakeResultBanner extends StatelessWidget {
     required this.withSnowflake,
     required this.snowflakeAmount,
     required this.snowflakeMonth,
-    required this.fmt,
     required this.isEs,
   });
 
@@ -2077,8 +2053,8 @@ class _SnowflakeResultBanner extends StatelessWidget {
               Expanded(
                 child: Text(
                   isEs
-                      ? 'Con ${fmt.format(snowflakeAmount)} en el mes $snowflakeMonth:'
-                      : 'With ${fmt.format(snowflakeAmount)} windfall in month $snowflakeMonth:',
+                      ? 'Con ${AmountFormatter.format(snowflakeAmount, 'USD')} en el mes $snowflakeMonth:'
+                      : 'With ${AmountFormatter.format(snowflakeAmount, 'USD')} windfall in month $snowflakeMonth:',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: AppTextSize.body,
@@ -2112,7 +2088,7 @@ class _SnowflakeResultBanner extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      fmt.format(baseline.totalInterest),
+                      AmountFormatter.format(baseline.totalInterest, 'USD'),
                       style: const TextStyle(
                         fontSize: AppTextSize.sm,
                         color: AppTheme.warning,
@@ -2145,7 +2121,7 @@ class _SnowflakeResultBanner extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      fmt.format(withSnowflake.totalInterest),
+                      AmountFormatter.format(withSnowflake.totalInterest, 'USD'),
                       style: const TextStyle(
                         fontSize: AppTextSize.sm,
                         color: AppTheme.accentGood,
@@ -2160,8 +2136,8 @@ class _SnowflakeResultBanner extends StatelessWidget {
             const Divider(height: AppSpacing.lg),
             Text(
               isEs
-                  ? 'Ahorro: ${fmt.format(interestSaved)} en intereses${monthsSaved > 0 ? " · $monthsSaved meses antes" : ""}'
-                  : 'Savings: ${fmt.format(interestSaved)} in interest${monthsSaved > 0 ? " · $monthsSaved months sooner" : ""}',
+                  ? 'Ahorro: ${AmountFormatter.format(interestSaved, 'USD')} en intereses${monthsSaved > 0 ? " · $monthsSaved meses antes" : ""}'
+                  : 'Savings: ${AmountFormatter.format(interestSaved, 'USD')} in interest${monthsSaved > 0 ? " · $monthsSaved months sooner" : ""}',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: AppTheme.accentGood,
@@ -2183,16 +2159,12 @@ class _WhatIfComparisonCard extends StatelessWidget {
   final EngineResult baseline;
   final EngineResult withExtra;
   final double extraAmount;
-  final NumberFormat fmt;
-  final NumberFormat fmtCents;
   final bool isEs;
 
   const _WhatIfComparisonCard({
     required this.baseline,
     required this.withExtra,
     required this.extraAmount,
-    required this.fmt,
-    required this.fmtCents,
     required this.isEs,
   });
 
@@ -2233,8 +2205,8 @@ class _WhatIfComparisonCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     isEs
-                        ? '¿Qué pasa si pago +${fmt.format(extraAmount)}/mes?'
-                        : 'What if I paid +${fmtCents.format(extraAmount)}/mo?',
+                        ? '¿Qué pasa si pago +${AmountFormatter.format(extraAmount, 'USD')}/mes?'
+                        : 'What if I paid +${AmountFormatter.format(extraAmount, 'USD')}/mo?',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: AppTextSize.body,
@@ -2282,7 +2254,7 @@ class _WhatIfComparisonCard extends StatelessWidget {
                         style: const TextStyle(fontSize: AppTextSize.xs),
                       ),
                       Text(
-                        fmt.format(baseline.totalInterest),
+                        AmountFormatter.format(baseline.totalInterest, 'USD'),
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: AppTextSize.body,
@@ -2300,8 +2272,8 @@ class _WhatIfComparisonCard extends StatelessWidget {
                     children: [
                       Text(
                         isEs
-                            ? 'Con +${fmt.format(extraAmount)}/mes'
-                            : 'With +${fmt.format(extraAmount)}/mo',
+                            ? 'Con +${AmountFormatter.format(extraAmount, 'USD')}/mes'
+                            : 'With +${AmountFormatter.format(extraAmount, 'USD')}/mo',
                         style: const TextStyle(
                           fontSize: AppTextSize.xs,
                           fontWeight: FontWeight.w600,
@@ -2327,7 +2299,7 @@ class _WhatIfComparisonCard extends StatelessWidget {
                         style: const TextStyle(fontSize: AppTextSize.xs),
                       ),
                       Text(
-                        fmt.format(withExtra.totalInterest),
+                        AmountFormatter.format(withExtra.totalInterest, 'USD'),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: AppTextSize.body,
@@ -2352,8 +2324,8 @@ class _WhatIfComparisonCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       isEs
-                          ? 'Ahorros: ${fmt.format(interestSaved)}'
-                          : 'Savings: ${fmt.format(interestSaved)}',
+                          ? 'Ahorros: ${AmountFormatter.format(interestSaved, 'USD')}'
+                          : 'Savings: ${AmountFormatter.format(interestSaved, 'USD')}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.accentGood,
