@@ -297,13 +297,6 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                     tooltip: s.shareLabel,
                     onPressed: () => _share(context, s),
                   ),
-                  IconButton(
-                    icon: isPremium
-                        ? const Icon(Icons.picture_as_pdf_rounded)
-                        : const Icon(Icons.lock_outline),
-                    tooltip: s.exportPdf,
-                    onPressed: () => _exportPdf(context, s),
-                  ),
                 ],
               ),
               body: Column(
