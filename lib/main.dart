@@ -211,6 +211,7 @@ class _MainShellState extends State<_MainShell> {
     await AnalyticsService.instance.logTabSwitch(tabName: _tabNames[i]);
     final trigger = await paywallSession.recordAction();
     if (!mounted) return;
+    if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
     if (trigger == PaywallTrigger.hard) {
       PaywallHard.show(context);
     } else if (trigger == PaywallTrigger.soft) {
