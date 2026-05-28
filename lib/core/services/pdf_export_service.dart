@@ -3,7 +3,9 @@ import '../language/language_notifier.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../freemium/iap_service.dart';
 import '../theme/app_theme.dart';
 import '../../main.dart';
@@ -56,11 +58,13 @@ class PdfExportService {
         ),
       ),
     );
-    await Printing.sharePdf(
-      bytes: await pdf.save(),
-      filename:
-          'LoanPayoff_${balance.round()}_${DateTime.now().millisecondsSinceEpoch}.pdf',
-    );
+    final pdfBytes = await pdf.save();
+    final tmpDir = await getTemporaryDirectory();
+    final pdfFile = File(
+        '${tmpDir.path}/LoanPayoff_${balance.round()}_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    await pdfFile.writeAsBytes(pdfBytes);
+    await Share.shareXFiles(
+        [XFile(pdfFile.path, mimeType: 'application/pdf')]);
   }
 
   static pw.Widget _buildPage({
