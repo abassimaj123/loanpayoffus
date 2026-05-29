@@ -206,16 +206,26 @@ class _MainShellState extends State<_MainShell> {
   }
 
   Future<void> _onTabSelected(int i) async {
-    // All tabs accessible — premium features gated inside each screen
     setState(() => _index = i);
     await AnalyticsService.instance.logTabSwitch(tabName: _tabNames[i]);
+
+    // Don't gate the Calculator tab — it's always free
+    if (i == 0) return;
+
     final trigger = await paywallSession.recordAction();
     if (!mounted) return;
     if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
     if (trigger == PaywallTrigger.hard) {
       PaywallHard.show(context);
     } else if (trigger == PaywallTrigger.soft) {
-      PaywallSoft.show(context, featureTitle: 'Full Payoff Analysis');
+      PaywallSoft.show(
+        context,
+        featureTitle: isSpanishNotifier.value
+            ? 'Análisis de Liquidación'
+            : 'Full Payoff Analysis',
+        isSpanish: isSpanishNotifier.value,
+        onUnlock: () => PaywallHard.show(context),
+      );
     }
   }
 
@@ -244,6 +254,7 @@ class _MainShellState extends State<_MainShell> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
         title: Text(
           s.appTitle,
           style: const TextStyle(

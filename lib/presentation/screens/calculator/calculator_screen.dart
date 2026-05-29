@@ -3,6 +3,8 @@ import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'refinance_screen.dart';
+import 'consolidation_screen.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
@@ -202,6 +204,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
           featureTitle: isSpanishNotifier.value
               ? 'Historial ilimitado'
               : 'Unlimited history',
+          isSpanish: isSpanishNotifier.value,
+          onUnlock: () => PaywallHard.show(context),
         );
       }
       return;
@@ -1065,6 +1069,17 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                           ),
                                         ),
                                         const SizedBox(height: AppSpacing.sm),
+                                        // index 5 — Refinance Calculator CTA (premium feature)
+                                        CalcwiseStaggerItem(
+                                          index: 5,
+                                          child: _RefinanceCta(isEs: isEs),
+                                        ),
+                                        const SizedBox(height: AppSpacing.sm),
+                                        CalcwiseStaggerItem(
+                                          index: 6,
+                                          child: _ConsolidationCta(isEs: isEs),
+                                        ),
+                                        const SizedBox(height: AppSpacing.sm),
                                         Text(
                                           isEs
                                               ? 'Solo para fines informativos. No es asesoramiento financiero.'
@@ -1668,4 +1683,235 @@ class _BwRow extends StatelessWidget {
       ),
     ],
   );
+}
+
+// ---------------------------------------------------------------------------
+// Consolidation Calculator CTA
+// ---------------------------------------------------------------------------
+class _ConsolidationCta extends StatelessWidget {
+  final bool isEs;
+  const _ConsolidationCta({required this.isEs});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      onTap: () {
+        if (!freemiumService.hasFullAccess) {
+          PaywallHard.show(context);
+          return;
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ConsolidationScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.mdPlus,
+        ),
+        decoration: BoxDecoration(
+          color: AppTheme.primary.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: const Icon(
+                Icons.merge_rounded,
+                color: AppTheme.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        isEs
+                            ? 'Consolidación de Deudas'
+                            : 'Debt Consolidation',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTextSize.body,
+                          color: AppTheme.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      if (!freemiumService.hasFullAccess)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xs,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary,
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: const Text(
+                            'PRO',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: AppTextSize.xxs,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    isEs
+                        ? 'Combina tus deudas en un solo pago'
+                        : 'Combine all your debts into one payment',
+                    style: TextStyle(
+                      fontSize: AppTextSize.xs,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.55),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              freemiumService.hasFullAccess
+                  ? Icons.arrow_forward_ios_rounded
+                  : Icons.lock_outline_rounded,
+              size: 16,
+              color: AppTheme.primary.withValues(alpha: 0.6),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Refinance Calculator CTA
+// ---------------------------------------------------------------------------
+class _RefinanceCta extends StatelessWidget {
+  final bool isEs;
+  const _RefinanceCta({required this.isEs});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      onTap: () {
+        if (!freemiumService.hasFullAccess) {
+          PaywallHard.show(context);
+          return;
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const RefinanceScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.mdPlus,
+        ),
+        decoration: BoxDecoration(
+          color: AppTheme.primary.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: const Icon(
+                Icons.compare_arrows_rounded,
+                color: AppTheme.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        isEs
+                            ? 'Calculadora de Refinanciamiento'
+                            : 'Refinance Calculator',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTextSize.body,
+                          color: AppTheme.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      if (!freemiumService.hasFullAccess)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xs,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary,
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: const Text(
+                            'PRO',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: AppTextSize.xxs,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    isEs
+                        ? 'Compara tu préstamo actual con una nueva tasa'
+                        : 'Compare current loan vs new rate — break-even & savings',
+                    style: TextStyle(
+                      fontSize: AppTextSize.xs,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.55),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              freemiumService.hasFullAccess
+                  ? Icons.arrow_forward_ios_rounded
+                  : Icons.lock_outline_rounded,
+              size: 16,
+              color: AppTheme.primary.withValues(alpha: 0.6),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

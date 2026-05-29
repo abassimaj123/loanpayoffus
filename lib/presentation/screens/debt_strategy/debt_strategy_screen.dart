@@ -13,12 +13,23 @@ import '../../../domain/models/debt_category.dart';
 import '../../../domain/models/debt_payment.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../widgets/paywall_soft.dart';
+import '../../widgets/paywall_hard.dart';
 import 'payments_history_screen.dart';
 import 'package:calcwise_core/calcwise_core.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// Safe date formatting — falls back to 'en' if locale data isn't loaded.
+String _yMMM(DateTime date, bool isEs) {
+  try {
+    return DateFormat.yMMM(isEs ? 'es' : 'en').format(date);
+  } catch (_) {
+    return DateFormat('MMM yyyy').format(date);
+  }
+}
+
 double _parseNum(String v) {
   if (v.isEmpty) return 0.0;
   final s = (v.contains('.') && v.contains(','))
@@ -202,7 +213,11 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     if (!freemiumService.hasFullAccess &&
         _debts.length >= _freeDebtLimit &&
         existing == null) {
-      await PaywallSoft.show(context);
+      await PaywallSoft.show(
+        context,
+        isSpanish: isSpanishNotifier.value,
+        onUnlock: () => _showDebtDialog(existing: existing, index: index),
+      );
       return;
     }
 
@@ -620,7 +635,11 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   Future<void> _showSchedule() async {
     if (!freemiumService.hasFullAccess) {
       AnalyticsService.instance.logPaywallViewed('payment_schedule');
-      await PaywallSoft.show(context);
+      await PaywallSoft.show(
+        context,
+        isSpanish: isSpanishNotifier.value,
+        onUnlock: () => _showSchedule(),
+      );
       return;
     }
     if (_strategyResult == null) return;
@@ -1335,9 +1354,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                           now.month + months,
                           now.day,
                         );
-                        final dateLabel = DateFormat.yMMM(
-                          isEs ? 'es' : 'en',
-                        ).format(freeOn);
+                        final dateLabel = _yMMM(freeOn, isEs);
                         final timeLabel = '${months ~/ 12}y ${months % 12}m';
                         final secondaryLabel = isEs
                             ? 'Libre de deudas: $dateLabel'
@@ -2022,12 +2039,8 @@ class _SnowflakeResultBanner extends StatelessWidget {
     DateTime _payoffDate(int months) =>
         DateTime(now.year, now.month + months, now.day);
 
-    final baseDateLabel = DateFormat.yMMM(
-      isEs ? 'es' : 'en',
-    ).format(_payoffDate(baseline.totalMonths));
-    final sfDateLabel = DateFormat.yMMM(
-      isEs ? 'es' : 'en',
-    ).format(_payoffDate(withSnowflake.totalMonths));
+    final baseDateLabel = _yMMM(_payoffDate(baseline.totalMonths), isEs);
+    final sfDateLabel = _yMMM(_payoffDate(withSnowflake.totalMonths), isEs);
     final monthsSaved = baseline.totalMonths - withSnowflake.totalMonths;
     final interestSaved = (baseline.totalInterest - withSnowflake.totalInterest)
         .clamp(0.0, double.infinity);
@@ -2174,12 +2187,8 @@ class _WhatIfComparisonCard extends StatelessWidget {
     DateTime _payoffDate(int months) =>
         DateTime(now.year, now.month + months, now.day);
 
-    final baseDateLabel = DateFormat.yMMM(
-      isEs ? 'es' : 'en',
-    ).format(_payoffDate(baseline.totalMonths));
-    final extraDateLabel = DateFormat.yMMM(
-      isEs ? 'es' : 'en',
-    ).format(_payoffDate(withExtra.totalMonths));
+    final baseDateLabel = _yMMM(_payoffDate(baseline.totalMonths), isEs);
+    final extraDateLabel = _yMMM(_payoffDate(withExtra.totalMonths), isEs);
     final interestSaved = (baseline.totalInterest - withExtra.totalInterest)
         .clamp(0.0, double.infinity);
 

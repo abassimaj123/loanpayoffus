@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/freemium/freemium_service.dart';
 import 'paywall_soft.dart';
-import 'package:calcwise_core/calcwise_core.dart';
+import 'paywall_hard.dart';
+import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 
 /// AppBar action widget that shows "Premium" badge when active,
 /// or a "⭐ Go Pro" tap-to-upgrade chip when free.
@@ -62,7 +63,10 @@ class PremiumBadge extends StatelessWidget {
           padding: const EdgeInsets.only(right: AppSpacing.xs),
           child: Center(
             child: GestureDetector(
-              onTap: () => PaywallSoft.show(context),
+              onTap: () => PaywallSoft.show(
+                context,
+                onUnlock: () => PaywallHard.show(context),
+              ),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.smPlus,

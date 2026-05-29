@@ -42,7 +42,11 @@ class PayoffPlanScreen extends ConsumerWidget {
         await PaywallHard.show(context);
         return;
       } else if (gate == PaywallTrigger.soft) {
-        await PaywallSoft.show(context);
+        await PaywallSoft.show(
+          context,
+          isSpanish: isSpanishNotifier.value,
+          onUnlock: () => PaywallHard.show(context),
+        );
         if (!context.mounted) return;
       }
     }
@@ -276,8 +280,8 @@ class PayoffPlanScreen extends ConsumerWidget {
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF exported'),
+          SnackBar(
+            content: Text(isEs ? 'PDF exportado' : 'PDF exported'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -285,8 +289,10 @@ class PayoffPlanScreen extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Export failed'),
+          SnackBar(
+            content: Text(
+              isEs ? 'Error al exportar el PDF.' : 'Export failed.',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -397,252 +403,243 @@ class PayoffPlanScreen extends ConsumerWidget {
 
     return Column(
       children: [
-        // ── Header stats ──
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppTheme.primary, AppTheme.primaryDark],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _HeaderStat(s.months, '${result.extraMonths}', Colors.white),
-              _HeaderStat(
-                s.interest,
-                AmountFormatter.ui(result.interestExtra, 'USD'),
-                Colors.white70,
-              ),
-              _HeaderStat(
-                s.payoff,
-                DateFormat('MMM yyyy').format(payoffDate),
-                AppTheme.accentGood,
-              ),
-            ],
-          ),
-        ),
-
-        // ── Share / PDF actions ──
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _share(context, result, isEs),
-                  icon: const Icon(Icons.share_rounded, size: 16),
-                  label: Text(
-                    s.shareLabel,
-                    style: const TextStyle(fontSize: AppTextSize.md),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 40),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ValueListenableBuilder<bool>(
-                  valueListenable: freemiumService.hasFullAccessNotifier,
-                  builder: (_, isPremium, __) => FilledButton.icon(
-                    onPressed: () => _exportPdf(context, result, isEs),
-                    icon: isPremium
-                        ? const Icon(Icons.picture_as_pdf_rounded, size: 16)
-                        : const Icon(Icons.lock_outline, size: 16),
-                    label: Text(
-                      s.exportPdf,
-                      style: const TextStyle(fontSize: AppTextSize.md),
-                    ),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 40),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // ── Streak & Next Victory ──
-        const StreakCard(),
-        FutureBuilder<List<DebtItem>>(
-          future: DebtPersistence.instance.load(),
-          builder: (context, snap) {
-            final debts = snap.data ?? const [];
-            final debtMaps = debts
-                .map(
-                  (d) => <String, dynamic>{
-                    'id': d.id,
-                    'name': d.name,
-                    'balance': d.balance,
-                    'monthlyPayment': d.minPayment,
-                    'rate': d.annualRate,
-                  },
-                )
-                .toList();
-            return NextVictoryCard(
-              nextVictory: StreakService.nextVictory(debtMaps),
-            );
-          },
-        ),
-
-        // ── Balance over time chart ──
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                s.balanceChart,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: AppTextSize.body,
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 180,
-                child: LineChart(
-                  LineChartData(
-                    minY: 0,
-                    maxY: maxBalance * 1.05,
-                    gridData: const FlGridData(show: false),
-                    borderData: FlBorderData(show: false),
-                    lineTouchData: LineTouchData(
-                      handleBuiltInTouches: true,
-                      touchTooltipData: LineTouchTooltipData(
-                        getTooltipItems: (spots) => spots
-                            .map(
-                              (sp) => LineTooltipItem(
-                                '\$${(sp.y / 1000).toStringAsFixed(1)}k',
-                                const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: AppTextSize.xs,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-                    titlesData: FlTitlesData(
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 56,
-                          getTitlesWidget: (v, _) => Text(
-                            '\$${(v / 1000).toStringAsFixed(0)}k',
-                            style: const TextStyle(fontSize: AppTextSize.xxs),
-                          ),
-                        ),
-                      ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (v, _) {
-                            final yr = (v / 12).round();
-                            if (yr == 0 || v % 24 != 0) return const SizedBox();
-                            return Text(
-                              'Y$yr',
-                              style: const TextStyle(fontSize: AppTextSize.xxs),
-                            );
-                          },
-                        ),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                    ),
-                    lineBarsData: [
-                      // Normal payoff line
-                      LineChartBarData(
-                        spots: normalSpots,
-                        isCurved: true,
-                        color: const Color(0xFF94A3B8),
-                        barWidth: 2,
-                        dotData: const FlDotData(show: false),
-                        belowBarData: BarAreaData(show: false),
-                      ),
-                      // Extra payment line
-                      if (extraSpots.length > 1)
-                        LineChartBarData(
-                          spots: extraSpots,
-                          isCurved: true,
-                          color: AppTheme.accentGood,
-                          barWidth: 2.5,
-                          dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: AppTheme.accentGood.withValues(alpha: 0.08),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  _LegendDot(
-                    color: const Color(0xFF94A3B8),
-                    label: s.normalLabel,
-                  ),
-                  const SizedBox(width: 16),
-                  _LegendDot(
-                    color: AppTheme.accentGood,
-                    label: s.withExtraLabel,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // ── Accordion list ──
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: groups.length,
-            itemBuilder: (context, gi) {
-              final group = groups[gi];
-              final firstMo = group.first.month;
-              final lastMo = group.last.month;
-              final isLastGrp = gi == groups.length - 1;
-
-              final yearNum = gi + 1;
-              final totalPrinc = group.fold<double>(
-                0,
-                (sum, e) => sum + e.principal,
-              );
-              final totalInt = group.fold<double>(
-                0,
-                (sum, e) => sum + e.interest,
-              );
-              final totalPmt = group.fold<double>(
-                0,
-                (sum, e) => sum + e.payment,
-              );
-              final endBal = group.last.balance;
-
-              return _MonthGroup(
-                yearNum: yearNum,
-                firstMonth: firstMo,
-                lastMonth: lastMo,
-                totalPayment: totalPmt,
-                totalPrincipal: totalPrinc,
-                totalInterest: totalInt,
-                endBalance: endBal,
-                isLastGroup: isLastGrp,
-                entries: group,
-                s: s,
-              );
+            itemCount: groups.length + 5,
+            itemBuilder: (ctx, i) {
+              if (i == 0) {
+                // ── Header stats ──
+                return Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppTheme.primary, AppTheme.primaryDark],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _HeaderStat(s.months, '${result.extraMonths}', Colors.white),
+                      _HeaderStat(
+                        s.interest,
+                        AmountFormatter.ui(result.interestExtra, 'USD'),
+                        Colors.white70,
+                      ),
+                      _HeaderStat(
+                        s.payoff,
+                        DateFormat('MMM yyyy').format(payoffDate),
+                        AppTheme.accentGood,
+                      ),
+                    ],
+                  ),
+                );
+              } else if (i == 1) {
+                // ── Share / PDF actions ──
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _share(context, result, isEs),
+                          icon: const Icon(Icons.share_rounded, size: 16),
+                          label: Text(
+                            s.shareLabel,
+                            style: const TextStyle(fontSize: AppTextSize.md),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 40),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: freemiumService.hasFullAccessNotifier,
+                          builder: (_, isPremium, __) => FilledButton.icon(
+                            onPressed: () => _exportPdf(context, result, isEs),
+                            icon: isPremium
+                                ? const Icon(Icons.picture_as_pdf_rounded, size: 16)
+                                : const Icon(Icons.lock_outline, size: 16),
+                            label: Text(
+                              s.exportPdf,
+                              style: const TextStyle(fontSize: AppTextSize.md),
+                            ),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 40),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              } else if (i == 2) {
+                return const StreakCard();
+              } else if (i == 3) {
+                // ── Next Victory ──
+                return FutureBuilder<List<DebtItem>>(
+                  future: DebtPersistence.instance.load(),
+                  builder: (context, snap) {
+                    final debts = snap.data ?? const [];
+                    final debtMaps = debts
+                        .map(
+                          (d) => <String, dynamic>{
+                            'id': d.id,
+                            'name': d.name,
+                            'balance': d.balance,
+                            'monthlyPayment': d.minPayment,
+                            'rate': d.annualRate,
+                          },
+                        )
+                        .toList();
+                    return NextVictoryCard(
+                      nextVictory: StreakService.nextVictory(debtMaps),
+                    );
+                  },
+                );
+              } else if (i == 4) {
+                // ── Balance over time chart ──
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        s.balanceChart,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTextSize.body,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 180,
+                        child: LineChart(
+                          LineChartData(
+                            minY: 0,
+                            maxY: maxBalance * 1.05,
+                            gridData: const FlGridData(show: false),
+                            borderData: FlBorderData(show: false),
+                            lineTouchData: LineTouchData(
+                              handleBuiltInTouches: true,
+                              touchTooltipData: LineTouchTooltipData(
+                                getTooltipItems: (spots) => spots
+                                    .map(
+                                      (sp) => LineTooltipItem(
+                                        '\$${(sp.y / 1000).toStringAsFixed(1)}k',
+                                        const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: AppTextSize.xs,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                            titlesData: FlTitlesData(
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 56,
+                                  getTitlesWidget: (v, _) => Text(
+                                    '\$${(v / 1000).toStringAsFixed(0)}k',
+                                    style: const TextStyle(fontSize: AppTextSize.xxs),
+                                  ),
+                                ),
+                              ),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (v, _) {
+                                    final yr = (v / 12).round();
+                                    if (yr == 0 || v % 24 != 0) return const SizedBox();
+                                    return Text(
+                                      'Y$yr',
+                                      style: const TextStyle(fontSize: AppTextSize.xxs),
+                                    );
+                                  },
+                                ),
+                              ),
+                              topTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                              rightTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                            ),
+                            lineBarsData: [
+                              // Normal payoff line
+                              LineChartBarData(
+                                spots: normalSpots,
+                                isCurved: true,
+                                color: const Color(0xFF94A3B8),
+                                barWidth: 2,
+                                dotData: const FlDotData(show: false),
+                                belowBarData: BarAreaData(show: false),
+                              ),
+                              // Extra payment line
+                              if (extraSpots.length > 1)
+                                LineChartBarData(
+                                  spots: extraSpots,
+                                  isCurved: true,
+                                  color: AppTheme.accentGood,
+                                  barWidth: 2.5,
+                                  dotData: const FlDotData(show: false),
+                                  belowBarData: BarAreaData(
+                                    show: true,
+                                    color: AppTheme.accentGood.withValues(alpha: 0.08),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          _LegendDot(
+                            color: const Color(0xFF94A3B8),
+                            label: s.normalLabel,
+                          ),
+                          const SizedBox(width: 16),
+                          _LegendDot(
+                            color: AppTheme.accentGood,
+                            label: s.withExtraLabel,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                final gi = i - 5;
+                final group = groups[gi];
+                final firstMo = group.first.month;
+                final lastMo = group.last.month;
+                final isLastGrp = gi == groups.length - 1;
+                final yearNum = gi + 1;
+                final totalPrinc = group.fold<double>(0, (sum, e) => sum + e.principal);
+                final totalInt = group.fold<double>(0, (sum, e) => sum + e.interest);
+                final totalPmt = group.fold<double>(0, (sum, e) => sum + e.payment);
+                final endBal = group.last.balance;
+                return _MonthGroup(
+                  yearNum: yearNum,
+                  firstMonth: firstMo,
+                  lastMonth: lastMo,
+                  totalPayment: totalPmt,
+                  totalPrincipal: totalPrinc,
+                  totalInterest: totalInt,
+                  endBalance: endBal,
+                  isLastGroup: isLastGrp,
+                  entries: group,
+                  s: s,
+                );
+              }
             },
           ),
         ),

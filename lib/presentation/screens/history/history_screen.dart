@@ -225,7 +225,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final loanType = row['loan_type'] as String;
     final createdAt = DateTime.tryParse(row['created_at'] as String);
     final dateStr = createdAt != null
-        ? DateFormat('MMM d, yyyy • h:mm a').format(createdAt)
+        ? DateFormat('MMM d, yyyy').format(createdAt)
         : '';
 
     return Dismissible(

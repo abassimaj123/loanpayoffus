@@ -1,7 +1,7 @@
 name: loan_payoff_us
 description: Loan Payoff US Calculator
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.5+4
 
 environment:
   sdk: ^3.11.4

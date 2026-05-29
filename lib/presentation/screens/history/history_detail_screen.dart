@@ -24,7 +24,7 @@ class HistoryDetailScreen extends StatefulWidget {
 }
 
 class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
-  final _fmtDate = DateFormat('MMM d, yyyy · h:mm a');
+  final _fmtDate = DateFormat('MMM d, yyyy');
 
   Map<String, dynamic> get _e => widget.entry;
 
@@ -106,7 +106,11 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         await PaywallHard.show(context);
         return;
       } else if (gate == PaywallTrigger.soft) {
-        await PaywallSoft.show(context);
+        await PaywallSoft.show(
+          context,
+          isSpanish: s is AppStringsES,
+          onUnlock: () => PaywallHard.show(context),
+        );
         if (!context.mounted) return;
       }
     }
@@ -206,8 +210,10 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Export failed'),
+          SnackBar(
+            content: Text(
+              s is AppStringsES ? 'Error al exportar el PDF.' : 'Export failed.',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -271,6 +277,20 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     );
   }
 
+  // Icon map for input rows
+  static const Map<String, IconData> _inputIcons = {
+    'Loan Type': Icons.credit_card_rounded,
+    'Type de prêt': Icons.credit_card_rounded,
+    'Loan Amount': Icons.attach_money,
+    'Montant': Icons.attach_money,
+    'Interest Rate': Icons.percent,
+    'Taux': Icons.percent,
+    'Monthly Payment': Icons.calendar_month_rounded,
+    'Paiement mensuel': Icons.calendar_month_rounded,
+    'Extra Payment': Icons.add_circle_outline,
+    'Paiement supplémentaire': Icons.add_circle_outline,
+  };
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -278,6 +298,19 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       builder: (context, isEs, _) {
         final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
         final ts = DateTime.tryParse(_e['created_at'] as String? ?? '');
+
+        // Derived metrics
+        final monthlyPayment = _d('monthly_payment');
+        final loanAmount = _d('loan_amount');
+        final rate = _d('interest_rate');
+        final totalCost = monthlyPayment * _i('normal_months');
+        final totalInterest =
+            (totalCost - loanAmount).clamp(0.0, double.infinity);
+        final payoffDate = ts?.add(Duration(days: _i('normal_months') * 30));
+        final payoffDateStr =
+            payoffDate != null ? DateFormat('MMM yyyy').format(payoffDate) : '—';
+        final yearsPayoff = _i('normal_months') ~/ 12;
+        final mosPayoff = _i('normal_months') % 12;
 
         return ValueListenableBuilder<bool>(
           valueListenable: freemiumService.hasFullAccessNotifier,
@@ -305,25 +338,151 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                     child: ListView(
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       children: [
-                        // ── Date ─────────────────────────────────────────────
-                        if (ts != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Text(
-                              _fmtDate.format(ts),
-                              style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.45),
-                                fontSize: AppTextSize.md,
-                              ),
+                        // ── 1. HERO CARD ─────────────────────────────────────
+                        Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [AppTheme.primary, AppTheme.primaryDark],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(AppRadius.xxl),
                             ),
                           ),
+                          padding: const EdgeInsets.all(AppSpacing.xl),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Loan type chip
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.md,
+                                    vertical: AppSpacing.xs,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(AppRadius.xxl),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    (_e['loan_type'] as String? ?? '—'),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: AppTextSize.xs,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.mdPlus),
+                              // Big loan amount
+                              Text(
+                                AmountFormatter.ui(loanAmount, 'USD'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: AppTextSize.display,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -1.5,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              // Payoff duration + debt-free date
+                              Text(
+                                isEs
+                                    ? 'Liquida en ${yearsPayoff}a ${mosPayoff}m  •  Libre de deuda $payoffDateStr'
+                                    : 'Payoff in ${yearsPayoff}y ${mosPayoff}m  •  Debt-free $payoffDateStr',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: AppTextSize.sm,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
 
-                        // ── Inputs card ───────────────────────────────────────
+                        const SizedBox(height: AppSpacing.lg),
+
+                        // ── 2. KPI ROW ────────────────────────────────────────
+                        Row(
+                          children: [
+                            _MetricTile(
+                              label: isEs ? 'Tasa de Interés' : 'Interest Rate',
+                              value: '${rate.toStringAsFixed(2)}%',
+                              icon: Icons.percent,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            _MetricTile(
+                              label: isEs ? 'Pago Mensual' : 'Monthly Pmt',
+                              value: AmountFormatter.ui(monthlyPayment, 'USD'),
+                              icon: Icons.calendar_today_rounded,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            _MetricTile(
+                              label: isEs ? 'Interés Total' : 'Total Interest',
+                              value: AmountFormatter.ui(totalInterest, 'USD'),
+                              icon: Icons.money_off_rounded,
+                              color: AppTheme.warning,
+                            ),
+                          ],
+                        ),
+
+                        // ── 3. SAVINGS BANNER (extra payment only) ────────────
+                        if (_d('extra_payment') > 0) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentGood.withValues(alpha: 0.1),
+                              border: Border.all(
+                                color: AppTheme.accentGood.withValues(
+                                  alpha: 0.4,
+                                ),
+                              ),
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(AppRadius.lg),
+                              ),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.smPlus,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.bolt_rounded,
+                                  color: AppTheme.accentGood,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Text(
+                                    isEs
+                                        ? 'Extra +${AmountFormatter.ui(_d('extra_payment'), 'USD')}/mes → ahorrado ${AmountFormatter.ui(_d('interest_saved'), 'USD')}'
+                                        : 'Extra +${AmountFormatter.ui(_d('extra_payment'), 'USD')}/mo → saved ${AmountFormatter.ui(_d('interest_saved'), 'USD')}',
+                                    style: const TextStyle(
+                                      color: AppTheme.accentGood,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: AppTextSize.sm,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: AppSpacing.lg),
+
+                        // ── 4. INPUTS CARD ────────────────────────────────────
                         Card(
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.lg),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -337,56 +496,16 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                                     fontSize: AppTextSize.bodyMd,
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                ..._inputRows(s).map(
-                                  (r) => _detailRow(context, r.label, r.value),
-                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                ..._inputRowsWithIcons(context, s),
                               ],
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.lg),
 
-                        // ── Results card ──────────────────────────────────────
-                        Card(
-                          color: AppTheme.primary.withValues(alpha: 0.04),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
-                            side: BorderSide(
-                              color: AppTheme.primary.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          elevation: 0,
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  s.results,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: AppTextSize.bodyMd,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                ..._resultRows(s).map(
-                                  (r) => _detailRow(
-                                    context,
-                                    r.label,
-                                    r.value,
-                                    bold: true,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // ── Action buttons ────────────────────────────────────
+                        // ── 5. ACTION BUTTONS ─────────────────────────────────
                         Row(
                           children: [
                             Expanded(
@@ -428,6 +547,120 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
           },
         );
       },
+    );
+  }
+
+  List<Widget> _inputRowsWithIcons(BuildContext context, AppStrings s) {
+    final rows = _inputRows(s);
+    const iconFallback = Icons.info_outline_rounded;
+    return rows.map((r) {
+      final icon = _inputIcons.entries
+              .where((e) =>
+                  r.label.toLowerCase().contains(e.key.toLowerCase()))
+              .map((e) => e.value)
+              .firstOrNull ??
+          iconFallback;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.smPlus),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.08),
+                borderRadius:
+                    const BorderRadius.all(Radius.circular(AppRadius.md)),
+              ),
+              child: Icon(icon, size: 16, color: AppTheme.primary),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                r.label,
+                style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
+                  fontSize: AppTextSize.body,
+                ),
+              ),
+            ),
+            Text(
+              r.value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: AppTextSize.body,
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KPI metric tile
+// ─────────────────────────────────────────────────────────────────────────────
+class _MetricTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color? color;
+  const _MetricTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? AppTheme.primary;
+    return Expanded(
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          side: BorderSide(color: c.withValues(alpha: 0.25)),
+        ),
+        color: c.withValues(alpha: 0.05),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.mdPlus,
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 18, color: c),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                value,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: AppTextSize.md,
+                  color: c,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: AppTextSize.xs,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.55),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

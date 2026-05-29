@@ -9,6 +9,7 @@ import '../../../core/freemium/iap_service.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import '../../widgets/premium_badge.dart';
+import '../../../main.dart' show adService;
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -102,6 +103,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
           ),
           const Divider(),
+
+          // ── Ads ──
+          ValueListenableBuilder<bool>(
+            valueListenable: freemiumService.isPremiumNotifier,
+            builder: (_, isPremium, __) {
+              if (isPremium) return const SizedBox.shrink();
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _SectionHeader(isEs ? 'PUBLICIDAD' : 'ADS'),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: freemiumService.isRewardedNotifier,
+                    builder: (_, isAdFree, __) => ListTile(
+                      leading: Icon(
+                        isAdFree
+                            ? Icons.block_rounded
+                            : Icons.play_circle_outline_rounded,
+                        color: AppTheme.primary,
+                      ),
+                      title: Text(isAdFree
+                          ? (isEs ? 'Sin anuncios activo' : 'Ad-Free Active')
+                          : (isEs ? 'Ver video → 60min sin anuncios' : 'Watch video → 60 min ad-free')),
+                      subtitle: isAdFree
+                          ? Text(isEs ? 'Disfruta sin interrupciones' : 'Enjoy without interruptions')
+                          : null,
+                      trailing: isAdFree
+                          ? null
+                          : Icon(Icons.chevron_right_rounded,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)),
+                      onTap: isAdFree
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                              CalcwiseRewardAdSheet.show(context);
+                            },
+                    ),
+                  ),
+                  const Divider(),
+                ],
+              );
+            },
+          ),
 
           // ── Language ──
           _SectionHeader(s.language),
