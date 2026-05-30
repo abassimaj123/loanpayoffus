@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import '../../../core/db/database_helper.dart';
 import '../../../core/freemium/freemium_service.dart';
-import '../../../core/freemium/iap_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import 'history_detail_screen.dart';
-import 'package:calcwise_core/calcwise_core.dart';
+import '../../widgets/paywall_hard.dart';
+import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -192,7 +192,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
             if (!isPremium)
               TextButton.icon(
-                onPressed: () => IAPService.instance.buy(),
+                onPressed: () => PaywallHard.show(context),
                 icon: const Icon(Icons.star_outline, size: 14),
                 label: Text(
                   s.unlockUnlimited,

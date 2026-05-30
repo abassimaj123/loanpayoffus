@@ -1,4 +1,4 @@
-import 'package:calcwise_core/calcwise_core.dart';
+import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,6 +9,7 @@ import '../../../core/freemium/iap_service.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import '../../widgets/premium_badge.dart';
+import '../../widgets/paywall_hard.dart';
 import '../../../main.dart' show adService;
 
 class SettingsScreen extends StatefulWidget {
@@ -80,7 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             context,
                           ).colorScheme.onSurface.withValues(alpha: 0.45),
                         ),
-                        onTap: () => IAPService.instance.buy(),
+                        onTap: () => PaywallHard.show(context),
                       ),
                       ListTile(
                         leading: const Icon(

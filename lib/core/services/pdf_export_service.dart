@@ -6,10 +6,10 @@ import 'package:pdf/widgets.dart' as pw;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import '../freemium/iap_service.dart';
 import '../theme/app_theme.dart';
 import '../../main.dart';
-import 'package:calcwise_core/calcwise_core.dart';
+import '../../presentation/widgets/paywall_hard.dart';
+import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 
 const _purple = PdfColor(0.290, 0.196, 0.784); // LoanPayoff purple
 const _navy = PdfColor(0.059, 0.137, 0.353);
@@ -401,7 +401,7 @@ class _PdfUnlockSheetState extends State<_PdfUnlockSheet> {
             child: ElevatedButton.icon(
               onPressed: () {
                 Navigator.pop(context);
-                IAPService.instance.buy();
+                PaywallHard.show(context);
               },
               icon: const Icon(Icons.workspace_premium, size: 18),
               label: Text(

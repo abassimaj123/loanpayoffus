@@ -199,14 +199,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
         count >= freemiumService.historyLimit) {
       if (mounted) {
         AnalyticsService.instance.logPaywallViewed('history_limit');
-        PaywallSoft.show(
-          context,
-          featureTitle: isSpanishNotifier.value
-              ? 'Historial ilimitado'
-              : 'Unlimited history',
-          isSpanish: isSpanishNotifier.value,
-          onUnlock: () => PaywallHard.show(context),
-        );
+        PaywallHard.show(context);
       }
       return;
     }
