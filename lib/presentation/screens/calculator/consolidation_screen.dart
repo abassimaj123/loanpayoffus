@@ -661,7 +661,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                         ? AppTheme.accentGood
                                         : isPartial
                                             ? AppTheme.warning
-                                            : CalcwiseSemanticColors.errorDark,
+                                            : CalcwiseSemanticColors.error(Theme.of(context).brightness),
                                     size: 18,
                                   ),
                                   const SizedBox(width: AppSpacing.sm),
@@ -685,7 +685,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                             ? AppTheme.accentGood
                                             : isPartial
                                                 ? AppTheme.warning
-                                                : CalcwiseSemanticColors.errorDark,
+                                                : CalcwiseSemanticColors.error(Theme.of(context).brightness),
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
