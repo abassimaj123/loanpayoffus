@@ -317,9 +317,10 @@ class _PdfUnlockSheetState extends State<_PdfUnlockSheet> {
             isEs
                 ? 'Elige cómo desbloquear la exportación'
                 : 'Choose how to unlock PDF export',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppTextSize.md,
-              color: Color(0xFF475569),
+              color:
+                  Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
             ),
           ),
           const SizedBox(height: 24),
@@ -371,8 +372,11 @@ class _PdfUnlockSheetState extends State<_PdfUnlockSheet> {
                             isEs
                                 ? 'Exportar una vez — gratis'
                                 : 'Export once — free',
-                            style: const TextStyle(
-                              color: Color(0xFF475569),
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.65),
                               fontSize: AppTextSize.md,
                             ),
                           ),
@@ -425,7 +429,11 @@ class _PdfUnlockSheetState extends State<_PdfUnlockSheet> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               isEs ? 'Ahora no' : 'Not now',
-              style: const TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.65)),
             ),
           ),
         ],
