@@ -560,36 +560,42 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                             ),
                             const Spacer(),
                             // One-time / Monthly toggle
-                            GestureDetector(
+                            InkWell(
                               onTap: () {
                                 setState(() => _extraOneTime = !_extraOneTime);
                                 _recalculate();
                               },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.sm,
-                                  vertical: AppSpacing.xs,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _extraOneTime
-                                      ? AppTheme.neutral
-                                      : AppTheme.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.md,
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(minHeight: 48),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.sm,
+                                    vertical: AppSpacing.xs,
                                   ),
-                                  border: Border.all(
-                                    color: AppTheme.primary,
-                                    width: 1,
+                                  decoration: BoxDecoration(
+                                    color: _extraOneTime
+                                        ? AppTheme.neutral
+                                        : AppTheme.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
+                                    border: Border.all(
+                                      color: AppTheme.primary,
+                                      width: 1,
+                                    ),
                                   ),
-                                ),
-                                child: Text(
-                                  _extraOneTime
-                                      ? (isEs ? 'Único' : 'One-time')
-                                      : (isEs ? 'Mensual' : 'Monthly'),
-                                  style: TextStyle(
-                                    fontSize: AppTextSize.xs,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primary,
+                                  child: Center(
+                                    child: Text(
+                                      _extraOneTime
+                                          ? (isEs ? 'Único' : 'One-time')
+                                          : (isEs ? 'Mensual' : 'Monthly'),
+                                      style: TextStyle(
+                                        fontSize: AppTextSize.xs,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.primary,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),

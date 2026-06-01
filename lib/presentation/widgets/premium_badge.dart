@@ -62,12 +62,15 @@ class PremiumBadge extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(right: AppSpacing.xs),
           child: Center(
-            child: GestureDetector(
+            child: InkWell(
               onTap: () => PaywallSoft.show(
                 context,
                 onUnlock: () => PaywallHard.show(context),
               ),
-              child: Container(
+              borderRadius: BorderRadius.circular(AppRadius.xxl),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.smPlus,
                   vertical: AppSpacing.xs,
@@ -100,6 +103,7 @@ class PremiumBadge extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
               ),
             ),
           ),

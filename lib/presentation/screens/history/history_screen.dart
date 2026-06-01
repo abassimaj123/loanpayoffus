@@ -369,41 +369,21 @@ class _HistorySkeleton extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        _ShimmerBox(
-                          width: 100,
-                          height: 18,
-                          radius: AppRadius.sm,
-                        ),
+                        CalcwiseSkeleton.line(width: 100, height: 18),
                         const Spacer(),
-                        _ShimmerBox(
-                          width: 60,
-                          height: 14,
-                          radius: AppRadius.sm,
-                        ),
+                        CalcwiseSkeleton.line(width: 60, height: 14),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.smPlus),
-                    _ShimmerBox(width: 140, height: 12, radius: 4),
+                    CalcwiseSkeleton.line(width: 140, height: 12),
                     const SizedBox(height: AppSpacing.md),
                     Row(
                       children: [
-                        _ShimmerBox(
-                          width: 72,
-                          height: 24,
-                          radius: AppRadius.xxl,
-                        ),
+                        CalcwiseSkeleton.line(width: 72, height: 24),
                         const SizedBox(width: AppSpacing.sm),
-                        _ShimmerBox(
-                          width: 52,
-                          height: 24,
-                          radius: AppRadius.xxl,
-                        ),
+                        CalcwiseSkeleton.line(width: 52, height: 24),
                         const SizedBox(width: AppSpacing.sm),
-                        _ShimmerBox(
-                          width: 64,
-                          height: 24,
-                          radius: AppRadius.xxl,
-                        ),
+                        CalcwiseSkeleton.line(width: 64, height: 24),
                       ],
                     ),
                   ],
@@ -417,25 +397,3 @@ class _HistorySkeleton extends StatelessWidget {
   }
 }
 
-class _ShimmerBox extends StatelessWidget {
-  final double width, height, radius;
-  const _ShimmerBox({
-    required this.width,
-    required this.height,
-    required this.radius,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.08)
-            : Colors.black.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(radius),
-      ),
-    );
-  }
-}

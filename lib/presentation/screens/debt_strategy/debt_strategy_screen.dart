@@ -2556,49 +2556,8 @@ class _StrategySelector extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Skeleton loading placeholder for DebtStrategyScreen
 // ---------------------------------------------------------------------------
-class _DebtStrategySkeleton extends StatefulWidget {
+class _DebtStrategySkeleton extends StatelessWidget {
   const _DebtStrategySkeleton();
-  @override
-  State<_DebtStrategySkeleton> createState() => _DebtStrategySkeletonState();
-}
-
-class _DebtStrategySkeletonState extends State<_DebtStrategySkeleton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  Widget _shimmer({double? width, required double height}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final base = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8);
-    final shine = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF5F5F5);
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (_, __) => Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: Color.lerp(base, shine, _anim.value),
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -2608,14 +2567,14 @@ class _DebtStrategySkeletonState extends State<_DebtStrategySkeleton>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Hero card placeholder
-          _shimmer(height: 100),
+          CalcwiseSkeleton.box(height: 100),
           const SizedBox(height: AppSpacing.xxl),
           // Section title placeholder
-          _shimmer(width: 140, height: 14),
+          CalcwiseSkeleton.line(width: 140, height: 14),
           const SizedBox(height: AppSpacing.lg),
           // Debt tiles
           for (int i = 0; i < 3; i++) ...[
-            _shimmer(height: 72),
+            CalcwiseSkeleton.box(height: 72),
             const SizedBox(height: AppSpacing.md),
           ],
           // Extra payment row placeholder
@@ -2623,8 +2582,8 @@ class _DebtStrategySkeletonState extends State<_DebtStrategySkeleton>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _shimmer(width: 160, height: 14),
-              _shimmer(width: 80, height: 14),
+              CalcwiseSkeleton.line(width: 160, height: 14),
+              CalcwiseSkeleton.line(width: 80, height: 14),
             ],
           ),
         ],
