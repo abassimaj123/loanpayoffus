@@ -92,6 +92,9 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     super.initState();
     isSpanishNotifier.addListener(_onLangChange);
     _loadDebts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _loaded) _runCalc();
+    });
   }
 
   @override
@@ -133,8 +136,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
       _customOrder = initial.map((d) => d.id).toList();
       _loaded = true;
     });
+    _runCalc(); // show results immediately without waiting for payment aggregates
     await _refreshPaymentAggregates();
-    _runCalc();
   }
 
   Future<void> _refreshPaymentAggregates() async {
