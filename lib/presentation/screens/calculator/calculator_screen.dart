@@ -1498,12 +1498,13 @@ class _BalanceChart extends StatelessWidget {
                     ),
                   ),
                   lineBarsData: [
-                    // Baseline (gray)
+                    // Baseline (gray, dashed for color-blind accessibility)
                     LineChartBarData(
                       spots: normalSpots,
                       isCurved: true,
-                      color: const Color(0xFF94A3B8),
+                      color: Theme.of(context).colorScheme.outline,
                       barWidth: 2,
+                      dashArray: CalcwiseChartTokens.secondarySeriesDash,
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(show: false),
                     ),

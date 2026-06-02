@@ -236,6 +236,20 @@ class ComparisonScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    _ChartLegendItem(
+                      color: Theme.of(context).colorScheme.outline,
+                      label: s.none,
+                    ),
+                    const SizedBox(width: AppSpacing.lg),
+                    _ChartLegendItem(
+                      color: AppTheme.accentGood,
+                      label: s.withExtraLabel,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
                 SizedBox(
                   height: 220,
                   child: BarChart(
@@ -244,12 +258,15 @@ class ComparisonScreen extends ConsumerWidget {
                       maxY: maxSaved * 1.15 + 1,
                       barTouchData: BarTouchData(
                         touchTooltipData: BarTouchTooltipData(
-                          getTooltipColor: (_) => Colors.blueGrey.shade800,
+                          getTooltipColor: (_) =>
+                              Theme.of(context).colorScheme.inverseSurface,
                           getTooltipItem: (group, groupIdx, rod, rodIdx) =>
                               BarTooltipItem(
                                 '\$${(rod.toY / 1000).toStringAsFixed(1)}k saved',
-                                const TextStyle(
-                                  color: Colors.white,
+                                TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onInverseSurface,
                                   fontWeight: FontWeight.bold,
                                   fontSize: AppTextSize.sm,
                                 ),
@@ -266,7 +283,7 @@ class ComparisonScreen extends ConsumerWidget {
                                 BarChartRodData(
                                   toY: entry.value.$2.interestSaved,
                                   color: entry.value.$1 == 0
-                                      ? const Color(0xFF94A3B8)
+                                      ? Theme.of(context).colorScheme.outline
                                       : AppTheme.accentGood,
                                   width: 22,
                                   borderRadius: BorderRadius.circular(
@@ -511,5 +528,35 @@ class _BreakdownLeg extends StatelessWidget {
         ),
       ],
     ),
+  );
+}
+
+// ── Chart legend item (color swatch + label) ───────────────────────────────
+class _ChartLegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _ChartLegendItem({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(AppRadius.xs),
+        ),
+      ),
+      const SizedBox(width: AppSpacing.xs),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: AppTextSize.xs,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+        ),
+      ),
+    ],
   );
 }
