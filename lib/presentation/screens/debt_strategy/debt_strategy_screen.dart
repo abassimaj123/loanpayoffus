@@ -1576,7 +1576,7 @@ class _InterestBarChart extends StatelessWidget {
                         getTitlesWidget: (v, _) => Text(
                           AmountFormatter.ui(v, 'USD'),
                           style: TextStyle(
-                            fontSize: AppTextSize.xxs,
+                            fontSize: AppTextSize.xs,
                             color: Theme.of(
                               context,
                             ).colorScheme.onSurface.withValues(alpha: 0.55),

@@ -1461,7 +1461,7 @@ class _BalanceChart extends StatelessWidget {
                         getTitlesWidget: (v, _) => Text(
                           '\$${v.toStringAsFixed(0)}K',
                           style: TextStyle(
-                            fontSize: AppTextSize.xxs,
+                            fontSize: AppTextSize.xs,
                             color: Theme.of(
                               context,
                             ).colorScheme.onSurface.withValues(alpha: 0.45),
@@ -1479,7 +1479,7 @@ class _BalanceChart extends StatelessWidget {
                             return Text(
                               '${(v / 12).toInt()}y',
                               style: TextStyle(
-                                fontSize: AppTextSize.xxs,
+                                fontSize: AppTextSize.xs,
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurface.withValues(alpha: 0.45),

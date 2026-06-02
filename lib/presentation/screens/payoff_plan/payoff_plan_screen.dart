@@ -549,7 +549,7 @@ class PayoffPlanScreen extends ConsumerWidget {
                                   reservedSize: 56,
                                   getTitlesWidget: (v, _) => Text(
                                     '\$${(v / 1000).toStringAsFixed(0)}k',
-                                    style: const TextStyle(fontSize: AppTextSize.xxs),
+                                    style: const TextStyle(fontSize: AppTextSize.xs),
                                   ),
                                 ),
                               ),
@@ -561,7 +561,7 @@ class PayoffPlanScreen extends ConsumerWidget {
                                     if (yr == 0 || v % 24 != 0) return const SizedBox();
                                     return Text(
                                       'Y$yr',
-                                      style: const TextStyle(fontSize: AppTextSize.xxs),
+                                      style: const TextStyle(fontSize: AppTextSize.xs),
                                     );
                                   },
                                 ),
