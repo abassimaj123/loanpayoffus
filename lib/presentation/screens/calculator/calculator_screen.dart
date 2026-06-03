@@ -1408,11 +1408,13 @@ class _BalanceChart extends StatelessWidget {
                   color: const Color(0xFF64748B),
                   label: isEs ? 'Normal' : 'Baseline',
                 ),
-                const SizedBox(width: AppSpacing.mdPlus),
-                _LegendDot(
-                  color: AppTheme.primary,
-                  label: isEs ? 'Con Extra' : 'Accelerated',
-                ),
+                if (result.monthsSaved > 0) ...[
+                  const SizedBox(width: AppSpacing.mdPlus),
+                  _LegendDot(
+                    color: AppTheme.primary,
+                    label: isEs ? 'Con Extra' : 'Accelerated',
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: AppSpacing.md),
@@ -1508,18 +1510,19 @@ class _BalanceChart extends StatelessWidget {
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(show: false),
                     ),
-                    // Accelerated (primary)
-                    LineChartBarData(
-                      spots: extraSpots,
-                      isCurved: true,
-                      color: AppTheme.primary,
-                      barWidth: 2.5,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: AppTheme.primary.withValues(alpha: 0.08),
+                    // Accelerated (primary) — only shown when extra payment is active
+                    if (result.monthsSaved > 0)
+                      LineChartBarData(
+                        spots: extraSpots,
+                        isCurved: true,
+                        color: AppTheme.primary,
+                        barWidth: 2.5,
+                        dotData: const FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          color: AppTheme.primary.withValues(alpha: 0.08),
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),

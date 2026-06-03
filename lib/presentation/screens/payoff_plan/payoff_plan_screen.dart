@@ -584,7 +584,7 @@ class PayoffPlanScreen extends ConsumerWidget {
                                 belowBarData: BarAreaData(show: false),
                               ),
                               // Extra payment line
-                              if (extraSpots.length > 1)
+                              if (result.monthsSaved > 0)
                                 LineChartBarData(
                                   spots: extraSpots,
                                   isCurved: true,

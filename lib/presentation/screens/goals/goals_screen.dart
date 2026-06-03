@@ -78,6 +78,11 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
   Widget build(BuildContext context) {
     final result = ref.watch(payoffResultProvider);
     final input = ref.watch(loanInputProvider);
+    // Re-run _calculateRequired whenever the loan inputs change while a
+    // deadline is already set, so the displayed extra-payment stays current.
+    ref.listen(loanInputProvider, (_, __) {
+      if (_deadline != null) _calculateRequired();
+    });
     final isEs = isSpanishNotifier.value;
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
 

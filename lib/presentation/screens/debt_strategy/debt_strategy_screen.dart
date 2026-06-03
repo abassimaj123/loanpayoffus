@@ -95,6 +95,23 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _loaded) _runCalc();
     });
+    // Snowflake fields: sync state + recalc on every keystroke so the
+    // user doesn't need to press "Apply Windfall" manually.
+    _snowflakeCtrl.addListener(() {
+      if (!_snowflakeEnabled) return;
+      final amt = _parseNum(_snowflakeCtrl.text);
+      if (amt == _snowflakeAmount) return;
+      setState(() => _snowflakeAmount = amt);
+      _runCalc();
+    });
+    _snowflakeMonthCtrl.addListener(() {
+      if (!_snowflakeEnabled) return;
+      final mo = int.tryParse(_snowflakeMonthCtrl.text.trim()) ?? 1;
+      final clamped = mo < 1 ? 1 : mo;
+      if (clamped == _snowflakeMonth) return;
+      setState(() => _snowflakeMonth = clamped);
+      _runCalc();
+    });
   }
 
   @override

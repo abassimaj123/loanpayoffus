@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import '../../../core/theme/app_theme.dart';
+import '../../../core/firebase/analytics_service.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../widgets/paywall_hard.dart';
@@ -66,6 +67,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.logScreenView('consolidation');
     _calculate();
   }
 
@@ -611,6 +613,36 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                   ),
                                   icon: Icons.percent_rounded,
                                   color: AppTheme.warning,
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: AppSpacing.sm),
+
+                            // Third metric row: Total Cost + spacer tile
+                            Row(
+                              children: [
+                                _ConsolidationMetricTile(
+                                  label: isEs
+                                      ? 'Costo Total (consolidación)'
+                                      : 'Total Cost (consolidation)',
+                                  value: AmountFormatter.ui(
+                                    _totalConsolidationCost,
+                                    'USD',
+                                  ),
+                                  icon: Icons.account_balance_wallet_outlined,
+                                  color: AppTheme.warning,
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                _ConsolidationMetricTile(
+                                  label: isEs
+                                      ? 'Plazo nuevo'
+                                      : 'New Term',
+                                  value: isEs
+                                      ? '$_termMonths meses'
+                                      : '$_termMonths months',
+                                  icon: Icons.calendar_today_outlined,
+                                  color: AppTheme.primary,
                                 ),
                               ],
                             ),

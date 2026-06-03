@@ -56,16 +56,20 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   List<({String label, String value})> _resultRows(AppStrings s) {
     final months = _i('normal_months');
     final saved = _d('interest_saved');
+    final loanAmount = _d('loan_amount');
+    final monthlyPayment = _d('monthly_payment');
+    final totalInterest =
+        (monthlyPayment * months - loanAmount).clamp(0.0, double.infinity);
+    final ts = DateTime.tryParse(_e['created_at'] as String? ?? '');
+    final payoffDate = ts?.add(Duration(days: months * 30));
+    final payoffDateStr =
+        payoffDate != null ? DateFormat('MMM yyyy').format(payoffDate) : '—';
     return [
       (label: s.payoff, value: '${months ~/ 12}y ${months % 12}m'),
+      (label: s.interestLabel, value: AmountFormatter.ui(totalInterest, 'USD')),
       (
-        label: s.interestLabel,
-        value: AmountFormatter.ui(
-          _d('interest_rate') > 0
-              ? _d('loan_amount') * _d('interest_rate') / 100 * months / 12
-              : 0,
-          'USD',
-        ),
+        label: s is AppStringsES ? 'Fecha de liquidación' : 'Payoff Date',
+        value: payoffDateStr,
       ),
       if (saved > 0)
         (label: s.interestSavedExtra, value: AmountFormatter.ui(saved, 'USD')),
