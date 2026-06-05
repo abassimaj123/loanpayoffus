@@ -1752,24 +1752,10 @@ class _ConsolidationCta extends StatelessWidget {
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       if (!freemiumService.hasFullAccess)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.xs,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary,
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                          ),
-                          child: const Text(
-                            'PRO',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: AppTextSize.xxs,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
+                        Icon(
+                          Icons.lock_outline_rounded,
+                          size: AppTextSize.sm,
+                          color: AppTheme.primary,
                         ),
                     ],
                   ),
@@ -1867,25 +1853,10 @@ class _RefinanceCta extends StatelessWidget {
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       if (!freemiumService.hasFullAccess)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.xs,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.sm),
-                          ),
-                          child: const Text(
-                            'PRO',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: AppTextSize.xxs,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
+                        Icon(
+                          Icons.lock_outline_rounded,
+                          size: AppTextSize.sm,
+                          color: AppTheme.primary,
                         ),
                     ],
                   ),
