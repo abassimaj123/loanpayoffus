@@ -153,8 +153,8 @@ class AppStringsEN implements AppStrings {
   // Premium
   final premiumActive = 'Premium Active';
   final premiumSubtitle = 'Unlimited history · No ads · PDF export';
-  final getPremium = 'Get Premium — \$2.99';
-  final getPremiumBtn = r'Get Premium — $2.99';
+  final getPremium = 'Get Premium';
+  final getPremiumBtn = 'Get Premium';
   final restorePurchase = 'Restore Purchase';
   final adFreeMinFree = 'Watch ad for 60 min free';
   final loading = 'Loading...';

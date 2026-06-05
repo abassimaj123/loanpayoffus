@@ -73,8 +73,8 @@ class AppStringsES implements AppStrings {
   // Premium
   final premiumActive = 'Premium Activo';
   final premiumSubtitle = 'Historial ilimitado · Sin anuncios · Exportar PDF';
-  final getPremium = 'Obtener Premium — \$2.99';
-  final getPremiumBtn = r'Obtener Premium — $2.99';
+  final getPremium = 'Obtener Premium';
+  final getPremiumBtn = 'Obtener Premium';
   final restorePurchase = 'Restaurar Compra';
   final adFreeMinFree = 'Ver anuncio 60 min gratis';
   final loading = 'Cargando...';
