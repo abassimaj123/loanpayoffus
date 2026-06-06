@@ -6,7 +6,7 @@ class DatabaseHelper {
   static final instance = DatabaseHelper._();
   static Database? _db;
 
-  static const _dbVersion = 2;
+  static const _dbVersion = 3;
 
   Future<Database> get database async {
     _db ??= await _initDb();
@@ -34,7 +34,12 @@ class DatabaseHelper {
         extra_payment REAL NOT NULL DEFAULT 0,
         normal_months INTEGER NOT NULL,
         interest_saved REAL NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        is_pinned INTEGER NOT NULL DEFAULT 0,
+        input_hash TEXT,
+        pin_label TEXT,
+        pin_order INTEGER NOT NULL DEFAULT 0,
+        l1_json TEXT
       )
     ''');
     await _createDebtPaymentsTable(db);
@@ -43,6 +48,17 @@ class DatabaseHelper {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await _createDebtPaymentsTable(db);
+    }
+    if (oldVersion < 3) {
+      await db.execute(
+        'ALTER TABLE history ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0',
+      );
+      await db.execute('ALTER TABLE history ADD COLUMN input_hash TEXT');
+      await db.execute('ALTER TABLE history ADD COLUMN pin_label TEXT');
+      await db.execute(
+        'ALTER TABLE history ADD COLUMN pin_order INTEGER NOT NULL DEFAULT 0',
+      );
+      await db.execute('ALTER TABLE history ADD COLUMN l1_json TEXT');
     }
   }
 
@@ -64,25 +80,78 @@ class DatabaseHelper {
 
   // ── History ────────────────────────────────────────────────────────────────
 
-  Future<void> insertHistory(Map<String, dynamic> row) async {
+  Future<int> insertHistory(Map<String, dynamic> row) async {
     final db = await database;
-    await db.insert('history', row);
+    return db.insert('history', row);
   }
 
   Future<List<Map<String, dynamic>>> getHistory() async {
     final db = await database;
-    return db.query('history', orderBy: 'created_at DESC');
+    return db.query(
+      'history',
+      orderBy: 'is_pinned DESC, pin_order DESC, created_at DESC',
+    );
   }
 
-  Future<int> countHistory() async {
+  Future<Map<String, dynamic>?> getHistoryByHash(String hash) async {
     final db = await database;
-    final result = await db.rawQuery('SELECT COUNT(*) FROM history');
+    final rows = await db.query(
+      'history',
+      where: 'input_hash = ?',
+      whereArgs: [hash],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<int> updateHistoryEntry(int id, Map<String, dynamic> values) async {
+    final db = await database;
+    return db.update('history', values, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> countHistory({bool? isPinned}) async {
+    final db = await database;
+    final String sql;
+    if (isPinned == null) {
+      sql = 'SELECT COUNT(*) FROM history';
+    } else {
+      sql =
+          'SELECT COUNT(*) FROM history WHERE is_pinned = ${isPinned ? 1 : 0}';
+    }
+    final result = await db.rawQuery(sql);
     return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  Future<List<Map<String, dynamic>>> getOldestAutoSaves(int limit) async {
+    final db = await database;
+    return db.query(
+      'history',
+      where: 'is_pinned = 0',
+      orderBy: 'created_at ASC',
+      limit: limit,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getOldestPinnedEntries(int limit) async {
+    final db = await database;
+    return db.query(
+      'history',
+      where: 'is_pinned = 1',
+      orderBy: 'pin_order ASC, created_at ASC',
+      limit: limit,
+    );
   }
 
   Future<void> deleteHistory(int id) async {
     final db = await database;
     await db.delete('history', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteOldestHistory() async {
+    final db = await database;
+    await db.rawDelete(
+      'DELETE FROM history WHERE id = (SELECT id FROM history WHERE is_pinned = 0 ORDER BY created_at ASC LIMIT 1)',
+    );
   }
 
   Future<void> clearHistory() async {

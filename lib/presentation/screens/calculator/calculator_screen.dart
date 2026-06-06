@@ -8,7 +8,6 @@ import 'consolidation_screen.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/db/database_helper.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../main.dart';
 import '../../../core/firebase/analytics_service.dart';
@@ -25,6 +24,7 @@ import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
 import '../../widgets/insight_card.dart';
 import '../../widgets/milestone_celebration.dart';
+import '../../widgets/save_scenario_button.dart';
 import '../../../core/utils/insight_engine.dart';
 
 double _parseNum(String v) {
@@ -85,6 +85,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
   void dispose() {
     _adDebounce?.cancel();
     _saveDebounce?.cancel();
+    smartHistoryService.cancelPendingSave('loanpayoffus', 'calculator');
     isSpanishNotifier.removeListener(_onLangChange);
     _amountCtrl.dispose();
     _rateCtrl.dispose();
@@ -184,38 +185,77 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
       }
     }
 
-    // Milestone celebrations (debounced with the save timer so UI is settled)
+    // SmartHistory auto-save (debounced + hash dedup + ring buffer).
+    _scheduleAutoSave(input);
+
+    // Milestone celebrations (debounced so UI is settled).
     _saveDebounce?.cancel();
     _saveDebounce = Timer(const Duration(milliseconds: 2000), () {
-      _saveToHistory(input);
       _checkMilestones(ref.read(payoffResultProvider));
     });
   }
 
-  Future<void> _saveToHistory(LoanInput input) async {
-    if (input.loanAmount <= 0 || input.interestRatePct <= 0) return;
-    final count = await DatabaseHelper.instance.countHistory();
-    if (!freemiumService.hasFullAccess &&
-        count >= freemiumService.historyLimit) {
-      if (mounted) {
-        AnalyticsService.instance.logPaywallViewed('history_limit');
-        PaywallHard.show(context);
-      }
-      return;
-    }
+  // ── SmartHistory snapshot ───────────────────────────────────────────────────
+
+  /// Builds the (hash, l1, l2) snapshot for the current result, or null when
+  /// inputs are incomplete.
+  ({String hash, Map<String, dynamic> l1, Map<String, dynamic> l2})?
+  _buildSnapshot(LoanInput input) {
+    if (input.loanAmount <= 0 || input.interestRatePct <= 0) return null;
     final result = ref.read(payoffResultProvider);
-    try {
-      await DatabaseHelper.instance.insertHistory({
-        'loan_type': input.loanType.label,
-        'loan_amount': input.loanAmount,
-        'interest_rate': input.interestRatePct,
-        'monthly_payment': input.monthlyPayment,
-        'extra_payment': input.extraPayment,
-        'normal_months': result?.normalMonths ?? 0,
-        'interest_saved': result?.interestSaved ?? 0,
-        'created_at': DateTime.now().toIso8601String(),
-      });
-    } catch (_) {}
+    if (result == null) return null;
+
+    final hash = ResultHasher.hashMixed({
+      'amount': ResultHasher.roundTo(input.loanAmount, 100),
+      'rate': ResultHasher.roundTo(input.interestRatePct, 0.01),
+      'payment': ResultHasher.roundTo(input.monthlyPayment, 10),
+      'extra': ResultHasher.roundTo(input.extraPayment, 10),
+      'type': input.loanType.name,
+    });
+    final l1 = {
+      'loan_type': input.loanType.label,
+      'loan_amount': input.loanAmount,
+      'monthly_payment': input.monthlyPayment,
+      'interest_rate': input.interestRatePct,
+    };
+    final l2 = {
+      'loan_type': input.loanType.label,
+      'loan_amount': input.loanAmount,
+      'interest_rate': input.interestRatePct,
+      'monthly_payment': input.monthlyPayment,
+      'extra_payment': input.extraPayment,
+      'normal_months': result.normalMonths,
+      'interest_saved': result.interestSaved,
+    };
+    return (hash: hash, l1: l1, l2: l2);
+  }
+
+  void _scheduleAutoSave(LoanInput input) {
+    final snap = _buildSnapshot(input);
+    if (snap == null) return;
+    smartHistoryService.scheduleAutoSave(
+      appKey: 'loanpayoffus',
+      screenId: 'calculator',
+      inputHash: snap.hash,
+      l1: snap.l1,
+      l2: snap.l2,
+    );
+  }
+
+  Future<void> _saveScenario(String? label) async {
+    final input = ref.read(loanInputProvider);
+    final snap = _buildSnapshot(input);
+    if (snap == null) return;
+    HapticFeedback.mediumImpact();
+    await smartHistoryService.saveScenario(
+      appKey: 'loanpayoffus',
+      screenId: 'calculator',
+      inputHash: snap.hash,
+      l1: snap.l1,
+      l2: snap.l2,
+      label: label,
+    );
+    historyRefreshNotifier.value++;
     try {
       AnalyticsService.instance.logSave();
     } catch (_) {}
@@ -1077,6 +1117,11 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                         CalcwiseStaggerItem(
                                           index: 6,
                                           child: _ConsolidationCta(isEs: isEs),
+                                        ),
+                                        const SizedBox(height: AppSpacing.md),
+                                        // ── Save Scenario (pinned history) ──
+                                        SaveScenarioButton(
+                                          onSave: _saveScenario,
                                         ),
                                         const SizedBox(height: AppSpacing.sm),
                                         Text(

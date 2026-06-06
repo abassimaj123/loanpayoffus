@@ -26,11 +26,21 @@ import 'presentation/widgets/paywall_soft.dart';
 import 'presentation/widgets/paywall_hard.dart';
 import 'presentation/screens/splash/splash_screen.dart';
 import 'core/services/loan_notification_service.dart';
+import 'core/db/loan_payoff_us_database_adapter.dart';
 
 final paywallSession = PaywallSessionService(
   appKey: 'loanpayoffus',
   hasFullAccess: () => freemiumService.hasFullAccess,
 );
+
+/// SmartHistory ring buffer + pinned scenarios service.
+final smartHistoryService = SmartHistoryService(
+  db: LoanPayoffUSDatabaseAdapter(),
+  freemium: freemiumService,
+);
+
+/// Bumped to trigger a silent reload of the History screen after a save.
+final historyRefreshNotifier = ValueNotifier<int>(0);
 
 final adService = CalcwiseAdService(
   config: CalcwiseAdConfig(
