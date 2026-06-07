@@ -1,5 +1,6 @@
 import 'package:calcwise_core/calcwise_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import '../../../core/theme/app_theme.dart';
@@ -10,8 +11,9 @@ import '../../../domain/models/amortization_entry.dart';
 import '../../../domain/usecases/loan_calculator.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
-import '../../../main.dart' show paywallSession;
+import '../../../main.dart' show paywallSession, smartHistoryService, historyRefreshNotifier, adService;
 import '../../providers/loan_provider.dart';
+import '../../widgets/save_scenario_button.dart';
 
 class GoalsScreen extends ConsumerStatefulWidget {
   const GoalsScreen({super.key});
@@ -74,6 +76,72 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
       months,
     );
     setState(() => _requiredExtra = required);
+  }
+
+  double _roundTo(double v, double step) => (v / step).round() * step;
+
+  Future<void> _saveScenario(String? label) async {
+    final result = ref.read(payoffResultProvider);
+    final input = ref.read(loanInputProvider);
+    if (result == null) return;
+    HapticFeedback.mediumImpact();
+
+    final goalType = _deadline != null ? 'date' : 'extra';
+    final hash = ResultHasher.hashMixed({
+      'loan_amount': _roundTo(input.loanAmount, 1000),
+      'interest_rate': _roundTo(input.interestRatePct, 0.25),
+      'extra_payment': _roundTo(input.extraPayment, 50),
+      'goal_type': goalType == 'date' ? 1.0 : 0.0,
+      'deadline_ms': _deadline != null
+          ? (_deadline!.millisecondsSinceEpoch / 86400000).roundToDouble()
+          : 0.0,
+    });
+
+    final l1 = <String, dynamic>{
+      'goal': goalType,
+      'months_saved': result.monthsSaved,
+      'interest_saved': result.interestSaved.toStringAsFixed(0),
+      if (_requiredExtra != null)
+        'required_extra': _requiredExtra!.toStringAsFixed(2),
+      if (_deadline != null)
+        'target_date': DateFormat('MMM yyyy').format(_deadline!),
+    };
+
+    final l2 = <String, dynamic>{
+      'inputs': {
+        'loan_amount': input.loanAmount,
+        'interest_rate_pct': input.interestRatePct,
+        'monthly_payment': input.monthlyPayment,
+        'extra_payment': input.extraPayment,
+        'goal_type': goalType,
+        if (_deadline != null) 'target_date': _deadline!.toIso8601String(),
+      },
+      'results': {
+        'months_saved': result.monthsSaved,
+        'interest_saved': result.interestSaved,
+        if (_requiredExtra != null) 'required_extra_payment': _requiredExtra,
+        if (_deadline != null)
+          'target_date': _deadline!.toIso8601String(),
+        'payoff_months': result.extraMonths,
+      },
+    };
+
+    await smartHistoryService.saveScenario(
+      appKey: 'loanpayoffus',
+      screenId: 'goals',
+      inputHash: hash,
+      l1: l1,
+      l2: l2,
+      label: label,
+    );
+    historyRefreshNotifier.value++;
+    try {
+      AnalyticsService.instance.logSave();
+    } catch (_) {}
+    try {
+      AnalyticsService.instance.logResultSaved();
+    } catch (_) {}
+    adService.onSave();
   }
 
   @override
@@ -353,6 +421,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                     ),
                   ),
                 ],
+                const SizedBox(height: AppSpacing.lg),
+                SaveScenarioButton(onSave: _saveScenario),
                 const SizedBox(height: AppSpacing.listBottomInset),
               ],
             ),

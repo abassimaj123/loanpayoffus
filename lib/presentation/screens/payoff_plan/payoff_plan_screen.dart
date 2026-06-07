@@ -3,6 +3,7 @@ import '../../../core/firebase/analytics_service.dart';
 import '../../../core/services/pdf_export_service.dart' show PdfExportService;
 import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart' show DateFormat;
@@ -12,7 +13,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/freemium/freemium_service.dart';
-import '../../../main.dart' show paywallSession;
+import '../../../main.dart' show paywallSession, smartHistoryService, historyRefreshNotifier, adService;
 import '../../../core/language/language_notifier.dart';
 import '../../../domain/models/amortization_entry.dart';
 import '../../../domain/models/payoff_result.dart';
@@ -21,6 +22,7 @@ import '../../../l10n/strings_es.dart';
 import '../../providers/loan_provider.dart';
 import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
+import '../../widgets/save_scenario_button.dart';
 import '../../widgets/streak_card.dart';
 import '../../widgets/next_victory_card.dart';
 import '../../../core/db/debt_persistence.dart';
@@ -39,6 +41,66 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
   void initState() {
     super.initState();
     AnalyticsService.instance.logScreenView('payoff_plan');
+  }
+
+  double _roundTo(double v, double step) => (v / step).round() * step;
+
+  Future<void> _saveScenario(String? label) async {
+    final result = ref.read(payoffResultProvider);
+    final input = ref.read(loanInputProvider);
+    if (result == null) return;
+    HapticFeedback.mediumImpact();
+
+    final hash = ResultHasher.hashMixed({
+      'loan_amount': _roundTo(input.loanAmount, 1000),
+      'interest_rate': _roundTo(input.interestRatePct, 0.25),
+      'monthly_payment': _roundTo(input.monthlyPayment, 10),
+      'extra_payment': _roundTo(input.extraPayment, 50),
+    });
+
+    final payoffDate = DateTime.now().add(Duration(days: result.extraMonths * 30));
+
+    final l1 = <String, dynamic>{
+      'payoff_months': result.extraMonths,
+      'payoff_date': DateFormat('MMM yyyy').format(payoffDate),
+      'total_interest': result.interestExtra.toStringAsFixed(0),
+      'monthly_payment': input.monthlyPayment.toStringAsFixed(2),
+      'extra_payment': input.extraPayment.toStringAsFixed(2),
+    };
+
+    final l2 = <String, dynamic>{
+      'inputs': {
+        'loan_amount': input.loanAmount,
+        'interest_rate_pct': input.interestRatePct,
+        'monthly_payment': input.monthlyPayment,
+        'extra_payment': input.extraPayment,
+      },
+      'results': {
+        'payoff_date': payoffDate.toIso8601String(),
+        'total_interest': result.interestExtra,
+        'monthly_payment': input.monthlyPayment,
+        'extra_payment': input.extraPayment,
+        'months_saved': result.monthsSaved,
+        'interest_saved': result.interestSaved,
+      },
+    };
+
+    await smartHistoryService.saveScenario(
+      appKey: 'loanpayoffus',
+      screenId: 'payoff_plan',
+      inputHash: hash,
+      l1: l1,
+      l2: l2,
+      label: label,
+    );
+    historyRefreshNotifier.value++;
+    try {
+      AnalyticsService.instance.logSave();
+    } catch (_) {}
+    try {
+      AnalyticsService.instance.logResultSaved();
+    } catch (_) {}
+    adService.onSave();
   }
 
   Future<void> _share(
@@ -417,7 +479,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
       children: [
         Expanded(
           child: ListView.builder(
-            itemCount: groups.length + 5,
+            itemCount: groups.length + 6,
             itemBuilder: (ctx, i) {
               if (i == 0) {
                 // ── Header stats ──
@@ -491,8 +553,14 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                   ),
                 );
               } else if (i == 2) {
-                return const StreakCard();
+                // ── Save Scenario ──
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  child: SaveScenarioButton(onSave: _saveScenario),
+                );
               } else if (i == 3) {
+                return const StreakCard();
+              } else if (i == 4) {
                 // ── Next Victory ──
                 return FutureBuilder<List<DebtItem>>(
                   future: DebtPersistence.instance.load(),
@@ -514,7 +582,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                     );
                   },
                 );
-              } else if (i == 4) {
+              } else if (i == 5) {
                 // ── Balance over time chart ──
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
@@ -629,7 +697,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                   ),
                 );
               } else {
-                final gi = i - 5;
+                final gi = i - 6;
                 final group = groups[gi];
                 final firstMo = group.first.month;
                 final lastMo = group.last.month;
