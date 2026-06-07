@@ -16,6 +16,8 @@ import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
 import 'payments_history_screen.dart';
 import 'package:calcwise_core/calcwise_core.dart';
+import '../../../main.dart';
+import '../../widgets/save_scenario_button.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -121,6 +123,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     _snowflakeCtrl.dispose();
     _snowflakeMonthCtrl.dispose();
     _whatIfCtrl.dispose();
+    smartHistoryService.cancelPendingSave('loanpayoffus', 'debt_strategy');
     super.dispose();
   }
 
@@ -225,6 +228,90 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
             )
           : null;
     });
+    _scheduleAutoSave();
+  }
+
+  // ── SmartHistory ────────────────────────────────────────────────────────────
+  double _roundTo(double v, double step) =>
+      step == 0 ? v : (v / step).round() * step;
+
+  double get _totalDebt => _debts.fold(0.0, (s, d) => s + d.balance);
+
+  double get _weightedRate {
+    final total = _totalDebt;
+    if (total == 0) return 0;
+    return _debts.fold(0.0, (s, d) => s + d.annualRate * d.balance) / total;
+  }
+
+  Map<String, dynamic> _buildL1() {
+    final r = _strategyResult;
+    return {
+      'debt_count': _debts.length,
+      'total_debt': _totalDebt,
+      'extra_monthly': _extra,
+      'strategy': _strategy.name,
+      'months_to_payoff': r?.totalMonths,
+    };
+  }
+
+  Map<String, dynamic> _buildL2() {
+    final r = _strategyResult;
+    final mo = _minimumResult;
+    return {
+      'inputs': {
+        'debts': _debts
+            .map((d) => {
+                  'name': d.name,
+                  'balance': d.balance,
+                  'rate': d.annualRate,
+                  'min_payment': d.minPayment,
+                })
+            .toList(),
+        'extra_monthly': _extra,
+        'strategy': _strategy.name,
+      },
+      'results': {
+        'months': r?.totalMonths,
+        'total_interest': r?.totalInterest,
+        'min_only_months': mo?.totalMonths,
+        'min_only_interest': mo?.totalInterest,
+      },
+    };
+  }
+
+  void _scheduleAutoSave() {
+    if (_debts.isEmpty || _strategyResult == null) return;
+    final hash = ResultHasher.hashMixed({
+      'total_debt': _roundTo(_totalDebt, 1000),
+      'weighted_rate': _roundTo(_weightedRate, 0.5),
+      'extra': _roundTo(_extra, 25),
+      'debt_count': _debts.length.toDouble(),
+    });
+    smartHistoryService.scheduleAutoSave(
+      appKey: 'loanpayoffus',
+      screenId: 'debt_strategy',
+      inputHash: hash,
+      l1: _buildL1(),
+      l2: _buildL2(),
+    );
+  }
+
+  Future<void> _saveScenario(String? label) async {
+    if (_debts.isEmpty || _strategyResult == null) return;
+    final hash = ResultHasher.hashMixed({
+      'total_debt': _roundTo(_totalDebt, 1000),
+      'weighted_rate': _roundTo(_weightedRate, 0.5),
+      'extra': _roundTo(_extra, 25),
+      'debt_count': _debts.length.toDouble(),
+    });
+    await smartHistoryService.saveScenario(
+      appKey: 'loanpayoffus',
+      screenId: 'debt_strategy',
+      inputHash: hash,
+      l1: _buildL1(),
+      l2: _buildL2(),
+      label: label,
+    );
   }
 
   // ── Add / Edit debt dialog ─────────────────────────────────────────────────
@@ -1467,6 +1554,15 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   ),
                 ],
 
+                if (freemiumService.hasFullAccess &&
+                    _strategyResult != null) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg),
+                    child: SaveScenarioButton(onSave: _saveScenario),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.listBottomInset),
               ],
             ),

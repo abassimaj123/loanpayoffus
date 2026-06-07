@@ -5,7 +5,9 @@ import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/language/language_notifier.dart';
+import '../../../main.dart';
 import '../../widgets/paywall_hard.dart';
+import '../../widgets/save_scenario_button.dart';
 
 class RefinanceScreen extends StatefulWidget {
   const RefinanceScreen({super.key});
@@ -48,6 +50,7 @@ class _RefinanceScreenState extends State<RefinanceScreen> {
     _newRateCtrl.dispose();
     _newTermCtrl.dispose();
     _closingCostsCtrl.dispose();
+    smartHistoryService.cancelPendingSave('loanpayoffus', 'refinance');
     super.dispose();
   }
 
@@ -103,6 +106,73 @@ class _RefinanceScreenState extends State<RefinanceScreen> {
           ? (closingCosts / ms).ceil()
           : 0;
     });
+    _scheduleAutoSave();
+  }
+
+  // ── SmartHistory ────────────────────────────────────────────────────────────
+  double _roundTo(double v, double step) =>
+      step == 0 ? v : (v / step).round() * step;
+
+  Map<String, dynamic> _buildL1() => {
+        'balance': _parseField(_balanceCtrl),
+        'monthly_savings': _monthlySavings,
+        'total_savings': _totalSavings,
+        'break_even_months': _breakEvenMonths,
+      };
+
+  Map<String, dynamic> _buildL2() => {
+        'inputs': {
+          'balance': _parseField(_balanceCtrl),
+          'current_rate': _parseField(_currentRateCtrl),
+          'current_months': _parseField(_currentMonthsCtrl).toInt(),
+          'new_rate': _parseField(_newRateCtrl),
+          'new_months': _parseField(_newTermCtrl).toInt(),
+          'closing_costs': _parseField(_closingCostsCtrl),
+        },
+        'results': {
+          'current_pmt': _currentPmt,
+          'new_pmt': _newPmt,
+          'monthly_savings': _monthlySavings,
+          'total_current_cost': _totalCurrentCost,
+          'total_new_cost': _totalNewCost,
+          'total_savings': _totalSavings,
+          'break_even_months': _breakEvenMonths,
+        },
+      };
+
+  void _scheduleAutoSave() {
+    if (_currentPmt <= 0) return;
+    final hash = ResultHasher.hashMixed({
+      'balance': _roundTo(_parseField(_balanceCtrl), 1000),
+      'cur_rate': _roundTo(_parseField(_currentRateCtrl), 0.25),
+      'new_rate': _roundTo(_parseField(_newRateCtrl), 0.25),
+      'new_months': _roundTo(_parseField(_newTermCtrl), 12),
+    });
+    smartHistoryService.scheduleAutoSave(
+      appKey: 'loanpayoffus',
+      screenId: 'refinance',
+      inputHash: hash,
+      l1: _buildL1(),
+      l2: _buildL2(),
+    );
+  }
+
+  Future<void> _saveScenario(String? label) async {
+    if (_currentPmt <= 0) return;
+    final hash = ResultHasher.hashMixed({
+      'balance': _roundTo(_parseField(_balanceCtrl), 1000),
+      'cur_rate': _roundTo(_parseField(_currentRateCtrl), 0.25),
+      'new_rate': _roundTo(_parseField(_newRateCtrl), 0.25),
+      'new_months': _roundTo(_parseField(_newTermCtrl), 12),
+    });
+    await smartHistoryService.saveScenario(
+      appKey: 'loanpayoffus',
+      screenId: 'refinance',
+      inputHash: hash,
+      l1: _buildL1(),
+      l2: _buildL2(),
+      label: label,
+    );
   }
 
   Widget _sectionHeader(String title) => Padding(
@@ -516,6 +586,10 @@ class _RefinanceScreenState extends State<RefinanceScreen> {
                                   .withValues(alpha: 0.45),
                             ),
                           ),
+                          if (isPremium) ...[
+                            const SizedBox(height: AppSpacing.lg),
+                            SaveScenarioButton(onSave: _saveScenario),
+                          ],
                           const SizedBox(height: AppSpacing.listBottomInset),
                         ],
                       ),

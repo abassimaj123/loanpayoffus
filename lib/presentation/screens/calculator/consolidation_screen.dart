@@ -6,7 +6,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/firebase/analytics_service.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/language/language_notifier.dart';
+import '../../../main.dart';
 import '../../widgets/paywall_hard.dart';
+import '../../widgets/save_scenario_button.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data model for a single debt entry
@@ -78,6 +80,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
     }
     _loanAmountCtrl.dispose();
     _consolidationRateCtrl.dispose();
+    smartHistoryService.cancelPendingSave('loanpayoffus', 'consolidation');
     super.dispose();
   }
 
@@ -143,6 +146,77 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
     }
 
     _monthlySavings = _totalCurrentMonthlyPayment - _consolidationPayment;
+    _scheduleAutoSave();
+  }
+
+  // ── SmartHistory ────────────────────────────────────────────────────────────
+  double _roundTo(double v, double step) =>
+      step == 0 ? v : (v / step).round() * step;
+
+  Map<String, dynamic> _buildL1() => {
+        'debt_count': _debts.length,
+        'total_balance': _totalCurrentBalance,
+        'consolidation_rate': _parseField(_consolidationRateCtrl),
+        'monthly_savings': _monthlySavings,
+        'term_months': _termMonths,
+      };
+
+  Map<String, dynamic> _buildL2() => {
+        'inputs': {
+          'debts': _debts
+              .map((d) => {
+                    'balance': _parseField(d.balanceCtrl),
+                    'rate': _parseField(d.rateCtrl),
+                    'payment': _parseField(d.paymentCtrl),
+                  })
+              .toList(),
+          'consolidation_rate': _parseField(_consolidationRateCtrl),
+          'term_months': _termMonths,
+        },
+        'results': {
+          'total_balance': _totalCurrentBalance,
+          'total_current_monthly': _totalCurrentMonthlyPayment,
+          'consolidation_payment': _consolidationPayment,
+          'total_consolidation_cost': _totalConsolidationCost,
+          'total_consolidation_interest': _totalConsolidationInterest,
+          'monthly_savings': _monthlySavings,
+          'avg_current_rate': _averageCurrentRate,
+        },
+      };
+
+  void _scheduleAutoSave() {
+    if (_totalCurrentBalance <= 0 || _consolidationPayment <= 0) return;
+    final hash = ResultHasher.hashMixed({
+      'total_balance': _roundTo(_totalCurrentBalance, 1000),
+      'consolidation_rate': _roundTo(_parseField(_consolidationRateCtrl), 0.25),
+      'term_months': _termMonths.toDouble(),
+      'debt_count': _debts.length.toDouble(),
+    });
+    smartHistoryService.scheduleAutoSave(
+      appKey: 'loanpayoffus',
+      screenId: 'consolidation',
+      inputHash: hash,
+      l1: _buildL1(),
+      l2: _buildL2(),
+    );
+  }
+
+  Future<void> _saveScenario(String? label) async {
+    if (_totalCurrentBalance <= 0 || _consolidationPayment <= 0) return;
+    final hash = ResultHasher.hashMixed({
+      'total_balance': _roundTo(_totalCurrentBalance, 1000),
+      'consolidation_rate': _roundTo(_parseField(_consolidationRateCtrl), 0.25),
+      'term_months': _termMonths.toDouble(),
+      'debt_count': _debts.length.toDouble(),
+    });
+    await smartHistoryService.saveScenario(
+      appKey: 'loanpayoffus',
+      screenId: 'consolidation',
+      inputHash: hash,
+      l1: _buildL1(),
+      l2: _buildL2(),
+      label: label,
+    );
   }
 
   void _addDebt() {
@@ -774,6 +848,10 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                   .withValues(alpha: 0.45),
                             ),
                           ),
+                          if (isPremium) ...[
+                            const SizedBox(height: AppSpacing.lg),
+                            SaveScenarioButton(onSave: _saveScenario),
+                          ],
                           const SizedBox(height: AppSpacing.listBottomInset),
                         ],
                       ),
