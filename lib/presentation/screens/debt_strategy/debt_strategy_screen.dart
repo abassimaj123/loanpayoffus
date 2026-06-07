@@ -92,6 +92,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.logScreenView('debt_strategy');
     isSpanishNotifier.addListener(_onLangChange);
     _loadDebts();
     WidgetsBinding.instance.addPostFrameCallback((_) {

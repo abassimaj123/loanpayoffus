@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import '../../../core/db/database_helper.dart';
+import '../../../core/firebase/analytics_service.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/language/language_notifier.dart';
@@ -26,6 +27,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.logScreenView('history');
     isSpanishNotifier.addListener(_onLangChange);
     historyRefreshNotifier.addListener(_silentRefresh);
     _load();

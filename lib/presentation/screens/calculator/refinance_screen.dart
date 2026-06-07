@@ -1,23 +1,26 @@
 import 'dart:math' show pow;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
+import '../../../core/firebase/analytics_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../../main.dart';
+import '../../providers/loan_provider.dart';
 import '../../widgets/paywall_hard.dart';
 import '../../widgets/save_scenario_button.dart';
 
-class RefinanceScreen extends StatefulWidget {
+class RefinanceScreen extends ConsumerStatefulWidget {
   const RefinanceScreen({super.key});
 
   @override
-  State<RefinanceScreen> createState() => _RefinanceScreenState();
+  ConsumerState<RefinanceScreen> createState() => _RefinanceScreenState();
 }
 
-class _RefinanceScreenState extends State<RefinanceScreen> {
-  // Input controllers — pre-filled so results appear immediately on open
+class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
+  // Input controllers — pre-filled from main loan provider, fallback to defaults
   final _balanceCtrl = TextEditingController(text: '15000');
   final _currentRateCtrl = TextEditingController(text: '5.5');
   final _currentMonthsCtrl = TextEditingController(text: '60');
@@ -37,8 +40,19 @@ class _RefinanceScreenState extends State<RefinanceScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.logScreenView('refinance');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _calculate();
+      if (!mounted) return;
+      // Pre-fill balance and current rate from the main loan calculator.
+      // Only overwrite defaults when the user has actually entered a loan
+      // (loanAmount > 0 guards against the provider's own default values
+      // being a worse UX than our own sensible defaults).
+      final loanInput = ref.read(loanInputProvider);
+      if (loanInput.loanAmount > 0) {
+        _balanceCtrl.text = loanInput.loanAmount.toStringAsFixed(0);
+        _currentRateCtrl.text = loanInput.interestRatePct.toStringAsFixed(2);
+      }
+      _calculate();
     });
   }
 

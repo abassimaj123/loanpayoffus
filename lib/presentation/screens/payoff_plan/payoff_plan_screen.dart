@@ -1,4 +1,5 @@
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
+import '../../../core/firebase/analytics_service.dart';
 import '../../../core/services/pdf_export_service.dart' show PdfExportService;
 import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
@@ -26,8 +27,19 @@ import '../../../core/db/debt_persistence.dart';
 import '../../../core/services/streak_service.dart';
 import '../../../domain/models/debt_item.dart';
 
-class PayoffPlanScreen extends ConsumerWidget {
+class PayoffPlanScreen extends ConsumerStatefulWidget {
   const PayoffPlanScreen({super.key});
+
+  @override
+  ConsumerState<PayoffPlanScreen> createState() => _PayoffPlanScreenState();
+}
+
+class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.logScreenView('payoff_plan');
+  }
 
   Future<void> _share(
     BuildContext context,
@@ -344,7 +356,7 @@ class PayoffPlanScreen extends ConsumerWidget {
   );
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final result = ref.watch(payoffResultProvider);
     return ValueListenableBuilder<bool>(
       valueListenable: isSpanishNotifier,

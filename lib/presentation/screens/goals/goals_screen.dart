@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import '../../../core/theme/app_theme.dart';
+import '../../../core/firebase/analytics_service.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../../domain/models/amortization_entry.dart';
@@ -25,6 +26,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.logScreenView('goals');
     isSpanishNotifier.addListener(_onLangChange);
     // Session-based gate — tab visible, paywall appears progressively after N sessions
     WidgetsBinding.instance.addPostFrameCallback((_) async {
