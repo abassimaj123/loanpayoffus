@@ -146,7 +146,6 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
     }
 
     _monthlySavings = _totalCurrentMonthlyPayment - _consolidationPayment;
-    _scheduleAutoSave();
   }
 
   // ── SmartHistory ────────────────────────────────────────────────────────────
@@ -233,6 +232,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
       _debts.removeAt(index);
       _calculate();
     });
+    _scheduleAutoSave();
   }
 
   Widget _sectionHeader(String title) => Padding(
@@ -272,7 +272,10 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
           ),
-          onChanged: (_) => setState(() => _calculate()),
+          onChanged: (_) {
+            setState(() => _calculate());
+            _scheduleAutoSave();
+          },
         ),
       );
 
@@ -363,7 +366,10 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
                 ),
-                onChanged: (_) => setState(() => _calculate()),
+                onChanged: (_) {
+                  setState(() => _calculate());
+                  _scheduleAutoSave();
+                },
               ),
             ),
           ],
@@ -547,6 +553,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                   _termMonths = v;
                                   _calculate();
                                 });
+                                _scheduleAutoSave();
                               },
                             ),
                           ),

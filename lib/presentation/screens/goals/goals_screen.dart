@@ -101,6 +101,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
       'goal': goalType,
       'months_saved': result.monthsSaved,
       'interest_saved': result.interestSaved.toStringAsFixed(0),
+      'monthly_payment': input.monthlyPayment,
       if (_requiredExtra != null)
         'required_extra': _requiredExtra!.toStringAsFixed(2),
       if (_deadline != null)
