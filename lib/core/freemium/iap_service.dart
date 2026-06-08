@@ -9,8 +9,9 @@ class IAPService {
   IAPService._();
   static final instance = IAPService._();
   static const productId = 'premium_upgrade';
-  late final CalcwiseIAP _iap;
-  ValueNotifier<String?> get localizedPrice => _iap.localizedPrice;
+  CalcwiseIAP? _iap;
+  final _fallbackPrice = ValueNotifier<String?>(null);
+  ValueNotifier<String?> get localizedPrice => _iap?.localizedPrice ?? _fallbackPrice;
 
   Future<void> initialize() async {
     _iap = CalcwiseIAP(
@@ -20,11 +21,11 @@ class IAPService {
       onPurchaseCompleted: () =>
           CalcwiseReviewService.instance.requestAfterSave(),
     );
-    await _iap.initialize();
-    PaywallHard.registerPrice(_iap.localizedPrice);
+    await _iap!.initialize();
+    PaywallHard.registerPrice(_iap!.localizedPrice);
   }
 
-  Future<void> buy() => _iap.buy();
-  Future<void> restore() => _iap.restore();
-  void dispose() => _iap.dispose();
+  Future<void> buy() async => _iap?.buy();
+  Future<void> restore() async => _iap?.restore();
+  void dispose() => _iap?.dispose();
 }
