@@ -3,9 +3,6 @@ import '../language/language_notifier.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../theme/app_theme.dart';
 import '../../main.dart';
 import '../../presentation/widgets/paywall_hard.dart';
@@ -27,45 +24,6 @@ class PdfExportService {
     decimalDigits: 0,
   );
   static final _date = DateFormat('MMMM d, yyyy');
-
-  static Future<void> exportPayoff({
-    required BuildContext context,
-    required double balance,
-    required double rate,
-    required double monthlyPayment,
-    required double extraPayment,
-    required int monthsToPayoff,
-    required double totalInterest,
-    required double interestSaved,
-    required int monthsSaved,
-    required String strategy,
-  }) async {
-    final pdf = pw.Document();
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.fromLTRB(36, 36, 36, 28),
-        build: (_) => _buildPage(
-          balance: balance,
-          rate: rate,
-          monthlyPayment: monthlyPayment,
-          extraPayment: extraPayment,
-          monthsToPayoff: monthsToPayoff,
-          totalInterest: totalInterest,
-          interestSaved: interestSaved,
-          monthsSaved: monthsSaved,
-          strategy: strategy,
-        ),
-      ),
-    );
-    final pdfBytes = await pdf.save();
-    final tmpDir = await getTemporaryDirectory();
-    final pdfFile = File(
-        '${tmpDir.path}/LoanPayoff_${balance.round()}_${DateTime.now().millisecondsSinceEpoch}.pdf');
-    await pdfFile.writeAsBytes(pdfBytes);
-    await Share.shareXFiles(
-        [XFile(pdfFile.path, mimeType: 'application/pdf')]);
-  }
 
   static pw.Widget _buildPage({
     required double balance,

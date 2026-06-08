@@ -67,10 +67,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     return [
       (label: s.payoff, value: '${months ~/ 12}y ${months % 12}m'),
       (label: s.interestLabel, value: AmountFormatter.ui(totalInterest, 'USD')),
-      (
-        label: s is AppStringsES ? 'Fecha de liquidación' : 'Payoff Date',
-        value: payoffDateStr,
-      ),
+      (label: s.payoffDate, value: payoffDateStr),
       if (saved > 0)
         (label: s.interestSavedExtra, value: AmountFormatter.ui(saved, 'USD')),
     ];
@@ -205,8 +202,8 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF exported'),
+          SnackBar(
+            content: Text(s.pdfExportedSuccess),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -397,9 +394,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                               const SizedBox(height: AppSpacing.xs),
                               // Payoff duration + debt-free date
                               Text(
-                                isEs
-                                    ? 'Liquida en ${yearsPayoff}a ${mosPayoff}m  •  Libre de deuda $payoffDateStr'
-                                    : 'Payoff in ${yearsPayoff}y ${mosPayoff}m  •  Debt-free $payoffDateStr',
+                                '${s.payoffIn} ${yearsPayoff}${isEs ? 'a' : 'y'} ${mosPayoff}m  •  ${s.debtFreeBy} $payoffDateStr',
                                 style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: AppTextSize.sm,

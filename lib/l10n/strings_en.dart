@@ -78,6 +78,11 @@ abstract class AppStrings {
   String get exportPdf;
   String get disclaimer;
   String get calculatedWith;
+  String get payoffDate;
+  String get schedule;
+  String get pdfExportedSuccess;
+  String get debtFreeBy;
+  String get payoffIn;
 }
 
 class AppStringsEN implements AppStrings {
@@ -182,4 +187,9 @@ class AppStringsEN implements AppStrings {
   final disclaimer =
       'For informational purposes only. Consult a financial advisor.';
   final calculatedWith = 'Calculated with Loan Payoff US';
+  final payoffDate = 'Payoff Date';
+  final schedule = 'Schedule';
+  final pdfExportedSuccess = 'PDF exported';
+  final debtFreeBy = 'Debt-free by';
+  final payoffIn = 'Payoff in';
 }

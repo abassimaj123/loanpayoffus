@@ -335,7 +335,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
 
           // ── Amortization table ────────────────────────────────────────────
           pw.Text(
-            '${s.navPayoffPlan} — Schedule',
+            '${s.navPayoffPlan} — ${s.schedule}',
             style: pw.TextStyle(
               fontWeight: pw.FontWeight.bold,
               fontSize: AppTextSize.sm,
@@ -407,7 +407,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isEs ? 'PDF exportado' : 'PDF exported'),
+            content: Text(s.pdfExportedSuccess),
             behavior: SnackBarBehavior.floating,
           ),
         );
