@@ -31,6 +31,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     AnalyticsService.instance.logScreenView('goals');
     isSpanishNotifier.addListener(_onLangChange);
     // Session-based gate — tab visible, paywall appears progressively after N sessions
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleAutoSave();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final trigger = await paywallSession.recordAction();
       if (!mounted || freemiumService.hasFullAccess) return;
@@ -46,6 +49,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
 
   @override
   void dispose() {
+    smartHistoryService.cancelPendingSave('loanpayoffus', 'goals');
     isSpanishNotifier.removeListener(_onLangChange);
     super.dispose();
   }
@@ -76,6 +80,57 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
       months,
     );
     setState(() => _requiredExtra = required);
+    _scheduleAutoSave();
+  }
+
+  void _scheduleAutoSave() {
+    final result = ref.read(payoffResultProvider);
+    final input = ref.read(loanInputProvider);
+    if (result == null) return;
+    final goalType = _deadline != null ? 'date' : 'extra';
+    final hash = ResultHasher.hashMixed({
+      'loan_amount': _roundTo(input.loanAmount, 1000),
+      'interest_rate': _roundTo(input.interestRatePct, 0.25),
+      'extra_payment': _roundTo(input.extraPayment, 50),
+      'goal_type': goalType == 'date' ? 1.0 : 0.0,
+      'deadline_ms': _deadline != null
+          ? (_deadline!.millisecondsSinceEpoch / 86400000).roundToDouble()
+          : 0.0,
+    });
+    final l1 = <String, dynamic>{
+      'goal': goalType,
+      'months_saved': result.monthsSaved,
+      'interest_saved': result.interestSaved.toStringAsFixed(0),
+      'monthly_payment': input.monthlyPayment,
+      if (_requiredExtra != null)
+        'required_extra': _requiredExtra!.toStringAsFixed(2),
+      if (_deadline != null)
+        'target_date': DateFormat('MMM yyyy').format(_deadline!),
+    };
+    final l2 = <String, dynamic>{
+      'inputs': {
+        'loan_amount': input.loanAmount,
+        'interest_rate_pct': input.interestRatePct,
+        'monthly_payment': input.monthlyPayment,
+        'extra_payment': input.extraPayment,
+        'goal_type': goalType,
+        if (_deadline != null) 'target_date': _deadline!.toIso8601String(),
+      },
+      'results': {
+        'months_saved': result.monthsSaved,
+        'interest_saved': result.interestSaved,
+        if (_requiredExtra != null) 'required_extra_payment': _requiredExtra,
+        if (_deadline != null) 'target_date': _deadline!.toIso8601String(),
+        'payoff_months': result.extraMonths,
+      },
+    };
+    smartHistoryService.scheduleAutoSave(
+      appKey: 'loanpayoffus',
+      screenId: 'goals',
+      inputHash: hash,
+      l1: l1,
+      l2: l2,
+    );
   }
 
   double _roundTo(double v, double step) => (v / step).round() * step;
@@ -153,6 +208,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     // deadline is already set, so the displayed extra-payment stays current.
     ref.listen(loanInputProvider, (_, __) {
       if (_deadline != null) _calculateRequired();
+      else _scheduleAutoSave();
     });
     final isEs = isSpanishNotifier.value;
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();

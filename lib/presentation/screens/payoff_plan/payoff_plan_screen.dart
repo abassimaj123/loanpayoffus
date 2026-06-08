@@ -19,6 +19,7 @@ import '../../../domain/models/amortization_entry.dart';
 import '../../../domain/models/payoff_result.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
+import '../../../domain/models/loan_input.dart';
 import '../../providers/loan_provider.dart';
 import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
@@ -41,9 +42,60 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
   void initState() {
     super.initState();
     AnalyticsService.instance.logScreenView('payoff_plan');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final result = ref.read(payoffResultProvider);
+      final input = ref.read(loanInputProvider);
+      if (result != null) _scheduleAutoSave(result, input);
+    });
+  }
+
+  @override
+  void dispose() {
+    smartHistoryService.cancelPendingSave('loanpayoffus', 'payoff_plan');
+    super.dispose();
   }
 
   double _roundTo(double v, double step) => (v / step).round() * step;
+
+  void _scheduleAutoSave(PayoffResult result, LoanInput input) {
+    final payoffDate = DateTime.now().add(Duration(days: result.extraMonths * 30));
+    final hash = ResultHasher.hashMixed({
+      'loan_amount': _roundTo(input.loanAmount, 1000),
+      'interest_rate': _roundTo(input.interestRatePct, 0.25),
+      'monthly_payment': _roundTo(input.monthlyPayment, 10),
+      'extra_payment': _roundTo(input.extraPayment, 50),
+    });
+    final l1 = <String, dynamic>{
+      'payoff_months': result.extraMonths,
+      'payoff_date': DateFormat('MMM yyyy').format(payoffDate),
+      'total_interest': result.interestExtra.toStringAsFixed(0),
+      'monthly_payment': input.monthlyPayment.toStringAsFixed(2),
+      'extra_payment': input.extraPayment.toStringAsFixed(2),
+    };
+    final l2 = <String, dynamic>{
+      'inputs': {
+        'loan_amount': input.loanAmount,
+        'interest_rate_pct': input.interestRatePct,
+        'monthly_payment': input.monthlyPayment,
+        'extra_payment': input.extraPayment,
+      },
+      'results': {
+        'payoff_date': payoffDate.toIso8601String(),
+        'total_interest': result.interestExtra,
+        'monthly_payment': input.monthlyPayment,
+        'extra_payment': input.extraPayment,
+        'months_saved': result.monthsSaved,
+        'interest_saved': result.interestSaved,
+      },
+    };
+    smartHistoryService.scheduleAutoSave(
+      appKey: 'loanpayoffus',
+      screenId: 'payoff_plan',
+      inputHash: hash,
+      l1: l1,
+      l2: l2,
+    );
+  }
 
   Future<void> _saveScenario(String? label) async {
     final result = ref.read(payoffResultProvider);
@@ -420,6 +472,10 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
   @override
   Widget build(BuildContext context) {
     final result = ref.watch(payoffResultProvider);
+    ref.listen(loanInputProvider, (_, next) {
+      final r = ref.read(payoffResultProvider);
+      if (r != null) _scheduleAutoSave(r, next);
+    });
     return ValueListenableBuilder<bool>(
       valueListenable: isSpanishNotifier,
       builder: (context, isEs, _) => _buildContent(context, ref, result, isEs),
