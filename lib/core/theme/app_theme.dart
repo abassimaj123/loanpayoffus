@@ -13,6 +13,7 @@ class AppTheme {
   static const Color warning = Color(0xFFFF6D00); // Deep Orange A400
   static const Color neutral = Color(0xFFD1C4E9); // Deep Purple 100
   static const Color dangerRed = Color(0xFFDC2626); // Semantic danger/error red
+  static const Color rewardGold = Color(0xFFFFD700); // Trophy / streak gold
 
   static ThemeData get light =>
       CalcwiseThemeFactory.buildLight(primary: primary, accent: accent);

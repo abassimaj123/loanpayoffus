@@ -49,7 +49,7 @@ class NextVictoryCard extends StatelessWidget {
             children: [
               const Icon(
                 Icons.emoji_events_rounded,
-                color: Colors.amber,
+                color: AppTheme.rewardGold,
                 size: 28,
               ),
               const SizedBox(width: AppSpacing.md),

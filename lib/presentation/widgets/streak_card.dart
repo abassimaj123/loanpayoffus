@@ -62,20 +62,20 @@ class _StreakCardState extends State<StreakCard> {
           : 'Start your streak! Log your first payment this month.';
     } else if (streak >= 6) {
       icon = Icons.emoji_events_rounded;
-      iconColor = const Color(0xFFFFD700); // gold
+      iconColor = AppTheme.rewardGold;
       message = isEs
           ? '🏆 $streak ${streak == 1 ? 'mes' : 'meses'} de racha — ¡disciplina increíble!'
           : '🏆 $streak month streak — incredible discipline!';
     } else if (streak >= 3) {
       icon = Icons.local_fire_department_rounded;
-      iconColor = Colors.amber;
+      iconColor = AppTheme.rewardGold;
       message = isEs
           ? '🔥 $streak ${streak == 1 ? 'mes' : 'meses'} de racha — ¡estás en llamas!'
           : '🔥 $streak month streak — you\'re on fire!';
     } else {
       // streak == 1 or 2
       icon = Icons.local_fire_department_rounded;
-      iconColor = Colors.amber;
+      iconColor = AppTheme.rewardGold;
       message = isEs
           ? '🔥 $streak ${streak == 1 ? 'mes' : 'meses'} de racha — ¡sigue así!'
           : '🔥 $streak month streak — keep it going!';

@@ -10,6 +10,17 @@ enum DebtCategory {
   other,
 }
 
+// Domain model colors — one per category, ordered by DebtCategory enum index
+const _categoryColors = [
+  Color(0xFFE53935), // creditCard  — red
+  Color(0xFF1E88E5), // studentLoan — blue
+  Color(0xFF6D4C41), // autoLoan    — brown
+  Color(0xFFD81B60), // medical     — pink
+  Color(0xFF8E24AA), // personal    — purple
+  Color(0xFF00897B), // mortgage    — teal
+  Color(0xFF607D8B), // other       — blue grey
+];
+
 extension DebtCategoryX on DebtCategory {
   String get id {
     switch (this) {
@@ -70,24 +81,7 @@ extension DebtCategoryX on DebtCategory {
   }
 
   /// Chip color used in lists.
-  Color get color {
-    switch (this) {
-      case DebtCategory.creditCard:
-        return const Color(0xFFE53935); // red
-      case DebtCategory.studentLoan:
-        return const Color(0xFF1E88E5); // blue
-      case DebtCategory.autoLoan:
-        return const Color(0xFF6D4C41); // brown
-      case DebtCategory.medical:
-        return const Color(0xFFD81B60); // pink
-      case DebtCategory.personal:
-        return const Color(0xFF8E24AA); // purple
-      case DebtCategory.mortgage:
-        return const Color(0xFF00897B); // teal
-      case DebtCategory.other:
-        return const Color(0xFF607D8B); // blue grey
-    }
-  }
+  Color get color => _categoryColors[index];
 
   String labelEn() {
     switch (this) {

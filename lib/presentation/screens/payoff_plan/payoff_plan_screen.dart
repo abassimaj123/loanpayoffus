@@ -589,7 +589,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                       Expanded(
                         child: ValueListenableBuilder<bool>(
                           valueListenable: freemiumService.hasFullAccessNotifier,
-                          builder: (_, isPremium, __) => FilledButton.icon(
+                          builder: (_, isPremium, __) => OutlinedButton.icon(
                             onPressed: () => _exportPdf(context, result, isEs),
                             icon: isPremium
                                 ? const Icon(Icons.picture_as_pdf_rounded, size: 16)
@@ -598,7 +598,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                               s.exportPdf,
                               style: const TextStyle(fontSize: AppTextSize.md),
                             ),
-                            style: FilledButton.styleFrom(
+                            style: OutlinedButton.styleFrom(
                               minimumSize: const Size(double.infinity, 40),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                             ),
@@ -714,7 +714,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                               LineChartBarData(
                                 spots: normalSpots,
                                 isCurved: true,
-                                color: const Color(0xFF94A3B8),
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 barWidth: 2,
                                 dotData: const FlDotData(show: false),
                                 belowBarData: BarAreaData(show: false),
@@ -739,7 +739,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                       Row(
                         children: [
                           _LegendDot(
-                            color: const Color(0xFF94A3B8),
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             label: s.normalLabel,
                           ),
                           const SizedBox(width: 16),

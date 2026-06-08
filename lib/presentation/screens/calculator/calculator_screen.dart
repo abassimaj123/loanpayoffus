@@ -1450,7 +1450,7 @@ class _BalanceChart extends StatelessWidget {
             Row(
               children: [
                 _LegendDot(
-                  color: const Color(0xFF64748B),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   label: isEs ? 'Normal' : 'Baseline',
                 ),
                 if (result.monthsSaved > 0) ...[

@@ -2042,6 +2042,10 @@ class _DebtTile extends StatelessWidget {
   }
 }
 
+// Chart series colors — semantic domain values, no shared theme equivalent
+const _chartTeal = Color(0xFF009688);
+const _chartIndigo = Colors.indigo;
+
 class _PayoffOrderTile extends StatelessWidget {
   final int rank;
   final DebtPayoffSummary summary;
@@ -2059,8 +2063,8 @@ class _PayoffOrderTile extends StatelessWidget {
       AppTheme.accentGood,
       AppTheme.primary,
       AppTheme.warning,
-      const Color(0xFF009688), // teal — chart accent, no semantic token
-      Colors.indigo,
+      _chartTeal,
+      _chartIndigo,
     ];
     final color = colors[(rank - 1).clamp(0, colors.length - 1)];
     final months = summary.monthPaidOff;

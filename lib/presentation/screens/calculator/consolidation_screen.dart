@@ -43,6 +43,11 @@ class ConsolidationScreen extends StatefulWidget {
   State<ConsolidationScreen> createState() => _ConsolidationScreenState();
 }
 
+// Semantic domain colors — not in shared theme (savings/warning gradient)
+const _savingsColor = Color(0xFF00C853);
+const _savingsDarkColor = Color(0xFF009624);
+const _warningDarkColor = Color(0xFFE65100);
+
 class _ConsolidationScreenState extends State<ConsolidationScreen> {
   // Up to 4 debts — start with 2 pre-filled samples
   final List<_DebtEntry> _debts = [
@@ -573,12 +578,12 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                 gradient: LinearGradient(
                                   colors: _monthlySavings > 0
                                       ? [
-                                          const Color(0xFF00C853),
-                                          const Color(0xFF009624),
+                                          _savingsColor,
+                                          _savingsDarkColor,
                                         ]
                                       : [
                                           AppTheme.warning,
-                                          const Color(0xFFE65100),
+                                          _warningDarkColor,
                                         ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,

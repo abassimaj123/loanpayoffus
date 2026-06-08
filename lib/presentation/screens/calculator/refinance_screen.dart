@@ -12,6 +12,11 @@ import '../../providers/loan_provider.dart';
 import '../../widgets/paywall_hard.dart';
 import '../../widgets/save_scenario_button.dart';
 
+// Semantic domain colors — not in shared theme (savings/warning gradient)
+const _savingsColor = Color(0xFF00C853);
+const _savingsDarkColor = Color(0xFF009624);
+const _warningDarkColor = Color(0xFFE65100);
+
 class RefinanceScreen extends ConsumerStatefulWidget {
   const RefinanceScreen({super.key});
 
@@ -372,12 +377,12 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                                 gradient: LinearGradient(
                                   colors: _monthlySavings > 0
                                       ? [
-                                          const Color(0xFF00C853),
-                                          const Color(0xFF009624),
+                                          _savingsColor,
+                                          _savingsDarkColor,
                                         ]
                                       : [
                                           AppTheme.warning,
-                                          const Color(0xFFE65100),
+                                          _warningDarkColor,
                                         ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
