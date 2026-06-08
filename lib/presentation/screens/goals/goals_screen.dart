@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/firebase/analytics_service.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/language/language_notifier.dart';
+import '../../../core/services/pdf_export_service.dart';
 import '../../../domain/models/amortization_entry.dart';
 import '../../../domain/usecases/loan_calculator.dart';
 import '../../../l10n/strings_en.dart';
@@ -480,6 +481,35 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                 ],
                 const SizedBox(height: AppSpacing.lg),
                 SaveScenarioButton(onSave: _saveScenario),
+                const SizedBox(height: AppSpacing.sm),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => PdfExportService.exportGoals(
+                      context,
+                      loanAmount: input.loanAmount,
+                      interestRate: input.interestRatePct,
+                      monthlyPayment: input.monthlyPayment,
+                      extraPayment: input.extraPayment,
+                      targetDate: _deadline,
+                      requiredExtra: _requiredExtra,
+                      currentPayoffMonths: result.extraMonths,
+                      monthsSaved: result.monthsSaved,
+                      interestSaved: result.interestSaved,
+                      isEs: isEs,
+                    ),
+                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                    label: Text(isEs ? 'Exportar PDF' : 'Export PDF'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      side: const BorderSide(color: AppTheme.primary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.mdPlus),
+                      ),
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.listBottomInset),
               ],
             ),

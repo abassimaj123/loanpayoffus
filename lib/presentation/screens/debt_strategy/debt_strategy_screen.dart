@@ -12,6 +12,7 @@ import '../../../domain/models/debt_item.dart';
 import '../../../domain/models/debt_category.dart';
 import '../../../domain/models/debt_payment.dart';
 import '../../../core/language/language_notifier.dart';
+import '../../../core/services/pdf_export_service.dart';
 import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
 import 'payments_history_screen.dart';
@@ -1562,6 +1563,63 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg),
                     child: SaveScenarioButton(onSave: _saveScenario),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          final result = _strategyResult!;
+                          final minResult = _minimumResult;
+                          PdfExportService.exportDebtStrategy(
+                            context,
+                            debts: _debts
+                                .map(
+                                  (d) => (
+                                    name: d.name,
+                                    balance: d.balance,
+                                    rate: d.annualRate,
+                                    minPayment: d.minPayment,
+                                  ),
+                                )
+                                .toList(),
+                            extraMonthly: _extra,
+                            strategy: _strategyLabel(_strategy, isEs),
+                            payoffOrder: result.payoffOrder
+                                .map(
+                                  (s) => (
+                                    name: s.name,
+                                    monthPaidOff: s.monthPaidOff,
+                                    interestPaid: s.interestPaid,
+                                  ),
+                                )
+                                .toList(),
+                            totalMonthsStrategy: result.totalMonths,
+                            totalInterestStrategy: result.totalInterest,
+                            totalMonthsMinimum: minResult?.totalMonths ?? 0,
+                            totalInterestMinimum: minResult?.totalInterest ?? 0,
+                            isEs: isEs,
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.picture_as_pdf_rounded,
+                          size: 18,
+                        ),
+                        label: Text(isEs ? 'Exportar PDF' : 'Export PDF'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.primary,
+                          side: const BorderSide(color: AppTheme.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.mdPlus),
+                          ),
+                          minimumSize: const Size.fromHeight(44),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
                 const SizedBox(height: AppSpacing.listBottomInset),

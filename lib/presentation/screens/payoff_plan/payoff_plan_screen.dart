@@ -161,22 +161,6 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
     bool isEs,
   ) async {
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
-    if (!freemiumService.hasFullAccess) {
-      final gate = await paywallSession.recordAction();
-      if (!context.mounted) return;
-      if (gate == PaywallTrigger.hard) {
-        await PaywallHard.show(context);
-        return;
-      } else if (gate == PaywallTrigger.soft) {
-        await PaywallSoft.show(
-          context,
-          isSpanish: isSpanishNotifier.value,
-          onUnlock: () => PaywallHard.show(context),
-        );
-        if (!context.mounted) return;
-      }
-    }
-
     const sep = '─────────────────────';
     final buf = StringBuffer();
     buf.writeln('Loan Payoff US — ${s.navPayoffPlan}');

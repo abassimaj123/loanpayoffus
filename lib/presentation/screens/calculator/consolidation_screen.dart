@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/firebase/analytics_service.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/language/language_notifier.dart';
+import '../../../core/services/pdf_export_service.dart';
 import '../../../main.dart';
 import '../../widgets/paywall_hard.dart';
 import '../../widgets/save_scenario_button.dart';
@@ -863,6 +864,75 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                           if (isPremium) ...[
                             const SizedBox(height: AppSpacing.lg),
                             SaveScenarioButton(onSave: _saveScenario),
+                            const SizedBox(height: AppSpacing.sm),
+                            if (hasResult)
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    final consolidationRate =
+                                        _parseField(_consolidationRateCtrl);
+                                    final totalCurrentInterest =
+                                        _debts.fold<double>(0, (sum, d) {
+                                      final bal = _parseField(d.balanceCtrl);
+                                      final rate = _parseField(d.rateCtrl);
+                                      final pmt = _parseField(d.paymentCtrl) > 0
+                                          ? _parseField(d.paymentCtrl)
+                                          : _calcMonthlyPayment(bal, rate, 60);
+                                      final months = pmt > 0 && bal > 0
+                                          ? (bal / pmt).ceil().clamp(1, 600)
+                                          : 60;
+                                      return sum + (pmt * months - bal).clamp(0, double.infinity);
+                                    });
+                                    PdfExportService.exportConsolidation(
+                                      context,
+                                      loans: _debts
+                                          .map(
+                                            (d) => (
+                                              balance: _parseField(d.balanceCtrl),
+                                              rate: _parseField(d.rateCtrl),
+                                              payment: _parseField(d.paymentCtrl) > 0
+                                                  ? _parseField(d.paymentCtrl)
+                                                  : _calcMonthlyPayment(
+                                                      _parseField(d.balanceCtrl),
+                                                      _parseField(d.rateCtrl),
+                                                      60,
+                                                    ),
+                                            ),
+                                          )
+                                          .toList(),
+                                      consolidationRate: consolidationRate,
+                                      termMonths: _termMonths,
+                                      currentTotalPayment:
+                                          _totalCurrentMonthlyPayment,
+                                      consolidationPayment: _consolidationPayment,
+                                      totalInterestCurrent: totalCurrentInterest,
+                                      totalInterestConsolidated:
+                                          _totalConsolidationInterest,
+                                      netMonthlySavings: _monthlySavings,
+                                      isEs: isEs,
+                                    );
+                                  },
+                                  icon: const Icon(
+                                    Icons.picture_as_pdf_rounded,
+                                    size: 18,
+                                  ),
+                                  label: Text(
+                                    isEs ? 'Exportar PDF' : 'Export PDF',
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppTheme.primary,
+                                    side: const BorderSide(
+                                        color: AppTheme.primary),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                          AppRadius.mdPlus),
+                                    ),
+                                    minimumSize:
+                                        const Size.fromHeight(44),
+                                  ),
+                                ),
+                              ),
                           ],
                           const SizedBox(height: AppSpacing.listBottomInset),
                         ],

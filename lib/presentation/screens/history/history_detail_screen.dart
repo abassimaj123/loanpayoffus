@@ -100,21 +100,6 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   }
 
   Future<void> _share(BuildContext context, AppStrings s) async {
-    if (!freemiumService.hasFullAccess) {
-      final gate = await paywallSession.recordAction();
-      if (!context.mounted) return;
-      if (gate == PaywallTrigger.hard) {
-        await PaywallHard.show(context);
-        return;
-      } else if (gate == PaywallTrigger.soft) {
-        await PaywallSoft.show(
-          context,
-          isSpanish: s is AppStringsES,
-          onUnlock: () => PaywallHard.show(context),
-        );
-        if (!context.mounted) return;
-      }
-    }
     final text = _buildShareText(s);
     try {
       await Share.share(text, subject: 'Loan Payoff US Summary');
@@ -257,15 +242,18 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.55),
-              fontSize: AppTextSize.body,
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.55),
+                fontSize: AppTextSize.body,
+              ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             value,
             style: TextStyle(

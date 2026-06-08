@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'refinance_screen.dart';
 import 'consolidation_screen.dart';
+import '../../../core/services/pdf_export_service.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
@@ -1124,6 +1125,54 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                           onSave: _saveScenario,
                                         ),
                                         const SizedBox(height: AppSpacing.sm),
+                                        // ── PDF Export ──
+                                        Builder(
+                                          builder: (ctx) {
+                                            final res = ref.watch(payoffResultProvider);
+                                            final inp = ref.watch(loanInputProvider);
+                                            if (res == null) return const SizedBox.shrink();
+                                            return SizedBox(
+                                              width: double.infinity,
+                                              child: OutlinedButton.icon(
+                                                onPressed: () =>
+                                                    PdfExportService.exportCalculator(
+                                                  ctx,
+                                                  loanBalance: inp.loanAmount,
+                                                  interestRate: inp.interestRatePct,
+                                                  monthlyPayment: inp.monthlyPayment,
+                                                  extraPayment: inp.extraPayment,
+                                                  monthsWithout: res.normalMonths,
+                                                  monthsWith: res.extraMonths,
+                                                  interestWithout: res.interestNormal,
+                                                  interestWith: res.interestExtra,
+                                                  interestSaved: res.interestSaved,
+                                                  monthsSaved: res.monthsSaved,
+                                                  isEs: isEs,
+                                                ),
+                                                icon: const Icon(
+                                                  Icons.picture_as_pdf_rounded,
+                                                  size: 18,
+                                                ),
+                                                label: Text(isEs
+                                                    ? 'Exportar PDF'
+                                                    : 'Export PDF'),
+                                                style: OutlinedButton.styleFrom(
+                                                  foregroundColor: AppTheme.primary,
+                                                  side: const BorderSide(
+                                                      color: AppTheme.primary),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            AppRadius.mdPlus),
+                                                  ),
+                                                  minimumSize:
+                                                      const Size.fromHeight(44),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(height: AppSpacing.sm),
                                         Text(
                                           isEs
                                               ? 'Solo para fines informativos. No es asesoramiento financiero.'
@@ -1219,15 +1268,18 @@ class _InfoCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    r.$1,
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.55),
-                      fontSize: AppTextSize.xs,
+                  Flexible(
+                    child: Text(
+                      r.$1,
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.55),
+                        fontSize: AppTextSize.xs,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     r.$2,
                     style: TextStyle(
