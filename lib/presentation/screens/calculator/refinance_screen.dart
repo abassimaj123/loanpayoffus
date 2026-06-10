@@ -258,7 +258,8 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
                 ),
-                body: Center(
+                body: CalcwisePageEntrance(
+                    child: Center(
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.xl),
                     child: Column(
@@ -300,7 +301,7 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                       ],
                     ),
                   ),
-                ),
+                )),
               );
             }
 
@@ -312,7 +313,8 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                 backgroundColor: AppTheme.primary,
                 foregroundColor: Colors.white,
               ),
-              body: Column(
+              body: CalcwisePageEntrance(
+                  child: Column(
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
@@ -663,7 +665,7 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                   ),
                   const CalcwiseAdFooter(),
                 ],
-              ),
+              )),
             );
           },
         );

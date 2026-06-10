@@ -174,7 +174,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final pinned = _pinned;
     final autoSaves = _visibleAutoSaves;
 
-    return Column(
+    return CalcwisePageEntrance(
+        child: Column(
       children: [
         Expanded(
           child: _loading
@@ -265,7 +266,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         const CalcwiseAdFooter(),
       ],
-    );
+    ));
   }
 
   Widget _buildEmpty(bool isEs, AppStrings s) {

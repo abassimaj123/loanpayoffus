@@ -408,7 +408,8 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
                 ),
-                body: Center(
+                body: CalcwisePageEntrance(
+                    child: Center(
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.xl),
                     child: Column(
@@ -450,7 +451,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                       ],
                     ),
                   ),
-                ),
+                )),
               );
             }
 
@@ -462,7 +463,8 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                 backgroundColor: AppTheme.primary,
                 foregroundColor: Colors.white,
               ),
-              body: Column(
+              body: CalcwisePageEntrance(
+                  child: Column(
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
@@ -941,7 +943,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                   ),
                   const CalcwiseAdFooter(),
                 ],
-              ),
+              )),
             );
           },
         );

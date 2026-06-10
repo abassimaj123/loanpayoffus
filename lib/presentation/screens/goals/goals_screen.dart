@@ -243,7 +243,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     final mo75 = monthAt(0.25); // 75% paid
     final hasExtra = result.monthsSaved > 0;
 
-    return Column(
+    return CalcwisePageEntrance(
+        child: Column(
       children: [
         Expanded(
           child: SingleChildScrollView(
@@ -517,7 +518,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
         ),
         const CalcwiseAdFooter(),
       ],
-    );
+    ));
   }
 }
 

@@ -58,7 +58,8 @@ class _PaymentsHistoryScreenState extends State<PaymentsHistoryScreen> {
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: SafeArea(
+      body: CalcwisePageEntrance(
+          child: SafeArea(
         top: false,
         left: false,
         right: false,
@@ -169,7 +170,7 @@ class _PaymentsHistoryScreenState extends State<PaymentsHistoryScreen> {
             );
           },
         ),
-      ),
+      )),
     );
   }
 }

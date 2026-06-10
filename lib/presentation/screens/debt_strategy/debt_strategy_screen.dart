@@ -938,7 +938,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
               .clamp(0.0, double.infinity)
         : 0.0;
 
-    return Column(
+    return CalcwisePageEntrance(
+        child: Column(
       children: [
         Expanded(
           child: SingleChildScrollView(
@@ -1629,7 +1630,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
         ),
         const CalcwiseAdFooter(),
       ],
-    );
+    ));
   }
 }
 

@@ -515,7 +515,8 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
         ? normalSched.first.balance + normalSched.first.principal
         : 1.0;
 
-    return Column(
+    return CalcwisePageEntrance(
+        child: Column(
       children: [
         Expanded(
           child: ListView.builder(
@@ -765,7 +766,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
         ),
         const CalcwiseAdFooter(),
       ],
-    );
+    ));
   }
 }
 
