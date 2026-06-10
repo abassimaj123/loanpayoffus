@@ -240,6 +240,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
       inputHash: snap.hash,
       l1: snap.l1,
       l2: snap.l2,
+      onSaved: () {
+        if (mounted) setState(() {});
+      },
     );
   }
 
