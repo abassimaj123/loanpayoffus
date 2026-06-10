@@ -32,3 +32,4 @@ ios/Podfile.lock
 ios/build/
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
+release.env
