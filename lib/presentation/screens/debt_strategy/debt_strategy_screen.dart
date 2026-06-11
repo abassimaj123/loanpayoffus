@@ -296,6 +296,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
       l1: _buildL1(),
       l2: _buildL2(),
     );
+    historyRefreshNotifier.value++;
   }
 
   Future<void> _saveScenario(String? label) async {
@@ -1476,6 +1477,23 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                             label: isEs ? 'LIBRE DE DEUDAS EN' : 'DEBT-FREE IN',
                             value: timeLabel,
                             secondary: secondaryLabel,
+                            rawStats: [
+                              (
+                                label: isEs
+                                    ? 'Interés total'
+                                    : 'Total interest',
+                                value: interest,
+                                formatter: (v) => AmountFormatter.ui(v, 'USD'),
+                              ),
+                              if (interestSaved > 0 && _extra > 0)
+                                (
+                                  label: isEs
+                                      ? 'Ahorro vs mínimos'
+                                      : 'Saved vs minimum',
+                                  value: interestSaved,
+                                  formatter: (v) => AmountFormatter.ui(v, 'USD'),
+                                ),
+                            ],
                             stats: [
                               (
                                 label: isEs
@@ -1500,11 +1518,14 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
 
                   // Bar chart: minimum interest vs strategy interest
                   if (_minimumResult != null)
-                    _InterestBarChart(
-                      minimumInterest: _minimumResult!.totalInterest,
-                      strategyInterest: _strategyResult!.totalInterest,
-                      isEs: isEs,
-                      strategy: _strategy,
+                    CalcwiseChartReveal(
+                      axis: Axis.vertical,
+                      child: _InterestBarChart(
+                        minimumInterest: _minimumResult!.totalInterest,
+                        strategyInterest: _strategyResult!.totalInterest,
+                        isEs: isEs,
+                        strategy: _strategy,
+                      ),
                     ),
                   const SizedBox(height: AppSpacing.lg),
 
