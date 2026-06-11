@@ -290,7 +290,16 @@ class _MainShellState extends State<_MainShell> {
           ),
         ],
       ),
-      body: IndexedStack(index: _index, children: _screens),
+      body: Stack(
+        fit: StackFit.expand,
+        children: List.generate(
+          _screens.length,
+          (i) => IgnorePointer(
+            ignoring: _index != i,
+            child: CalcwiseTabReveal(active: _index == i, child: _screens[i]),
+          ),
+        ),
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
