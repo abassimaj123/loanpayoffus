@@ -11,18 +11,17 @@ TOOLS INCLUDED
 • Payment Calculator — compute your monthly payment for any loan type
 • Amortization Schedule — see every payment broken down by principal and interest
 • Payoff Strategies — compare Avalanche (highest rate first) vs Snowball (smallest balance first) side by side
-• Loan Comparator — compare up to 3 loan offers before you sign
 • Goals Tracker — set a debt-free target date and track your progress
 • History & PDF Export — save unlimited calculations and share as professional PDF reports
 
 FREEMIUM MODEL
-Free: Full calculator access, up to 100 saved calculations
+Free: Full calculator access, save and review your debt payoff calculations anytime
 Premium ($2.99 one-time): Unlimited history, PDF export, zero ads — forever
-Rewarded Ad: Watch a short ad for 60 minutes of premium access (up to 3 times per day)
+Rewarded Ad: Watch a short ad for 60 minutes of premium access (up to 2 times per day)
 
 BILINGUAL: English + Spanish (EN/ES)
 
-Trusted by 75,000+ borrowers across the US to pay off their loans faster.
+Trusted by thousands of borrowers across the US to pay off their loans faster.
 
 WHAT MAKES IT DIFFERENT
 ✓ Extra payment slider — see the exact impact of paying $100 or $500 more per month
@@ -35,4 +34,4 @@ LOAN TYPES SUPPORTED
 Mortgage · Auto · Student · Personal · Home Equity · Credit Card
 
 KEYWORDS
-loan payoff, mortgage calculator, debt free, amortization, extra payment, avalanche, snowball, loan comparator, student loan, auto loan, interest savings, debt snowball, debt avalanche, loan payoff calculator
+loan payoff, mortgage calculator, debt free, amortization, extra payment, avalanche, snowball, student loan, auto loan, interest savings, debt snowball, debt avalanche, loan payoff calculator

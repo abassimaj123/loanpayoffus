@@ -180,6 +180,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
           'months_saved': result.monthsSaved,
         },
       );
+      AnalyticsService.instance.maybeLogFirstCalculate();
       // Emotional trigger: user sees significant savings → ask for review
       if (result.monthsSaved > 12) {
         CalcwiseReviewService.instance.requestAfterPremium();

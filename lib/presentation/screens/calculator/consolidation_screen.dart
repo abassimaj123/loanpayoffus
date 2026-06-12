@@ -204,6 +204,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
       l1: _buildL1(),
       l2: _buildL2(),
     );
+    historyRefreshNotifier.value++;
   }
 
   Future<void> _saveScenario(String? label) async {

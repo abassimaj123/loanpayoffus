@@ -1,3 +1,6 @@
+import 'dart:isolate';
+import 'dart:typed_data';
+
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
@@ -15,6 +18,156 @@ import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
 import '../../widgets/premium_badge.dart';
 
+// ── Params + top-level builder for Isolate.run ────────────────────────────────
+
+class _HistoryDetailPdfParams {
+  final String loanType;
+  final double loanAmount;
+  final double interestRate;
+  final double monthlyPayment;
+  final double extraPayment;
+  final int normalMonths;
+  final double interestSaved;
+  final String? createdAt;
+  final bool isEs;
+
+  const _HistoryDetailPdfParams({
+    required this.loanType,
+    required this.loanAmount,
+    required this.interestRate,
+    required this.monthlyPayment,
+    required this.extraPayment,
+    required this.normalMonths,
+    required this.interestSaved,
+    required this.createdAt,
+    required this.isEs,
+  });
+}
+
+Future<Uint8List> _buildHistoryDetailPdf(_HistoryDetailPdfParams p) async {
+  final ts = p.createdAt != null ? DateTime.tryParse(p.createdAt!) : null;
+  final totalCost = p.monthlyPayment * p.normalMonths;
+  final totalInterest = (totalCost - p.loanAmount).clamp(0.0, double.infinity);
+  final payoffDate = ts?.add(Duration(days: p.normalMonths * 30));
+  final payoffDateStr =
+      payoffDate != null ? DateFormat('MMM yyyy').format(payoffDate) : '—';
+  final yearsPayoff = p.normalMonths ~/ 12;
+  final mosPayoff = p.normalMonths % 12;
+
+  final s = p.isEs ? AppStringsES() : AppStringsEN();
+
+  // Input rows
+  final inputRows = <({String label, String value})>[
+    (label: s.loanTypeLabel, value: p.loanType),
+    (label: s.loanAmount, value: AmountFormatter.ui(p.loanAmount, 'USD')),
+    (
+      label: s.interestRate,
+      value: '${p.interestRate.toStringAsFixed(2)}%',
+    ),
+    (label: s.monthlyPayment, value: AmountFormatter.ui(p.monthlyPayment, 'USD')),
+    if (p.extraPayment > 0)
+      (
+        label: s.extraPayment,
+        value: '${AmountFormatter.ui(p.extraPayment, 'USD')}/mo',
+      ),
+  ];
+
+  // Result rows
+  final resultRows = <({String label, String value})>[
+    (label: s.payoff, value: '${yearsPayoff}y ${mosPayoff}m'),
+    (label: s.interestLabel, value: AmountFormatter.ui(totalInterest, 'USD')),
+    (label: s.payoffDate, value: payoffDateStr),
+    if (p.interestSaved > 0)
+      (label: s.interestSavedExtra, value: AmountFormatter.ui(p.interestSaved, 'USD')),
+  ];
+
+  pw.Widget pdfRow(String label, String value, {bool highlight = false}) =>
+      pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(vertical: 3),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              label,
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800),
+            ),
+            pw.Text(
+              value,
+              style: pw.TextStyle(
+                fontSize: 10,
+                fontWeight:
+                    highlight ? pw.FontWeight.bold : pw.FontWeight.normal,
+                color: highlight ? PdfColors.blue800 : PdfColors.black,
+              ),
+            ),
+          ],
+        ),
+      );
+
+  final pdf = pw.Document();
+  pdf.addPage(
+    pw.Page(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(AppSpacing.xxxl),
+      build: (_) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Loan Payoff US — ${s.historyDetail}',
+            style: pw.TextStyle(
+              fontSize: AppTextSize.title,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          if (ts != null)
+            pw.Text(
+              DateFormat('MMM d, yyyy').format(ts),
+              style: const pw.TextStyle(
+                fontSize: AppTextSize.xs,
+                color: PdfColors.grey600,
+              ),
+            ),
+          pw.SizedBox(height: 16),
+          pw.Divider(),
+          pw.SizedBox(height: 6),
+          pw.Text(
+            s.inputs,
+            style: pw.TextStyle(
+              fontSize: AppTextSize.md,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          ...inputRows.map((r) => pdfRow(r.label, r.value)),
+          pw.SizedBox(height: 12),
+          pw.Text(
+            s.results,
+            style: pw.TextStyle(
+              fontSize: AppTextSize.md,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          ...resultRows.map((r) => pdfRow(r.label, r.value, highlight: true)),
+          pw.SizedBox(height: 16),
+          pw.Divider(),
+          pw.SizedBox(height: 6),
+          pw.Text(
+            s.disclaimer,
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            s.calculatedWith,
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey),
+          ),
+        ],
+      ),
+    ),
+  );
+  return pdf.save();
+}
+
 class HistoryDetailScreen extends StatefulWidget {
   final Map<String, dynamic> entry;
   const HistoryDetailScreen({super.key, required this.entry});
@@ -25,6 +178,7 @@ class HistoryDetailScreen extends StatefulWidget {
 
 class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   final _fmtDate = DateFormat('MMM d, yyyy');
+  bool _isExporting = false;
 
   Map<String, dynamic> get _e => widget.entry;
 
@@ -111,78 +265,25 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       await PaywallHard.show(context);
       return;
     }
+    setState(() => _isExporting = true);
     final ts = DateTime.tryParse(_e['created_at'] as String? ?? '');
-    final pdf = pw.Document();
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(AppSpacing.xxxl),
-        build: (_) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              'Loan Payoff US — ${s.historyDetail}',
-              style: pw.TextStyle(
-                fontSize: AppTextSize.title,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            if (ts != null)
-              pw.Text(
-                DateFormat('MMM d, yyyy').format(ts),
-                style: const pw.TextStyle(
-                  fontSize: AppTextSize.xs,
-                  color: PdfColors.grey600,
-                ),
-              ),
-            pw.SizedBox(height: 16),
-            pw.Divider(),
-            pw.SizedBox(height: 6),
-
-            pw.Text(
-              s.inputs,
-              style: pw.TextStyle(
-                fontSize: AppTextSize.md,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 6),
-            ..._inputRows(s).map((r) => _pdfRow(r.label, r.value)),
-
-            pw.SizedBox(height: 12),
-            pw.Text(
-              s.results,
-              style: pw.TextStyle(
-                fontSize: AppTextSize.md,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 6),
-            ..._resultRows(
-              s,
-            ).map((r) => _pdfRow(r.label, r.value, highlight: true)),
-
-            pw.SizedBox(height: 16),
-            pw.Divider(),
-            pw.SizedBox(height: 6),
-            pw.Text(
-              s.disclaimer,
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
-            ),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              s.calculatedWith,
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-
     final tsStr = ts != null ? DateFormat('yyyyMMdd').format(ts) : 'export';
     try {
+      final params = _HistoryDetailPdfParams(
+        loanType: _e['loan_type'] as String? ?? '—',
+        loanAmount: _d('loan_amount'),
+        interestRate: _d('interest_rate'),
+        monthlyPayment: _d('monthly_payment'),
+        extraPayment: _d('extra_payment'),
+        normalMonths: _i('normal_months'),
+        interestSaved: _d('interest_saved'),
+        createdAt: _e['created_at'] as String?,
+        isEs: s is AppStringsES,
+      );
+      final bytes = await Isolate.run(() => _buildHistoryDetailPdf(params));
+      if (!context.mounted) return;
       await Printing.sharePdf(
-        bytes: await pdf.save(),
+        bytes: bytes,
         filename: 'loan_payoff_us_$tsStr.pdf',
       );
       if (context.mounted) {
@@ -204,32 +305,10 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
-
-  pw.Widget _pdfRow(String label, String value, {bool highlight = false}) =>
-      pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 3),
-        child: pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Text(
-              label,
-              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800),
-            ),
-            pw.Text(
-              value,
-              style: pw.TextStyle(
-                fontSize: 10,
-                fontWeight: highlight
-                    ? pw.FontWeight.bold
-                    : pw.FontWeight.normal,
-                color: highlight ? PdfColors.blue800 : PdfColors.black,
-              ),
-            ),
-          ],
-        ),
-      );
 
   Widget _detailRow(
     BuildContext context,
@@ -509,10 +588,21 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: FilledButton.icon(
-                                onPressed: () => _exportPdf(context, s),
-                                icon: isPremium
-                                    ? const Icon(Icons.picture_as_pdf_rounded)
-                                    : const Icon(Icons.lock_outline),
+                                onPressed: _isExporting
+                                    ? null
+                                    : () => _exportPdf(context, s),
+                                icon: _isExporting
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : isPremium
+                                        ? const Icon(Icons.picture_as_pdf_rounded)
+                                        : const Icon(Icons.lock_outline),
                                 label: Text(s.exportPdf),
                                 style: FilledButton.styleFrom(
                                   minimumSize: const Size(double.infinity, 52),

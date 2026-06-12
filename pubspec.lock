@@ -95,7 +95,7 @@ packages:
       path: "../packages/calcwise_core"
       relative: true
     source: path
-    version: "1.0.36"
+    version: "1.0.41"
   calcwise_lint:
     dependency: "direct dev"
     description:
@@ -420,7 +420,7 @@ packages:
     source: hosted
     version: "8.0.0"
   flutter_native_splash:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: flutter_native_splash
       sha256: "4fb9f4113350d3a80841ce05ebf1976a36de622af7d19aca0ca9a9911c7ff002"

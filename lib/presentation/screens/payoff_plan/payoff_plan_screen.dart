@@ -1,3 +1,6 @@
+import 'dart:isolate';
+import 'dart:typed_data';
+
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import '../../../core/firebase/analytics_service.dart';
 import '../../../core/services/pdf_export_service.dart' show PdfExportService;
@@ -29,6 +32,230 @@ import '../../widgets/next_victory_card.dart';
 import '../../../core/db/debt_persistence.dart';
 import '../../../core/services/streak_service.dart';
 import '../../../domain/models/debt_item.dart';
+
+// ── Payoff Plan PDF isolate support ─────────────────────────────────────────
+
+class _AmortizationRow {
+  final int month;
+  final double payment;
+  final double principal;
+  final double interest;
+  final double balance;
+  const _AmortizationRow(this.month, this.payment, this.principal, this.interest, this.balance);
+}
+
+class _PayoffPlanPdfParams {
+  // Summary data
+  final int normalMonths;
+  final int extraMonths;
+  final int monthsSaved;
+  final double interestNormal;
+  final double interestExtra;
+  final double interestSaved;
+  final double totalPaidNormal;
+  final double totalPaidExtra;
+  // Amortization schedule (serialised)
+  final List<_AmortizationRow> schedule;
+  // Localised strings (resolved on main isolate)
+  final String labelNavPayoffPlan;
+  final String labelWithoutExtra;
+  final String labelPayoff;
+  final String labelInterest;
+  final String labelTotalPaid;
+  final String labelWithExtraLabel;
+  final String labelSaved;
+  final String labelSchedule;
+  final String labelPayment;
+  final String labelPrincipal;
+  final String labelBalance;
+  final String labelDisclaimer;
+  final String labelCalculatedWith;
+  final String labelPdfExportedSuccess;
+  // Timestamp
+  final int nowYear;
+  final int nowMonth;
+  final int nowDay;
+
+  const _PayoffPlanPdfParams({
+    required this.normalMonths,
+    required this.extraMonths,
+    required this.monthsSaved,
+    required this.interestNormal,
+    required this.interestExtra,
+    required this.interestSaved,
+    required this.totalPaidNormal,
+    required this.totalPaidExtra,
+    required this.schedule,
+    required this.labelNavPayoffPlan,
+    required this.labelWithoutExtra,
+    required this.labelPayoff,
+    required this.labelInterest,
+    required this.labelTotalPaid,
+    required this.labelWithExtraLabel,
+    required this.labelSaved,
+    required this.labelSchedule,
+    required this.labelPayment,
+    required this.labelPrincipal,
+    required this.labelBalance,
+    required this.labelDisclaimer,
+    required this.labelCalculatedWith,
+    required this.labelPdfExportedSuccess,
+    required this.nowYear,
+    required this.nowMonth,
+    required this.nowDay,
+  });
+}
+
+pw.Widget _payoffPdfSummaryRow(String label, String value, {bool highlight = false}) =>
+    pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(label, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800)),
+          pw.Text(
+            value,
+            style: pw.TextStyle(
+              fontSize: 10,
+              fontWeight: highlight ? pw.FontWeight.bold : pw.FontWeight.normal,
+              color: highlight ? PdfColors.blue800 : PdfColors.black,
+            ),
+          ),
+        ],
+      ),
+    );
+
+pw.Widget _payoffPdfCell(String text, {bool header = false, bool bold = false}) =>
+    pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      child: pw.Text(
+        text,
+        textAlign: pw.TextAlign.right,
+        style: pw.TextStyle(
+          fontSize: header ? 9 : 8,
+          fontWeight: (header || bold) ? pw.FontWeight.bold : pw.FontWeight.normal,
+        ),
+      ),
+    );
+
+Future<Uint8List> _buildPayoffPlanPdf(_PayoffPlanPdfParams p) async {
+  final now = DateTime(p.nowYear, p.nowMonth, p.nowDay);
+  final pdf = pw.Document();
+  pdf.addPage(
+    pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(AppSpacing.xxxl),
+      header: (_) => pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(
+            'Loan Payoff US — ${p.labelNavPayoffPlan}',
+            style: pw.TextStyle(fontSize: AppTextSize.body, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.Text(
+            DateFormat.yMMMMd().format(now),
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+          ),
+        ],
+      ),
+      footer: (ctx) => pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.end,
+        children: [
+          pw.Text(
+            '${ctx.pageNumber} / ${ctx.pagesCount}',
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+          ),
+        ],
+      ),
+      build: (_) => [
+        pw.SizedBox(height: 8),
+        pw.Container(
+          decoration: pw.BoxDecoration(
+            color: PdfColors.blueGrey50,
+            borderRadius: pw.BorderRadius.circular(AppRadius.xs),
+          ),
+          padding: const pw.EdgeInsets.all(AppSpacing.md),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                p.labelWithoutExtra,
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: AppTextSize.sm),
+              ),
+              pw.SizedBox(height: 6),
+              _payoffPdfSummaryRow(p.labelPayoff, '${p.normalMonths ~/ 12}y ${p.normalMonths % 12}m'),
+              _payoffPdfSummaryRow(p.labelInterest, AmountFormatter.ui(p.interestNormal, 'USD')),
+              _payoffPdfSummaryRow(p.labelTotalPaid, AmountFormatter.ui(p.totalPaidNormal, 'USD')),
+              if (p.monthsSaved > 0) ...[
+                pw.Divider(color: PdfColors.grey400),
+                pw.Text(
+                  p.labelWithExtraLabel,
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: AppTextSize.sm),
+                ),
+                pw.SizedBox(height: 6),
+                _payoffPdfSummaryRow(p.labelPayoff, '${p.extraMonths ~/ 12}y ${p.extraMonths % 12}m'),
+                _payoffPdfSummaryRow(p.labelInterest, AmountFormatter.ui(p.interestExtra, 'USD')),
+                _payoffPdfSummaryRow(p.labelTotalPaid, AmountFormatter.ui(p.totalPaidExtra, 'USD')),
+                _payoffPdfSummaryRow(p.labelSaved, AmountFormatter.ui(p.interestSaved, 'USD'), highlight: true),
+              ],
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 16),
+        pw.Text(
+          '${p.labelNavPayoffPlan} — ${p.labelSchedule}',
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: AppTextSize.sm),
+        ),
+        pw.SizedBox(height: 6),
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+          columnWidths: const {
+            0: pw.FlexColumnWidth(1),
+            1: pw.FlexColumnWidth(2.2),
+            2: pw.FlexColumnWidth(2.2),
+            3: pw.FlexColumnWidth(2.2),
+            4: pw.FlexColumnWidth(2.2),
+          },
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.blueGrey100),
+              children: [
+                '#',
+                p.labelPayment,
+                p.labelPrincipal,
+                p.labelInterest,
+                p.labelBalance,
+              ].map((h) => _payoffPdfCell(h, header: true)).toList(),
+            ),
+            ...p.schedule.asMap().entries.map((entry) {
+              final i = entry.key;
+              final r = entry.value;
+              final bg = i.isEven ? PdfColors.white : PdfColors.grey50;
+              return pw.TableRow(
+                decoration: pw.BoxDecoration(color: bg),
+                children: [
+                  _payoffPdfCell('${r.month}'),
+                  _payoffPdfCell(AmountFormatter.ui(r.payment, 'USD')),
+                  _payoffPdfCell(AmountFormatter.ui(r.principal, 'USD')),
+                  _payoffPdfCell(AmountFormatter.ui(r.interest, 'USD')),
+                  _payoffPdfCell(AmountFormatter.ui(r.balance, 'USD'), bold: r.balance < 0.01),
+                ],
+              );
+            }),
+          ],
+        ),
+        pw.SizedBox(height: 16),
+        pw.Divider(),
+        pw.SizedBox(height: 6),
+        pw.Text(p.labelDisclaimer, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+        pw.Text(p.labelCalculatedWith, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
+      ],
+    ),
+  );
+  return pdf.save();
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 
 class PayoffPlanScreen extends ConsumerStatefulWidget {
   const PayoffPlanScreen({super.key});
@@ -219,174 +446,46 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
     bool isEs,
   ) async {
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
-    final pdf = pw.Document();
+    final now = DateTime.now();
 
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(AppSpacing.xxxl),
-        header: (_) => pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Text(
-              'Loan Payoff US — ${s.navPayoffPlan}',
-              style: pw.TextStyle(
-                fontSize: AppTextSize.body,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.Text(
-              DateFormat.yMMMMd().format(DateTime.now()),
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
-            ),
-          ],
-        ),
-        footer: (ctx) => pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.end,
-          children: [
-            pw.Text(
-              '${ctx.pageNumber} / ${ctx.pagesCount}',
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
-            ),
-          ],
-        ),
-        build: (context) => [
-          pw.SizedBox(height: 8),
-
-          // ── Summary ──────────────────────────────────────────────────────
-          pw.Container(
-            decoration: pw.BoxDecoration(
-              color: PdfColors.blueGrey50,
-              borderRadius: pw.BorderRadius.circular(AppRadius.xs),
-            ),
-            padding: const pw.EdgeInsets.all(AppSpacing.md),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  s.withoutExtra,
-                  style: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold,
-                    fontSize: AppTextSize.sm,
-                  ),
-                ),
-                pw.SizedBox(height: 6),
-                _pdfSummaryRow(
-                  s.payoff,
-                  '${result.normalMonths ~/ 12}y ${result.normalMonths % 12}m',
-                ),
-                _pdfSummaryRow(
-                  s.interest,
-                  AmountFormatter.ui(result.interestNormal, 'USD'),
-                ),
-                _pdfSummaryRow(
-                  s.totalPaid,
-                  AmountFormatter.ui(result.totalPaidNormal, 'USD'),
-                ),
-                if (result.monthsSaved > 0) ...[
-                  pw.Divider(color: PdfColors.grey400),
-                  pw.Text(
-                    s.withExtraLabel,
-                    style: pw.TextStyle(
-                      fontWeight: pw.FontWeight.bold,
-                      fontSize: AppTextSize.sm,
-                    ),
-                  ),
-                  pw.SizedBox(height: 6),
-                  _pdfSummaryRow(
-                    s.payoff,
-                    '${result.extraMonths ~/ 12}y ${result.extraMonths % 12}m',
-                  ),
-                  _pdfSummaryRow(
-                    s.interest,
-                    AmountFormatter.ui(result.interestExtra, 'USD'),
-                  ),
-                  _pdfSummaryRow(
-                    s.totalPaid,
-                    AmountFormatter.ui(result.totalPaidExtra, 'USD'),
-                  ),
-                  _pdfSummaryRow(
-                    s.saved,
-                    AmountFormatter.ui(result.interestSaved, 'USD'),
-                    highlight: true,
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          pw.SizedBox(height: 16),
-
-          // ── Amortization table ────────────────────────────────────────────
-          pw.Text(
-            '${s.navPayoffPlan} — ${s.schedule}',
-            style: pw.TextStyle(
-              fontWeight: pw.FontWeight.bold,
-              fontSize: AppTextSize.sm,
-            ),
-          ),
-          pw.SizedBox(height: 6),
-
-          pw.Table(
-            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-            columnWidths: const {
-              0: pw.FlexColumnWidth(1),
-              1: pw.FlexColumnWidth(2.2),
-              2: pw.FlexColumnWidth(2.2),
-              3: pw.FlexColumnWidth(2.2),
-              4: pw.FlexColumnWidth(2.2),
-            },
-            children: [
-              pw.TableRow(
-                decoration: const pw.BoxDecoration(
-                  color: PdfColors.blueGrey100,
-                ),
-                children: [
-                  '#',
-                  s.payment,
-                  s.principal,
-                  s.interest,
-                  s.balance,
-                ].map((h) => _pdfCell(h, header: true)).toList(),
-              ),
-              ...result.schedule.asMap().entries.map((entry) {
-                final i = entry.key;
-                final r = entry.value;
-                final bg = i.isEven ? PdfColors.white : PdfColors.grey50;
-                return pw.TableRow(
-                  decoration: pw.BoxDecoration(color: bg),
-                  children: [
-                    _pdfCell('${r.month}'),
-                    _pdfCell(AmountFormatter.ui(r.payment, 'USD')),
-                    _pdfCell(AmountFormatter.ui(r.principal, 'USD')),
-                    _pdfCell(AmountFormatter.ui(r.interest, 'USD')),
-                    _pdfCell(AmountFormatter.ui(r.balance, 'USD'), bold: r.balance < 0.01),
-                  ],
-                );
-              }),
-            ],
-          ),
-
-          pw.SizedBox(height: 16),
-          pw.Divider(),
-          pw.SizedBox(height: 6),
-          pw.Text(
-            s.disclaimer,
-            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
-          ),
-          pw.Text(
-            s.calculatedWith,
-            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey),
-          ),
-        ],
-      ),
+    // Resolve all data on main isolate before spawning
+    final params = _PayoffPlanPdfParams(
+      normalMonths: result.normalMonths,
+      extraMonths: result.extraMonths,
+      monthsSaved: result.monthsSaved,
+      interestNormal: result.interestNormal,
+      interestExtra: result.interestExtra,
+      interestSaved: result.interestSaved,
+      totalPaidNormal: result.totalPaidNormal,
+      totalPaidExtra: result.totalPaidExtra,
+      schedule: result.schedule
+          .map((r) => _AmortizationRow(r.month, r.payment, r.principal, r.interest, r.balance))
+          .toList(),
+      labelNavPayoffPlan: s.navPayoffPlan,
+      labelWithoutExtra: s.withoutExtra,
+      labelPayoff: s.payoff,
+      labelInterest: s.interest,
+      labelTotalPaid: s.totalPaid,
+      labelWithExtraLabel: s.withExtraLabel,
+      labelSaved: s.saved,
+      labelSchedule: s.schedule,
+      labelPayment: s.payment,
+      labelPrincipal: s.principal,
+      labelBalance: s.balance,
+      labelDisclaimer: s.disclaimer,
+      labelCalculatedWith: s.calculatedWith,
+      labelPdfExportedSuccess: s.pdfExportedSuccess,
+      nowYear: now.year,
+      nowMonth: now.month,
+      nowDay: now.day,
     );
 
     try {
+      final bytes = await Isolate.run(() => _buildPayoffPlanPdf(params));
+      if (!context.mounted) return;
       await Printing.sharePdf(
-        bytes: await pdf.save(),
-        filename:
-            'loan_payoff_us_plan_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf',
+        bytes: bytes,
+        filename: 'loan_payoff_us_plan_${DateFormat('yyyyMMdd').format(now)}.pdf',
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -409,49 +508,6 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
       }
     }
   }
-
-  static pw.Widget _pdfSummaryRow(
-    String label,
-    String value, {
-    bool highlight = false,
-  }) => pw.Padding(
-    padding: const pw.EdgeInsets.symmetric(vertical: 2),
-    child: pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      children: [
-        pw.Text(
-          label,
-          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800),
-        ),
-        pw.Text(
-          value,
-          style: pw.TextStyle(
-            fontSize: 10,
-            fontWeight: highlight ? pw.FontWeight.bold : pw.FontWeight.normal,
-            color: highlight ? PdfColors.blue800 : PdfColors.black,
-          ),
-        ),
-      ],
-    ),
-  );
-
-  static pw.Widget _pdfCell(
-    String text, {
-    bool header = false,
-    bool bold = false,
-  }) => pw.Padding(
-    padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-    child: pw.Text(
-      text,
-      textAlign: pw.TextAlign.right,
-      style: pw.TextStyle(
-        fontSize: header ? 9 : 8,
-        fontWeight: (header || bold)
-            ? pw.FontWeight.bold
-            : pw.FontWeight.normal,
-      ),
-    ),
-  );
 
   @override
   Widget build(BuildContext context) {

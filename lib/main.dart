@@ -42,18 +42,37 @@ final smartHistoryService = SmartHistoryService(
 /// Bumped to trigger a silent reload of the History screen after a save.
 final historyRefreshNotifier = ValueNotifier<int>(0);
 
+/// AdMob unit IDs. Production IDs are injected at build time via
+/// `--dart-define-from-file=admob.json` (see admob.example.json). When a prod
+/// ID is missing — or in any non-release build — the Google official TEST units
+/// are used so a release build can NEVER ship a placeholder.
+class AdConfig {
+  AdConfig._();
+
+  // Google official TEST ad unit IDs (debug + release fallback).
+  static const _testBannerAndroid = 'ca-app-pub-3940256099942544/6300978111';
+  static const _testInterstitialAndroid = 'ca-app-pub-3940256099942544/1033173712';
+  static const _testRewardedAndroid = 'ca-app-pub-3940256099942544/5224354917';
+
+  // Production IDs injected via --dart-define-from-file=admob.json.
+  static const _prodBannerAndroid = String.fromEnvironment('ADMOB_BANNER_ANDROID');
+  static const _prodInterstitialAndroid = String.fromEnvironment('ADMOB_INTERSTITIAL_ANDROID');
+  static const _prodRewardedAndroid = String.fromEnvironment('ADMOB_REWARDED_ANDROID');
+
+  static String get bannerAndroid =>
+      kReleaseMode && _prodBannerAndroid.isNotEmpty ? _prodBannerAndroid : _testBannerAndroid;
+  static String get interstitialAndroid =>
+      kReleaseMode && _prodInterstitialAndroid.isNotEmpty ? _prodInterstitialAndroid : _testInterstitialAndroid;
+  static String get rewardedAndroid =>
+      kReleaseMode && _prodRewardedAndroid.isNotEmpty ? _prodRewardedAndroid : _testRewardedAndroid;
+}
+
 final adService = CalcwiseAdService(
   config: CalcwiseAdConfig(
-    bannerAndroid: kReleaseMode
-        ? 'ca-app-pub-5379540026739666/XXXXXXXXXX'
-        : 'ca-app-pub-3940256099942544/6300978111',
-    interstitialAndroid: kReleaseMode
-        ? 'ca-app-pub-5379540026739666/XXXXXXXXXX'
-        : 'ca-app-pub-3940256099942544/1033173712',
-    rewardedAndroid: kReleaseMode
-        ? 'ca-app-pub-5379540026739666/XXXXXXXXXX'
-        : 'ca-app-pub-3940256099942544/5224354917',
-    calcThreshold: 8,
+    bannerAndroid: AdConfig.bannerAndroid,
+    interstitialAndroid: AdConfig.interstitialAndroid,
+    rewardedAndroid: AdConfig.rewardedAndroid,
+    calcThreshold: 3,
     cooldownMinutes: 5,
   ),
   freemium: freemiumService,

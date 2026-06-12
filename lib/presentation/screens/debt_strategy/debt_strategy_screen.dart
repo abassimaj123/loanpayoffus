@@ -231,6 +231,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
           : null;
     });
     _scheduleAutoSave();
+    AnalyticsService.instance.maybeLogFirstCalculate();
   }
 
   // ── SmartHistory ────────────────────────────────────────────────────────────
@@ -344,6 +345,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     );
     DebtCategory selectedCat = existing?.category ?? DebtCategory.creditCard;
 
+    try {
     final result = await showModalBottomSheet<DebtItem>(
       context: context,
       isScrollControlled: true,
@@ -522,6 +524,12 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     _persist();
     await _refreshPaymentAggregates();
     _runCalc();
+    } finally {
+      nameCtrl.dispose();
+      balCtrl.dispose();
+      rateCtrl.dispose();
+      minCtrl.dispose();
+    }
   }
 
   Widget _field(
@@ -570,6 +578,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     final noteCtrl = TextEditingController();
     DateTime selectedDate = DateTime.now();
 
+    try {
     final saved = await showModalBottomSheet<DebtPayment>(
       context: context,
       isScrollControlled: true,
@@ -738,6 +747,10 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
         duration: const Duration(seconds: 2),
       ),
     );
+    } finally {
+      amountCtrl.dispose();
+      noteCtrl.dispose();
+    }
   }
 
   // ── Payoff schedule bottom-sheet (premium-gated) ───────────────────────────
