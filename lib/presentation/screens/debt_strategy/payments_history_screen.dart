@@ -58,6 +58,7 @@ class _PaymentsHistoryScreenState extends State<PaymentsHistoryScreen> {
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
+      bottomNavigationBar: const CalcwiseAdFooter(),
       body: CalcwisePageEntrance(
           child: SafeArea(
         top: false,

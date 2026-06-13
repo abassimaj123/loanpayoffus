@@ -186,7 +186,11 @@ class DebtStrategyEngine {
         debtInterest[i] += interest;
 
         var principal = debts[i].minPayment - interest;
-        if (principal < 0) principal = 0;
+        if (principal < 0) {
+          // Minimum payment below interest: unpaid interest capitalizes into balance
+          balances[i] -= principal; // principal is negative → balance grows
+          principal = 0;
+        }
         if (principal > balances[i]) principal = balances[i];
 
         final endBalance = balances[i] - principal;
