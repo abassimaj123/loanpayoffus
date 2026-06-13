@@ -42,6 +42,11 @@ final smartHistoryService = SmartHistoryService(
 /// Bumped to trigger a silent reload of the History screen after a save.
 final historyRefreshNotifier = ValueNotifier<int>(0);
 
+/// Bumped after a backup is restored so the Debt Strategy screen reloads its
+/// debts + payments from storage (the tab is kept alive in a Stack, so it
+/// never re-runs initState on its own).
+final debtRefreshNotifier = ValueNotifier<int>(0);
+
 /// AdMob unit IDs. Production IDs are injected at build time via
 /// `--dart-define-from-file=admob.json` (see admob.example.json). When a prod
 /// ID is missing — or in any non-release build — the Google official TEST units

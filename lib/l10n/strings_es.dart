@@ -107,4 +107,27 @@ class AppStringsES implements AppStrings {
   final pdfExportedSuccess = 'PDF exportado';
   final debtFreeBy = 'Libre de deuda el';
   final payoffIn = 'Liquida en';
+
+  // Backup / restore
+  final backupRestore = 'Copia de seguridad';
+  final backupSubtitle = 'Exporta o restaura tus deudas y pagos';
+  final exportBackup = 'Exportar copia';
+  final exportBackupDesc =
+      'Guarda todas las deudas y el historial de pagos como CSV';
+  final importBackup = 'Importar copia';
+  final importBackupDesc = 'Restaura desde un CSV exportado previamente';
+  final backupPasteHint = 'Pega aquí el contenido de tu copia CSV';
+  final backupParseError = 'No se pudo leer esta copia.';
+  final backupReplaceTitle = '¿Restaurar copia?';
+  final backupReplaceBody =
+      'Se encontraron {debts} deudas y {payments} pagos. ¿Reemplazar tus datos actuales o fusionar la copia con ellos?';
+  final backupMerge = 'Fusionar';
+  final backupReplace = 'Reemplazar';
+  final backupImported = 'Copia restaurada';
+  final backupExported = 'Copia lista para compartir';
+  final backupSkipped = '{n} fila(s) inválida(s) omitida(s)';
+  final backupErrEmpty = 'Nada que importar — pega tu copia primero.';
+  final backupErrNotBackup = 'Este no es un archivo de copia de Loan Payoff US.';
+  final backupErrNoDebts = 'No se encontraron deudas válidas en esta copia.';
+  final backupErrColumns = 'Faltan columnas o están mal formadas.';
 }

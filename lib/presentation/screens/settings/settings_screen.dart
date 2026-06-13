@@ -10,6 +10,7 @@ import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import '../../widgets/premium_badge.dart';
 import '../../widgets/paywall_hard.dart';
+import '../backup/backup_screen.dart';
 import '../../../main.dart' show adService;
 
 class SettingsScreen extends StatefulWidget {
@@ -184,6 +185,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ).colorScheme.onSurface.withValues(alpha: 0.45),
               ),
               onTap: () => themeModeService.toggle(),
+            ),
+          ),
+          const Divider(),
+
+          // ── Data ──
+          _SectionHeader(isEs ? 'DATOS' : 'DATA'),
+          ListTile(
+            leading: const Icon(
+              Icons.backup_rounded,
+              color: AppTheme.primary,
+            ),
+            title: Text(s.backupRestore),
+            subtitle: Text(s.backupSubtitle),
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.45),
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BackupScreen()),
             ),
           ),
           const Divider(),

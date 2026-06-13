@@ -95,6 +95,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     super.initState();
     AnalyticsService.instance.logScreenView('debt_strategy');
     isSpanishNotifier.addListener(_onLangChange);
+    debtRefreshNotifier.addListener(_onDebtRefresh);
     _loadDebts();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _loaded) _runCalc();
@@ -121,6 +122,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   @override
   void dispose() {
     isSpanishNotifier.removeListener(_onLangChange);
+    debtRefreshNotifier.removeListener(_onDebtRefresh);
     _extraCtrl.dispose();
     _snowflakeCtrl.dispose();
     _snowflakeMonthCtrl.dispose();
@@ -130,6 +132,12 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   }
 
   void _onLangChange() => setState(() {});
+
+  /// Reload debts + payment aggregates after a backup restore.
+  void _onDebtRefresh() {
+    if (!mounted) return;
+    _loadDebts();
+  }
 
   Future<void> _loadDebts() async {
     final saved = await DebtPersistence.instance.load();

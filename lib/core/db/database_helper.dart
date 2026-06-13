@@ -202,4 +202,9 @@ class DatabaseHelper {
     final db = await database;
     await db.delete('debt_payments', where: 'id = ?', whereArgs: [id]);
   }
+
+  Future<void> clearDebtPayments() async {
+    final db = await database;
+    await db.delete('debt_payments');
+  }
 }

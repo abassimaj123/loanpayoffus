@@ -83,6 +83,27 @@ abstract class AppStrings {
   String get pdfExportedSuccess;
   String get debtFreeBy;
   String get payoffIn;
+
+  // Backup / restore
+  String get backupRestore;
+  String get backupSubtitle;
+  String get exportBackup;
+  String get exportBackupDesc;
+  String get importBackup;
+  String get importBackupDesc;
+  String get backupPasteHint;
+  String get backupParseError;
+  String get backupReplaceTitle;
+  String get backupReplaceBody;
+  String get backupMerge;
+  String get backupReplace;
+  String get backupImported;
+  String get backupExported;
+  String get backupSkipped;
+  String get backupErrEmpty;
+  String get backupErrNotBackup;
+  String get backupErrNoDebts;
+  String get backupErrColumns;
 }
 
 class AppStringsEN implements AppStrings {
@@ -192,4 +213,26 @@ class AppStringsEN implements AppStrings {
   final pdfExportedSuccess = 'PDF exported';
   final debtFreeBy = 'Debt-free by';
   final payoffIn = 'Payoff in';
+
+  // Backup / restore
+  final backupRestore = 'Backup & Restore';
+  final backupSubtitle = 'Export or restore your debts and payments';
+  final exportBackup = 'Export Backup';
+  final exportBackupDesc = 'Save all debts and payment history as a CSV file';
+  final importBackup = 'Import Backup';
+  final importBackupDesc = 'Restore from a previously exported CSV';
+  final backupPasteHint = 'Paste the contents of your backup CSV here';
+  final backupParseError = 'Could not read this backup.';
+  final backupReplaceTitle = 'Restore backup?';
+  final backupReplaceBody =
+      'Found {debts} debts and {payments} payments. Replace your current data, or merge the backup into it?';
+  final backupMerge = 'Merge';
+  final backupReplace = 'Replace';
+  final backupImported = 'Backup restored';
+  final backupExported = 'Backup ready to share';
+  final backupSkipped = '{n} invalid row(s) skipped';
+  final backupErrEmpty = 'Nothing to import — paste your backup first.';
+  final backupErrNotBackup = 'This is not a Loan Payoff US backup file.';
+  final backupErrNoDebts = 'No valid debts found in this backup.';
+  final backupErrColumns = 'Backup columns are missing or malformed.';
 }

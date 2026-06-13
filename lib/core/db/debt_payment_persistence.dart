@@ -27,4 +27,6 @@ class DebtPaymentPersistence {
       DatabaseHelper.instance.latestPaymentDate(debtId);
 
   Future<void> delete(int id) => DatabaseHelper.instance.deleteDebtPayment(id);
+
+  Future<void> clearAll() => DatabaseHelper.instance.clearDebtPayments();
 }
