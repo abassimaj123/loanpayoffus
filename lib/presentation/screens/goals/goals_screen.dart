@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:calcwise_core/calcwise_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -70,6 +71,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
   }
 
   void _calculateRequired() {
+    unawaited(AnalyticsService.instance.maybeLogFirstCalculate());
     if (_deadline == null) return;
     final input = ref.read(loanInputProvider);
     final months = (_deadline!.difference(DateTime.now()).inDays / 30).floor();

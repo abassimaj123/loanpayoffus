@@ -34,3 +34,6 @@ ios/build/
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
 release.env
+
+# Build debug symbols (binary, not for VCS)
+debug_symbols/
