@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' show pow;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -103,6 +104,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
   }
 
   void _calculate() {
+    unawaited(AnalyticsService.instance.maybeLogFirstCalculate());
     // Current debts
     double totalBalance = 0;
     double totalPayment = 0;
@@ -572,13 +574,15 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                           // ── RESULTS ───────────────────────────────────────
                           if (hasResult) ...[
                             // Hero savings card
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: AppSpacing.xxl,
-                                horizontal: AppSpacing.xl,
-                              ),
-                              decoration: BoxDecoration(
+                            CalcwiseStaggerItem(
+                              index: 0,
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.xxl,
+                                  horizontal: AppSpacing.xl,
+                                ),
+                                decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: _monthlySavings > 0
                                       ? [
@@ -624,56 +628,62 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                   ),
                                 ],
                               ),
+                              ),
                             ),
 
                             const SizedBox(height: AppSpacing.md),
 
                             // First metric row: Current Monthly | New Payment | Savings
-                            Row(
-                              children: [
-                                _ConsolidationMetricTile(
-                                  label: isEs
-                                      ? 'Total Actual/mes'
-                                      : 'Current Monthly Total',
-                                  value: AmountFormatter.ui(
-                                    _totalCurrentMonthlyPayment,
-                                    'USD',
+                            CalcwiseStaggerItem(
+                              index: 1,
+                              child: Row(
+                                children: [
+                                  _ConsolidationMetricTile(
+                                    label: isEs
+                                        ? 'Total Actual/mes'
+                                        : 'Current Monthly Total',
+                                    value: AmountFormatter.ui(
+                                      _totalCurrentMonthlyPayment,
+                                      'USD',
+                                    ),
+                                    icon: Icons.credit_card_rounded,
                                   ),
-                                  icon: Icons.credit_card_rounded,
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                _ConsolidationMetricTile(
-                                  label: isEs
-                                      ? 'Nuevo Pago'
-                                      : 'New Monthly Payment',
-                                  value: AmountFormatter.ui(
-                                    _consolidationPayment,
-                                    'USD',
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _ConsolidationMetricTile(
+                                    label: isEs
+                                        ? 'Nuevo Pago'
+                                        : 'New Monthly Payment',
+                                    value: AmountFormatter.ui(
+                                      _consolidationPayment,
+                                      'USD',
+                                    ),
+                                    icon: Icons.payments_outlined,
+                                    color: AppTheme.primary,
                                   ),
-                                  icon: Icons.payments_outlined,
-                                  color: AppTheme.primary,
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                _ConsolidationMetricTile(
-                                  label: isEs
-                                      ? 'Ahorro Mensual'
-                                      : 'Monthly Savings',
-                                  value: AmountFormatter.ui(
-                                    _monthlySavings.abs(),
-                                    'USD',
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _ConsolidationMetricTile(
+                                    label: isEs
+                                        ? 'Ahorro Mensual'
+                                        : 'Monthly Savings',
+                                    value: AmountFormatter.ui(
+                                      _monthlySavings.abs(),
+                                      'USD',
+                                    ),
+                                    icon: Icons.savings_outlined,
+                                    color: _monthlySavings > 0
+                                        ? AppTheme.accentGood
+                                        : AppTheme.warning,
                                   ),
-                                  icon: Icons.savings_outlined,
-                                  color: _monthlySavings > 0
-                                      ? AppTheme.accentGood
-                                      : AppTheme.warning,
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
 
                             const SizedBox(height: AppSpacing.sm),
 
                             // Second metric row: Term | Debts Count | Total Interest
-                            Row(
+                            CalcwiseStaggerItem(
+                              index: 2,
+                              child: Row(
                               children: [
                                 _ConsolidationMetricTile(
                                   label: isEs
@@ -706,41 +716,47 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                 ),
                               ],
                             ),
+                            ),
 
                             const SizedBox(height: AppSpacing.sm),
 
                             // Third metric row: Total Cost + spacer tile
-                            Row(
-                              children: [
-                                _ConsolidationMetricTile(
-                                  label: isEs
-                                      ? 'Costo Total (consolidación)'
-                                      : 'Total Cost (consolidation)',
-                                  value: AmountFormatter.ui(
-                                    _totalConsolidationCost,
-                                    'USD',
+                            CalcwiseStaggerItem(
+                              index: 3,
+                              child: Row(
+                                children: [
+                                  _ConsolidationMetricTile(
+                                    label: isEs
+                                        ? 'Costo Total (consolidación)'
+                                        : 'Total Cost (consolidation)',
+                                    value: AmountFormatter.ui(
+                                      _totalConsolidationCost,
+                                      'USD',
+                                    ),
+                                    icon: Icons.account_balance_wallet_outlined,
+                                    color: AppTheme.warning,
                                   ),
-                                  icon: Icons.account_balance_wallet_outlined,
-                                  color: AppTheme.warning,
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                _ConsolidationMetricTile(
-                                  label: isEs
-                                      ? 'Plazo nuevo'
-                                      : 'New Term',
-                                  value: isEs
-                                      ? '$_termMonths meses'
-                                      : '$_termMonths months',
-                                  icon: Icons.calendar_today_outlined,
-                                  color: AppTheme.primary,
-                                ),
-                              ],
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _ConsolidationMetricTile(
+                                    label: isEs
+                                        ? 'Plazo nuevo'
+                                        : 'New Term',
+                                    value: isEs
+                                        ? '$_termMonths meses'
+                                        : '$_termMonths months',
+                                    icon: Icons.calendar_today_outlined,
+                                    color: AppTheme.primary,
+                                  ),
+                                ],
+                              ),
                             ),
 
                             const SizedBox(height: AppSpacing.md),
 
                             // Verdict chip
-                            Container(
+                            CalcwiseStaggerItem(
+                              index: 4,
+                              child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AppSpacing.lg,
@@ -813,6 +829,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                     ),
                                   ),
                                 ],
+                              ),
                               ),
                             ),
 

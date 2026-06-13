@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' show pow;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -88,6 +89,7 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
   }
 
   void _calculate() {
+    unawaited(AnalyticsService.instance.maybeLogFirstCalculate());
     final balance = _parseField(_balanceCtrl);
     final currentRate = _parseField(_currentRateCtrl);
     final currentMonths = _parseField(_currentMonthsCtrl).toInt();
@@ -371,31 +373,33 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                           // ── RESULTS ───────────────────────────────────────
                           if (hasResult) ...[
                             // Hero savings card
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: AppSpacing.xxl,
-                                horizontal: AppSpacing.xl,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: _monthlySavings > 0
-                                      ? [
-                                          _savingsColor,
-                                          _savingsDarkColor,
-                                        ]
-                                      : [
-                                          AppTheme.warning,
-                                          _warningDarkColor,
-                                        ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                            CalcwiseStaggerItem(
+                              index: 0,
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.xxl,
+                                  horizontal: AppSpacing.xl,
                                 ),
-                                borderRadius: const BorderRadius.all(
-                                  Radius.circular(AppRadius.xxl),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: _monthlySavings > 0
+                                        ? [
+                                            _savingsColor,
+                                            _savingsDarkColor,
+                                          ]
+                                        : [
+                                            AppTheme.warning,
+                                            _warningDarkColor,
+                                          ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: const BorderRadius.all(
+                                    Radius.circular(AppRadius.xxl),
+                                  ),
                                 ),
-                              ),
-                              child: Column(
+                                child: Column(
                                 children: [
                                   Text(
                                     _monthlySavings > 0
@@ -423,50 +427,56 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                                   ),
                                 ],
                               ),
+                              ),
                             ),
 
                             const SizedBox(height: AppSpacing.md),
 
                             // Row 1: Break-even / Total Savings / New Monthly
-                            Row(
-                              children: [
-                                _RefinanceMetricTile(
-                                  label: isEs
-                                      ? 'Punto de Equilibrio'
-                                      : 'Break-even',
-                                  value: _breakEvenMonths > 0
-                                      ? '$_breakEvenMonths ${isEs ? "meses" : "months"}'
-                                      : 'N/A',
-                                  icon: Icons.timer_outlined,
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                _RefinanceMetricTile(
-                                  label: isEs
-                                      ? 'Ahorro Total'
-                                      : 'Total Savings',
-                                  value: AmountFormatter.ui(
-                                      _totalSavings, 'USD'),
-                                  icon: Icons.savings_outlined,
-                                  color: _totalSavings >= 0
-                                      ? AppTheme.accentGood
-                                      : AppTheme.warning,
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                _RefinanceMetricTile(
-                                  label: isEs
-                                      ? 'Nuevo Pago Mensual'
-                                      : 'New Monthly',
-                                  value: AmountFormatter.ui(_newPmt, 'USD'),
-                                  icon: Icons.calendar_today_rounded,
-                                ),
-                              ],
+                            CalcwiseStaggerItem(
+                              index: 1,
+                              child: Row(
+                                children: [
+                                  _RefinanceMetricTile(
+                                    label: isEs
+                                        ? 'Punto de Equilibrio'
+                                        : 'Break-even',
+                                    value: _breakEvenMonths > 0
+                                        ? '$_breakEvenMonths ${isEs ? "meses" : "months"}'
+                                        : 'N/A',
+                                    icon: Icons.timer_outlined,
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _RefinanceMetricTile(
+                                    label: isEs
+                                        ? 'Ahorro Total'
+                                        : 'Total Savings',
+                                    value: AmountFormatter.ui(
+                                        _totalSavings, 'USD'),
+                                    icon: Icons.savings_outlined,
+                                    color: _totalSavings >= 0
+                                        ? AppTheme.accentGood
+                                        : AppTheme.warning,
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _RefinanceMetricTile(
+                                    label: isEs
+                                        ? 'Nuevo Pago Mensual'
+                                        : 'New Monthly',
+                                    value: AmountFormatter.ui(_newPmt, 'USD'),
+                                    icon: Icons.calendar_today_rounded,
+                                  ),
+                                ],
+                              ),
                             ),
 
                             const SizedBox(height: AppSpacing.sm),
 
                             // Row 2: Total cost current / Total cost new
-                            Row(
-                              children: [
+                            CalcwiseStaggerItem(
+                              index: 2,
+                              child: Row(
+                                children: [
                                 _RefinanceMetricTile(
                                   label: isEs
                                       ? 'Costo Total Actual'
@@ -496,12 +506,15 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                                   icon: Icons.calendar_month_rounded,
                                 ),
                               ],
+                              ),
                             ),
 
                             const SizedBox(height: AppSpacing.md),
 
                             // Verdict chip
-                            Container(
+                            CalcwiseStaggerItem(
+                              index: 3,
+                              child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AppSpacing.lg,
@@ -557,6 +570,7 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                                     ),
                                   ),
                                 ],
+                              ),
                               ),
                             ),
 

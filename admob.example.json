@@ -1,0 +1,6 @@
+{
+  "_comment": "Copy to admob.json (gitignored), fill real IDs from admob.google.com, build with: flutter build appbundle --release --dart-define-from-file=admob.json. App ID goes in android/local.properties as admob.app.id. Blank values fall back to Google TEST ads.",
+  "ADMOB_BANNER_ANDROID": "ca-app-pub-5379540026739666/REPLACE_BANNER",
+  "ADMOB_INTERSTITIAL_ANDROID": "ca-app-pub-5379540026739666/REPLACE_INTERSTITIAL",
+  "ADMOB_REWARDED_ANDROID": "ca-app-pub-5379540026739666/REPLACE_REWARDED"
+}
