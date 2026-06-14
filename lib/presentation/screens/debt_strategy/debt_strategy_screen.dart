@@ -4,6 +4,7 @@ import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/freemium/freemium_service.dart';
+import '../../../core/freemium/iap_service.dart';
 import '../../../core/firebase/analytics_service.dart';
 import '../../../core/engine/debt_strategy_engine.dart';
 import '../../../core/db/debt_persistence.dart';
@@ -83,6 +84,10 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
 
   EngineResult? _strategyResult;
   EngineResult? _minimumResult;
+
+  // Always-computed snowball/avalanche for the side-by-side comparison card.
+  EngineResult? _snowballResult;
+  EngineResult? _avalancheResult;
 
   bool _loaded = false;
 
@@ -202,6 +207,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
         _minimumResult = null;
         _snowflakeResult = null;
         _whatIfResult = null;
+        _snowballResult = null;
+        _avalancheResult = null;
       });
       return;
     }
@@ -237,6 +244,17 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
               strategy: _strategy,
             )
           : null;
+      // Always compute both canonical strategies for the comparison card.
+      _snowballResult = DebtStrategyEngine.run(
+        debts: debtsForCalc,
+        extraMonthly: _extra,
+        strategy: PayoffStrategy.snowball,
+      );
+      _avalancheResult = DebtStrategyEngine.run(
+        debts: debtsForCalc,
+        extraMonthly: _extra,
+        strategy: PayoffStrategy.avalanche,
+      );
     });
     _scheduleAutoSave();
     AnalyticsService.instance.maybeLogFirstCalculate();
@@ -969,6 +987,17 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Snowball vs Avalanche comparison ──────────────────────────
+                if (_snowballResult != null && _avalancheResult != null) ...[
+                  _StrategyComparisonCard(
+                    snowball: _snowballResult!,
+                    avalanche: _avalancheResult!,
+                    minimum: _minimumResult,
+                    isEs: isEs,
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                ],
+
                 // ── Strategy toggle ───────────────────────────────────────────
                 _SectionHeader(
                   icon: Icons.account_balance_wallet_rounded,
@@ -2766,6 +2795,296 @@ class _StrategySelector extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Snowball vs Avalanche side-by-side comparison card
+// ---------------------------------------------------------------------------
+
+class _StrategyComparisonCard extends StatelessWidget {
+  final EngineResult snowball;
+  final EngineResult avalanche;
+  final EngineResult? minimum;
+  final bool isEs;
+
+  const _StrategyComparisonCard({
+    required this.snowball,
+    required this.avalanche,
+    required this.minimum,
+    required this.isEs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // When results are identical (e.g. only 1 debt), show a single-column note.
+    final identical = snowball.totalMonths == avalanche.totalMonths &&
+        (snowball.totalInterest - avalanche.totalInterest).abs() < 0.01;
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: freemiumService.isPremiumNotifier,
+      builder: (context, isPremium, _) {
+        if (!isPremium) {
+          return CalcwisePremiumGate(
+            title: isEs
+                ? 'Nieve ❄️ vs Avalancha 🏔️'
+                : 'Snowball ❄️ vs Avalanche 🏔️',
+            description: isEs
+                ? 'Compara ambas estrategias lado a lado para elegir la mejor.'
+                : 'Compare both strategies side by side to pick the best one.',
+            price: IAPService.instance.localizedPrice,
+            onUnlock: () => PaywallSoft.show(
+              context,
+              isSpanish: isEs,
+            ),
+          );
+        }
+
+        return Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            side: BorderSide(color: Theme.of(context).dividerColor),
+          ),
+          elevation: 0,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.compare_arrows_rounded,
+                      color: AppTheme.primary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      isEs
+                          ? 'Nieve ❄️ vs Avalancha 🏔️'
+                          : 'Snowball ❄️ vs Avalanche 🏔️',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: AppTextSize.body,
+                        color: AppTheme.primaryDark,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: AppSpacing.md),
+
+                if (identical)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.mdPlus,
+                      vertical: AppSpacing.smPlus,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                    child: Text(
+                      isEs
+                          ? 'Solo 1 deuda — las estrategias son idénticas.'
+                          : 'Only 1 debt — strategies are identical.',
+                      style: TextStyle(
+                        fontSize: AppTextSize.sm,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  )
+                else
+                  _StrategyComparisonColumns(
+                    snowball: snowball,
+                    avalanche: avalanche,
+                    minimum: minimum,
+                    isEs: isEs,
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StrategyComparisonColumns extends StatelessWidget {
+  final EngineResult snowball;
+  final EngineResult avalanche;
+  final EngineResult? minimum;
+  final bool isEs;
+
+  const _StrategyComparisonColumns({
+    required this.snowball,
+    required this.avalanche,
+    required this.minimum,
+    required this.isEs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    DateTime _payoffDate(int months) =>
+        DateTime(now.year, now.month + months, now.day);
+
+    // Avalanche wins on interest (lower is better).
+    final avalancheWins =
+        avalanche.totalInterest <= snowball.totalInterest;
+
+    final snowballBorder = avalancheWins
+        ? Border.all(color: Theme.of(context).dividerColor)
+        : Border.all(color: AppTheme.accentGood, width: 1.5);
+    final avalancheBorder = avalancheWins
+        ? Border.all(color: AppTheme.accentGood, width: 1.5)
+        : Border.all(color: Theme.of(context).dividerColor);
+
+    final minInterest = minimum?.totalInterest;
+
+    Widget _col({
+      required String label,
+      required EngineResult result,
+      required Border border,
+      required bool winner,
+    }) {
+      final payoffDate = _yMMM(_payoffDate(result.totalMonths), isEs);
+      final interestSaved = minInterest != null
+          ? (minInterest - result.totalInterest).clamp(0.0, double.infinity)
+          : null;
+
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: winner
+                ? AppTheme.accentGood.withValues(alpha: 0.05)
+                : Theme.of(context).colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: border,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: AppTextSize.sm,
+                        fontWeight: FontWeight.bold,
+                        color: winner ? AppTheme.accentGood : AppTheme.primaryDark,
+                      ),
+                    ),
+                  ),
+                  if (winner)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xxs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentGood.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(AppRadius.mdPlus),
+                      ),
+                      child: Text(
+                        isEs ? 'Ganador' : 'Winner',
+                        style: const TextStyle(
+                          fontSize: AppTextSize.xs,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.accentGood,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.smPlus),
+              // Payoff date
+              Text(
+                isEs ? 'Pago libre:' : 'Payoff:',
+                style: TextStyle(
+                  fontSize: AppTextSize.xs,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.55),
+                ),
+              ),
+              Text(
+                payoffDate,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: AppTextSize.body,
+                  color: winner ? AppTheme.accentGood : null,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              // Total interest
+              Text(
+                isEs ? 'Interés total:' : 'Total interest:',
+                style: TextStyle(
+                  fontSize: AppTextSize.xs,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.55),
+                ),
+              ),
+              Text(
+                AmountFormatter.ui(result.totalInterest, 'USD'),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: AppTextSize.body,
+                  color: winner ? AppTheme.accentGood : AppTheme.warning,
+                ),
+              ),
+              // Interest saved vs minimum
+              if (interestSaved != null && interestSaved > 0) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  isEs ? 'Ahorros vs mínimos:' : 'Saved vs minimum:',
+                  style: TextStyle(
+                    fontSize: AppTextSize.xs,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                ),
+                Text(
+                  AmountFormatter.ui(interestSaved, 'USD'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: AppTextSize.sm,
+                    color: AppTheme.accentGood,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _col(
+          label: isEs ? 'Bola de Nieve ❄️' : 'Snowball ❄️',
+          result: snowball,
+          border: snowballBorder,
+          winner: !avalancheWins,
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        _col(
+          label: isEs ? 'Avalancha 🏔️' : 'Avalanche 🏔️',
+          result: avalanche,
+          border: avalancheBorder,
+          winner: avalancheWins,
         ),
       ],
     );
