@@ -1523,7 +1523,19 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         return Semantics(
                           label:
                               '${isEs ? "Libre de deudas en" : "Debt-free in"} $timeLabel. ${isEs ? "Interés total" : "Total interest"}: ${AmountFormatter.ui(interest, 'USD')}${interestSaved > 0 && _extra > 0 ? ". ${isEs ? "Ahorras" : "You save"} ${AmountFormatter.ui(interestSaved, 'USD')}" : ""}',
-                          child: CalcwiseHeroCard(
+                          child: Container(
+                            margin: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(28),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: CalcwiseHeroCard(
                             label: isEs ? 'LIBRE DE DEUDAS EN' : 'DEBT-FREE IN',
                             value: timeLabel,
                             secondary: secondaryLabel,
@@ -1559,6 +1571,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                                   value: AmountFormatter.ui(interestSaved, 'USD'),
                                 ),
                             ],
+                          ),
                           ),
                         );
                       },
