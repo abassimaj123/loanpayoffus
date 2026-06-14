@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:calcwise_core/calcwise_core.dart' hide CrashlyticsService, PaywallHard;
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart' show kReleaseMode;
@@ -87,6 +88,7 @@ final adService = CalcwiseAdService(
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  unawaited(CalcwiseRemoteConfig.initialize());
   await CalcwiseTax.init(remoteFetcher: calcwiseTaxRemoteFetch);
   await CrashlyticsService.init();
   await loadSavedLanguage();
