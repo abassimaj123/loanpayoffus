@@ -1001,7 +1001,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                       // index 1 — Comparison info cards
                                       CalcwiseStaggerItem(
                                         index: 1,
-                                        child: Row(
+                                        child: IntrinsicHeight(
+                                          child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
                                           children: [
                                             Expanded(
                                               child: _InfoCard(
@@ -1053,6 +1055,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                                 ),
                                               ),
                                           ],
+                                        ),
                                         ),
                                       ),
                                       // ── Debt-Free Date Banner ──

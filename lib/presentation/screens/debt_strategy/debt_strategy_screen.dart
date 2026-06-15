@@ -1524,7 +1524,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                           label:
                               '${isEs ? "Libre de deudas en" : "Debt-free in"} $timeLabel. ${isEs ? "Interés total" : "Total interest"}: ${AmountFormatter.ui(interest, 'USD')}${interestSaved > 0 && _extra > 0 ? ". ${isEs ? "Ahorras" : "You save"} ${AmountFormatter.ui(interestSaved, 'USD')}" : ""}',
                           child: Container(
-                            margin: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+                            margin: const EdgeInsets.only(top: AppSpacing.lg),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(28),
                               boxShadow: [

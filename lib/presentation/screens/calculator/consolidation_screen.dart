@@ -636,7 +636,9 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                             // First metric row: Current Monthly | New Payment | Savings
                             CalcwiseStaggerItem(
                               index: 1,
-                              child: Row(
+                              child: IntrinsicHeight(
+                                child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   _ConsolidationMetricTile(
                                     label: isEs
@@ -676,6 +678,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                   ),
                                 ],
                               ),
+                              ),
                             ),
 
                             const SizedBox(height: AppSpacing.sm),
@@ -683,7 +686,9 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                             // Second metric row: Term | Debts Count | Total Interest
                             CalcwiseStaggerItem(
                               index: 2,
+                              child: IntrinsicHeight(
                               child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 _ConsolidationMetricTile(
                                   label: isEs
@@ -717,13 +722,16 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                               ],
                             ),
                             ),
+                            ),
 
                             const SizedBox(height: AppSpacing.sm),
 
                             // Third metric row: Total Cost + spacer tile
                             CalcwiseStaggerItem(
                               index: 3,
-                              child: Row(
+                              child: IntrinsicHeight(
+                                child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   _ConsolidationMetricTile(
                                     label: isEs
@@ -748,6 +756,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                     color: AppTheme.primary,
                                   ),
                                 ],
+                              ),
                               ),
                             ),
 

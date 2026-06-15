@@ -435,7 +435,9 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                             // Row 1: Break-even / Total Savings / New Monthly
                             CalcwiseStaggerItem(
                               index: 1,
-                              child: Row(
+                              child: IntrinsicHeight(
+                                child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   _RefinanceMetricTile(
                                     label: isEs
@@ -468,6 +470,7 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                                   ),
                                 ],
                               ),
+                              ),
                             ),
 
                             const SizedBox(height: AppSpacing.sm),
@@ -475,7 +478,9 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                             // Row 2: Total cost current / Total cost new
                             CalcwiseStaggerItem(
                               index: 2,
-                              child: Row(
+                              child: IntrinsicHeight(
+                                child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                 _RefinanceMetricTile(
                                   label: isEs
@@ -506,6 +511,7 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                                   icon: Icons.calendar_month_rounded,
                                 ),
                               ],
+                              ),
                               ),
                             ),
 
