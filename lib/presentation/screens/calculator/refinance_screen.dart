@@ -295,7 +295,10 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                         ),
                         const SizedBox(height: AppSpacing.xxl),
                         FilledButton(
-                          onPressed: () => PaywallHard.show(context),
+                          onPressed: () {
+                            AnalyticsService.instance.logPaywallShown('hard');
+                            PaywallHard.show(context);
+                          },
                           style: FilledButton.styleFrom(
                             minimumSize: const Size(double.infinity, 52),
                           ),

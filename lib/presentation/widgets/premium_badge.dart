@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/freemium/freemium_service.dart';
+import '../../core/firebase/analytics_service.dart';
 import 'paywall_soft.dart';
 import 'paywall_hard.dart';
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
@@ -63,10 +64,16 @@ class PremiumBadge extends StatelessWidget {
           padding: const EdgeInsets.only(right: AppSpacing.xs),
           child: Center(
             child: InkWell(
-              onTap: () => PaywallSoft.show(
-                context,
-                onUnlock: () => PaywallHard.show(context),
-              ),
+              onTap: () {
+                AnalyticsService.instance.logPaywallShown('soft');
+                PaywallSoft.show(
+                  context,
+                  onUnlock: () {
+                    AnalyticsService.instance.logPaywallShown('hard');
+                    PaywallHard.show(context);
+                  },
+                );
+              },
               borderRadius: BorderRadius.circular(AppRadius.xxl),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 48),

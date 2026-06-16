@@ -350,6 +350,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     if (!freemiumService.hasFullAccess &&
         _debts.length >= _freeDebtLimit &&
         existing == null) {
+      AnalyticsService.instance.logPaywallShown('soft');
       await PaywallSoft.show(
         context,
         isSpanish: isSpanishNotifier.value,
@@ -784,6 +785,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   Future<void> _showSchedule() async {
     if (!freemiumService.hasFullAccess) {
       AnalyticsService.instance.logPaywallViewed('payment_schedule');
+      AnalyticsService.instance.logPaywallShown('soft');
       await PaywallSoft.show(
         context,
         isSpanish: isSpanishNotifier.value,
@@ -2849,10 +2851,10 @@ class _StrategyComparisonCard extends StatelessWidget {
                 ? 'Compara ambas estrategias lado a lado para elegir la mejor.'
                 : 'Compare both strategies side by side to pick the best one.',
             price: IAPService.instance.localizedPrice,
-            onUnlock: () => PaywallSoft.show(
-              context,
-              isSpanish: isEs,
-            ),
+            onUnlock: () {
+              AnalyticsService.instance.logPaywallShown('soft');
+              PaywallSoft.show(context, isSpanish: isEs);
+            },
           );
         }
 

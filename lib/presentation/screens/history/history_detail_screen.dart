@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import 'package:flutter/material.dart';
+import '../../../core/firebase/analytics_service.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
@@ -262,6 +263,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
   Future<void> _exportPdf(BuildContext context, AppStrings s) async {
     if (!freemiumService.hasFullAccess) {
+      AnalyticsService.instance.logPaywallShown('hard');
       await PaywallHard.show(context);
       return;
     }

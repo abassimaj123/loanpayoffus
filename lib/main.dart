@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'core/theme/app_theme.dart';
 import 'core/freemium/freemium_service.dart';
 import 'core/freemium/iap_service.dart';
@@ -100,6 +101,10 @@ Future<void> main() async {
   await IAPService.instance.initialize();
   await requestCalcwiseConsent();
   await adService.initialize();
+  unawaited(MobileAds.instance.updateRequestConfiguration(
+    RequestConfiguration(testDeviceIds: ['FD16D4616C3A21C3ACE5E48F8DC9C1DC']),
+  ));
+  AnalyticsService.instance.setUserPremium(freemiumService.hasFullAccess);
   await AnalyticsService.instance.logAppOpen();
   CalcwiseAdFooter.configure(
     adService: adService,
@@ -207,6 +212,7 @@ class _MainShellState extends State<_MainShell> {
     isSpanishNotifier.addListener(_onLangChange);
     freemiumService.isPremiumNotifier.addListener(_onPremiumChange);
     iapErrorNotifier.addListener(_onIapError);
+    iapRestoreResultNotifier.addListener(_onRestoreResult);
     WidgetsBinding.instance.addPostFrameCallback((_) => _recordSession());
   }
 
@@ -215,6 +221,7 @@ class _MainShellState extends State<_MainShell> {
     isSpanishNotifier.removeListener(_onLangChange);
     freemiumService.isPremiumNotifier.removeListener(_onPremiumChange);
     iapErrorNotifier.removeListener(_onIapError);
+    iapRestoreResultNotifier.removeListener(_onRestoreResult);
     super.dispose();
   }
 
@@ -222,10 +229,27 @@ class _MainShellState extends State<_MainShell> {
 
   void _onPremiumChange() {
     final now = freemiumService.hasFullAccess;
+    if (now && !_wasPremium) {
+      AnalyticsService.instance.logPurchaseCompleted();
+    }
     if (now && !_wasPremium && mounted) {
       showPremiumWelcomeSnackBar(context, isSpanish: isSpanishNotifier.value);
     }
     _wasPremium = now;
+    unawaited(AnalyticsService.instance.setUserPremium(now));
+  }
+
+  void _onRestoreResult() {
+    final result = iapRestoreResultNotifier.value;
+    if (result == null || !mounted) return;
+    final isEs = isSpanishNotifier.value;
+    final msg = result == 'restored'
+        ? (isEs ? '¡Premium restaurado!' : 'Premium restored!')
+        : (isEs ? 'No hay compras para restaurar.' : 'No purchases to restore.');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
+    );
+    iapRestoreResultNotifier.value = null;
   }
 
   void _onIapError() {
@@ -254,8 +278,10 @@ class _MainShellState extends State<_MainShell> {
     if (!mounted) return;
     if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
     if (trigger == PaywallTrigger.hard) {
+      AnalyticsService.instance.logPaywallShown('hard');
       PaywallHard.show(context);
     } else if (trigger == PaywallTrigger.soft) {
+      AnalyticsService.instance.logPaywallShown('soft');
       PaywallSoft.show(
         context,
         featureTitle: isSpanishNotifier.value

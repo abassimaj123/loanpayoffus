@@ -1805,6 +1805,7 @@ class _ConsolidationCta extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.xl),
       onTap: () {
         if (!freemiumService.hasFullAccess) {
+          AnalyticsService.instance.logPaywallShown('hard');
           PaywallHard.show(context);
           return;
         }
@@ -1906,6 +1907,7 @@ class _RefinanceCta extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.xl),
       onTap: () {
         if (!freemiumService.hasFullAccess) {
+          AnalyticsService.instance.logPaywallShown('hard');
           PaywallHard.show(context);
           return;
         }
