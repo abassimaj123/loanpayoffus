@@ -380,6 +380,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
       AnalyticsService.instance.logResultSaved();
     } catch (_) {}
     adService.onSave();
+    paywallSession.recordAction().ignore();
   }
 
   Future<void> _share(

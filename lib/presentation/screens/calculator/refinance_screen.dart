@@ -196,6 +196,11 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
       l2: _buildL2(),
       label: label,
     );
+    historyRefreshNotifier.value++;
+    try { AnalyticsService.instance.logSave(); } catch (_) {}
+    try { AnalyticsService.instance.logResultSaved(); } catch (_) {}
+    adService.onSave();
+    paywallSession.recordAction().ignore();
   }
 
   Widget _sectionHeader(String title) => Padding(

@@ -342,6 +342,11 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
       l2: _buildL2(),
       label: label,
     );
+    historyRefreshNotifier.value++;
+    try { AnalyticsService.instance.logSave(); } catch (_) {}
+    try { AnalyticsService.instance.logResultSaved(); } catch (_) {}
+    adService.onSave();
+    paywallSession.recordAction().ignore();
   }
 
   // ── Add / Edit debt dialog ─────────────────────────────────────────────────
