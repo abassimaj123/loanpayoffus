@@ -994,6 +994,77 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Hero result card (result-first — top of screen) ──
+                if (_strategyResult != null && _debts.isNotEmpty) ...[
+                  AnimatedSwitcher(
+                    duration: AppDuration.base,
+                    child: Builder(
+                      key: ValueKey(_strategyResult!.totalMonths),
+                      builder: (context) {
+                        final months = _strategyResult!.totalMonths;
+                        final interest = _strategyResult!.totalInterest;
+                        final now = DateTime.now();
+                        final freeOn = DateTime(
+                          now.year,
+                          now.month + months,
+                          now.day,
+                        );
+                        final dateLabel = _yMMM(freeOn, isEs);
+                        final timeLabel = '${months ~/ 12}y ${months % 12}m';
+                        final secondaryLabel = isEs
+                            ? 'Libre de deudas: $dateLabel'
+                            : 'Debt-free: $dateLabel';
+                        return Semantics(
+                          label:
+                              '${isEs ? "Libre de deudas en" : "Debt-free in"} $timeLabel. ${isEs ? "Interés total" : "Total interest"}: ${AmountFormatter.ui(interest, "USD")}${interestSaved > 0 && _extra > 0 ? ". ${isEs ? "Ahorras" : "You save"} ${AmountFormatter.ui(interestSaved, "USD")}" : ""}',
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(28),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: CalcwiseHeroCard(
+                              label: isEs ? 'LIBRE DE DEUDAS EN' : 'DEBT-FREE IN',
+                              value: timeLabel,
+                              secondary: secondaryLabel,
+                              rawStats: [
+                                (
+                                  label: isEs ? 'Interés total' : 'Total interest',
+                                  value: interest,
+                                  formatter: (v) => AmountFormatter.ui(v, 'USD'),
+                                ),
+                                if (interestSaved > 0 && _extra > 0)
+                                  (
+                                    label: isEs ? 'Ahorro vs mínimos' : 'Saved vs minimum',
+                                    value: interestSaved,
+                                    formatter: (v) => AmountFormatter.ui(v, 'USD'),
+                                  ),
+                              ],
+                              stats: [
+                                (
+                                  label: isEs ? 'Interés total' : 'Total interest',
+                                  value: AmountFormatter.ui(interest, 'USD'),
+                                ),
+                                if (interestSaved > 0 && _extra > 0)
+                                  (
+                                    label: isEs ? 'Ahorro vs mínimos' : 'Saved vs minimum',
+                                    value: AmountFormatter.ui(interestSaved, 'USD'),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+
                 // ── Snowball vs Avalanche comparison ──────────────────────────
                 if (_snowballResult != null && _avalancheResult != null) ...[
                   _StrategyComparisonCard(
@@ -1500,92 +1571,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
 
                 const SizedBox(height: AppSpacing.lg),
 
-                // ── Results ───────────────────────────────────────────────────
+                // ── Results breakdown ─────────────────────────────────────────
                 if (_strategyResult != null && _debts.isNotEmpty) ...[
-                  _SectionHeader(
-                    icon: Icons.emoji_events_rounded,
-                    title: isEs ? 'Resultados' : 'Results',
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Hero card — debt-free date
-                  AnimatedSwitcher(
-                    duration: AppDuration.base,
-                    child: Builder(
-                      key: ValueKey(_strategyResult!.totalMonths),
-                      builder: (context) {
-                        final months = _strategyResult!.totalMonths;
-                        final interest = _strategyResult!.totalInterest;
-                        final now = DateTime.now();
-                        final freeOn = DateTime(
-                          now.year,
-                          now.month + months,
-                          now.day,
-                        );
-                        final dateLabel = _yMMM(freeOn, isEs);
-                        final timeLabel = '${months ~/ 12}y ${months % 12}m';
-                        final secondaryLabel = isEs
-                            ? 'Libre de deudas: $dateLabel'
-                            : 'Debt-free: $dateLabel';
-                        return Semantics(
-                          label:
-                              '${isEs ? "Libre de deudas en" : "Debt-free in"} $timeLabel. ${isEs ? "Interés total" : "Total interest"}: ${AmountFormatter.ui(interest, 'USD')}${interestSaved > 0 && _extra > 0 ? ". ${isEs ? "Ahorras" : "You save"} ${AmountFormatter.ui(interestSaved, 'USD')}" : ""}',
-                          child: Container(
-                            margin: const EdgeInsets.only(top: AppSpacing.lg),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(28),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: CalcwiseHeroCard(
-                            label: isEs ? 'LIBRE DE DEUDAS EN' : 'DEBT-FREE IN',
-                            value: timeLabel,
-                            secondary: secondaryLabel,
-                            rawStats: [
-                              (
-                                label: isEs
-                                    ? 'Interés total'
-                                    : 'Total interest',
-                                value: interest,
-                                formatter: (v) => AmountFormatter.ui(v, 'USD'),
-                              ),
-                              if (interestSaved > 0 && _extra > 0)
-                                (
-                                  label: isEs
-                                      ? 'Ahorro vs mínimos'
-                                      : 'Saved vs minimum',
-                                  value: interestSaved,
-                                  formatter: (v) => AmountFormatter.ui(v, 'USD'),
-                                ),
-                            ],
-                            stats: [
-                              (
-                                label: isEs
-                                    ? 'Interés total'
-                                    : 'Total interest',
-                                value: AmountFormatter.ui(interest, 'USD'),
-                              ),
-                              if (interestSaved > 0 && _extra > 0)
-                                (
-                                  label: isEs
-                                      ? 'Ahorro vs mínimos'
-                                      : 'Saved vs minimum',
-                                  value: AmountFormatter.ui(interestSaved, 'USD'),
-                                ),
-                            ],
-                          ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.mdPlus),
-
                   // Bar chart: minimum interest vs strategy interest
                   if (_minimumResult != null)
                     CalcwiseChartReveal(

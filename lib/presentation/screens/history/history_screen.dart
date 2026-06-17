@@ -46,9 +46,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _load() async {
     if (mounted && !_loading) setState(() => _loading = true);
     final rows = await DatabaseHelper.instance.getHistory();
+    // Auto-clean entries with no valid loan data (bad auto-saves from wrong
+    // screen schema or corrupted input before _parseNum fix).
+    for (final row in rows) {
+      final amount = (row['loan_amount'] as num?)?.toDouble() ?? 0.0;
+      final rate = (row['interest_rate'] as num?)?.toDouble() ?? 0.0;
+      if (amount == 0 && rate == 0.0) {
+        await smartHistoryService.delete(row['id'] as int);
+      }
+    }
+    final cleanRows = await DatabaseHelper.instance.getHistory();
     if (mounted) {
       setState(() {
-        _rows = rows;
+        _rows = cleanRows;
         _loading = false;
       });
     }

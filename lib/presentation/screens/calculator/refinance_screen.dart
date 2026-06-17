@@ -3,7 +3,7 @@ import 'dart:math' show pow;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
+import 'package:calcwise_core/calcwise_core.dart';
 import '../../../core/firebase/analytics_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/freemium/freemium_service.dart';
@@ -11,7 +11,6 @@ import '../../../core/language/language_notifier.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../main.dart';
 import '../../providers/loan_provider.dart';
-import '../../widgets/paywall_hard.dart';
 import '../../widgets/save_scenario_button.dart';
 
 // Semantic domain colors — not in shared theme (savings/warning gradient)
@@ -265,65 +264,6 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
         return ValueListenableBuilder<bool>(
           valueListenable: freemiumService.hasFullAccessNotifier,
           builder: (context, isPremium, _) {
-            if (!isPremium) {
-              return Scaffold(
-                appBar: AppBar(
-                  title: Text(isEs
-                      ? 'Calculadora de Refinanciamiento'
-                      : 'Refinance Calculator'),
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
-                ),
-                body: CalcwisePageEntrance(
-                    child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xl),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.lock_outline_rounded,
-                            size: 56, color: AppTheme.primary),
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          isEs ? 'Función Premium' : 'Premium Feature',
-                          style: const TextStyle(
-                            fontSize: AppTextSize.title,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryDark,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          isEs
-                              ? 'Desbloquea la Calculadora de Refinanciamiento con una suscripción Pro.'
-                              : 'Unlock the Refinance Calculator with a Pro subscription.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: AppTextSize.body,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.6),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxl),
-                        FilledButton(
-                          onPressed: () {
-                            AnalyticsService.instance.logPaywallShown('hard');
-                            PaywallHard.show(context);
-                          },
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 52),
-                          ),
-                          child: Text(isEs ? 'Desbloquear Pro' : 'Unlock Pro'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )),
-              );
-            }
-
             return Scaffold(
               appBar: AppBar(
                 title: Text(isEs

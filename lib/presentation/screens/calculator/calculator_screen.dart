@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
+import 'package:calcwise_core/calcwise_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +9,6 @@ import '../../../core/services/pdf_export_service.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/freemium/freemium_service.dart';
 import '../../../main.dart';
 import '../../../core/firebase/analytics_service.dart';
 import '../../../domain/models/loan_input.dart';
@@ -21,8 +20,6 @@ import '../../../l10n/strings_es.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../../core/utils/milestone_tracker.dart';
 import '../../providers/loan_provider.dart';
-import '../../widgets/paywall_soft.dart';
-import '../../widgets/paywall_hard.dart';
 import '../../widgets/insight_card.dart';
 import '../../widgets/milestone_celebration.dart';
 import '../../widgets/save_scenario_button.dart';
@@ -30,9 +27,21 @@ import '../../../core/utils/insight_engine.dart';
 
 double _parseNum(String v) {
   if (v.isEmpty) return 0.0;
-  final s = (v.contains('.') && v.contains(','))
-      ? v.replaceAll(',', '')
-      : v.replaceAll(',', '.');
+  String s;
+  if (v.contains('.') && v.contains(',')) {
+    // Both separators: the last one is the decimal separator
+    s = v.lastIndexOf('.') > v.lastIndexOf(',')
+        ? v.replaceAll(',', '')               // US: 1,234.56
+        : v.replaceAll('.', '').replaceAll(',', '.'); // EU: 1.234,56
+  } else if (v.contains(',')) {
+    final parts = v.split(',');
+    // All groups after the first comma are 3 digits → US thousands separator
+    s = parts.sublist(1).every((p) => p.length == 3)
+        ? v.replaceAll(',', '')   // 15,000 or 1,000,000 → 15000
+        : v.replaceAll(',', '.'); // 15,5 EU decimal → 15.5
+  } else {
+    s = v;
+  }
   return double.tryParse(s.trim()) ?? 0.0;
 }
 
@@ -431,49 +440,39 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 600),
-                  child: CalcwisePageEntrance(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            AppSpacing.xl,
-                            AppSpacing.lg,
-                            AppSpacing.lg,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                        // ── Hero result card (result-first — top of screen) ──
+                        AnimatedSwitcher(
+                          duration: AppDuration.base,
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.06),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
+                            ),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                s.appTitle,
-                                style: Theme.of(context).textTheme.headlineSmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onPrimaryContainer,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                isEs
-                                    ? 'Calcula cuándo estarás libre de deudas'
-                                    : 'See when you\'ll be debt-free',
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimaryContainer
-                                          .withValues(alpha: 0.8),
-                                    ),
-                              ),
-                            ],
-                          ),
+                          child: result != null
+                              ? Padding(
+                                  key: const ValueKey('hero'),
+                                  padding: const EdgeInsets.only(
+                                    bottom: AppSpacing.lg,
+                                  ),
+                                  child: _HeroSavingsCard(
+                                    result: result,
+                                    input: input,
+                                    debtFreeDateStr: debtFreeDateStr,
+                                    isEs: isEs,
+                                    s: s,
+                                  ),
+                                )
+                              : const SizedBox.shrink(key: ValueKey('no-hero')),
                         ),
-                        const SizedBox(height: AppSpacing.lg),
                         DropdownButtonFormField<LoanType>(
                           initialValue: _type,
                           decoration: InputDecoration(
@@ -797,7 +796,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                 opacity: animation,
                                 child: SlideTransition(
                                   position: Tween<Offset>(
-                                    begin: const Offset(0, 0.04),
+                                    begin: const Offset(0, 0.06),
                                     end: Offset.zero,
                                   ).animate(animation),
                                   child: child,
@@ -806,201 +805,14 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                           child: result != null
                               ? KeyedSubtree(
                                   key: const ValueKey('results'),
-                                  child: Column(
+                                  child: CalcwisePageEntrance(
+                                    child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      // Hero savings card with debt-free date
-                                      // index 0 — Hero savings card
+                                      // index 0 — Comparison info cards
                                       CalcwiseStaggerItem(
                                         index: 0,
-                                        child: Container(
-                                          width: double.infinity,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: AppSpacing.xxl,
-                                            horizontal: AppSpacing.xl,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            gradient: result.monthsSaved > 0
-                                                ? const LinearGradient(
-                                                    colors: [
-                                                      CalcwiseSemanticColors
-                                                          .successDeep,
-                                                      CalcwiseSemanticColors
-                                                          .successDark,
-                                                    ],
-                                                    begin: Alignment.topLeft,
-                                                    end: Alignment.bottomRight,
-                                                  )
-                                                : const LinearGradient(
-                                                    colors: [
-                                                      AppTheme.primary,
-                                                      AppTheme.primaryDark,
-                                                    ],
-                                                    begin: Alignment.topLeft,
-                                                    end: Alignment.bottomRight,
-                                                  ),
-                                            borderRadius: BorderRadius.circular(
-                                              AppRadius.xxl,
-                                            ),
-                                          ),
-                                          child: Column(
-                                            children: [
-                                              if (result.monthsSaved > 0) ...[
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    const Icon(
-                                                      Icons.savings_rounded,
-                                                      color: Colors.white70,
-                                                      size: 18,
-                                                    ),
-                                                    const SizedBox(
-                                                      width: AppSpacing.xs,
-                                                    ),
-                                                    Text(
-                                                      s.youCouldSave,
-                                                      style: const TextStyle(
-                                                        color: Colors.white70,
-                                                        fontSize:
-                                                            AppTextSize.md,
-                                                        letterSpacing: 1.2,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(
-                                                  height: AppSpacing.sm,
-                                                ),
-                                                Text(
-                                                  AmountFormatter.ui(result.interestSaved, 'USD'),
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: AppTextSize.hero,
-                                                    fontWeight: FontWeight.w800,
-                                                    letterSpacing: -1.5,
-                                                  ),
-                                                ),
-                                                const SizedBox(
-                                                  height: AppSpacing.xs,
-                                                ),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal:
-                                                            AppSpacing.mdPlus,
-                                                        vertical: 5,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white
-                                                        .withValues(alpha: 0.2),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          AppRadius.xxl,
-                                                        ),
-                                                  ),
-                                                  child: Text(
-                                                    '${s.inInterest}  •  ${result.yearsSaved}y ${result.remMonthsSaved}m ${s.faster}',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: AppTextSize.md,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ] else ...[
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    const Icon(
-                                                      Icons.schedule_rounded,
-                                                      color: Colors.white70,
-                                                      size: 18,
-                                                    ),
-                                                    const SizedBox(
-                                                      width: AppSpacing.xs,
-                                                    ),
-                                                    Text(
-                                                      s.payoffTimeline,
-                                                      style: const TextStyle(
-                                                        color: Colors.white70,
-                                                        fontSize:
-                                                            AppTextSize.md,
-                                                        letterSpacing: 1.2,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(
-                                                  height: AppSpacing.smPlus,
-                                                ),
-                                                Text(
-                                                  '${result.normalMonths ~/ 12} yrs ${result.normalMonths % 12} mos',
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: AppTextSize.hero,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                              // ── Debt-free date chip ──
-                                              if (debtFreeDateStr
-                                                  .isNotEmpty) ...[
-                                                const SizedBox(
-                                                  height: AppSpacing.smPlus,
-                                                ),
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    const Icon(
-                                                      Icons
-                                                          .event_available_rounded,
-                                                      color: Colors.white60,
-                                                      size: 15,
-                                                    ),
-                                                    const SizedBox(
-                                                      width: AppSpacing.xs,
-                                                    ),
-                                                    Text(
-                                                      '${s.debtFreeDate}: $debtFreeDateStr',
-                                                      style: const TextStyle(
-                                                        color: Colors.white60,
-                                                        fontSize:
-                                                            AppTextSize.sm,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                              // ── Interest-to-loan ratio insight ──
-                                              if (result.interestNormal > 0 &&
-                                                  input.loanAmount > 0) ...[
-                                                const SizedBox(
-                                                  height: AppSpacing.xs,
-                                                ),
-                                                Text(
-                                                  '${isEs ? "Pagas" : "You pay"} ${((result.interestNormal / input.loanAmount) * 100).toStringAsFixed(0)}% '
-                                                  '${isEs ? "del préstamo en intereses" : "of loan amount in interest"}',
-                                                  style: const TextStyle(
-                                                    color: Colors.white60,
-                                                    fontSize: AppTextSize.xs,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: AppSpacing.lg),
-
-                                      // index 1 — Comparison info cards
-                                      CalcwiseStaggerItem(
-                                        index: 1,
                                         child: IntrinsicHeight(
                                           child: Row(
                                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1061,12 +873,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                       // ── Debt-Free Date Banner ──
                                       if (result.monthsSaved > 0) ...[
                                         const SizedBox(height: AppSpacing.lg),
-                                        CalcwiseStaggerItem(
-                                          index: 2,
-                                          child: _DebtFreeDateBanner(
-                                            result: result,
-                                            isEs: isEs,
-                                          ),
+                                        _DebtFreeDateBanner(
+                                          result: result,
+                                          isEs: isEs,
                                         ),
                                       ],
 
@@ -1074,7 +883,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                       ...[
                                         const SizedBox(height: AppSpacing.lg),
                                         CalcwiseStaggerItem(
-                                          index: 3,
+                                          index: 1,
                                           child: _BalanceChart(
                                             result: result,
                                             isEs: isEs,
@@ -1086,7 +895,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                       ...[
                                         const SizedBox(height: AppSpacing.lg),
                                         CalcwiseStaggerItem(
-                                          index: 4,
+                                          index: 2,
                                           child: InsightCard(
                                             isSpanish: isEs,
                                             insights: InsightEngine.generate(
@@ -1116,14 +925,14 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                           ),
                                         ),
                                         const SizedBox(height: AppSpacing.sm),
-                                        // index 5 — Refinance Calculator CTA (premium feature)
+                                        // index 3 — Refinance Calculator CTA
                                         CalcwiseStaggerItem(
-                                          index: 5,
+                                          index: 3,
                                           child: _RefinanceCta(isEs: isEs),
                                         ),
                                         const SizedBox(height: AppSpacing.sm),
                                         CalcwiseStaggerItem(
-                                          index: 6,
+                                          index: 4,
                                           child: _ConsolidationCta(isEs: isEs),
                                         ),
                                         const SizedBox(height: AppSpacing.md),
@@ -1195,8 +1004,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                         ),
                                       ],
                                     ],
-                                  ),
-                                )
+                                  ),  // Column
+                                  ),  // CalcwisePageEntrance
+                                )     // KeyedSubtree
                               : KeyedSubtree(
                                   key: const ValueKey('empty'),
                                   child: CalcwiseEmptyState(
@@ -1210,15 +1020,179 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                   ),
                                 ),
                         ),
-                        const SizedBox(height: AppSpacing.listBottomInset),
+                        const SizedBox(height: AppSpacing.xxl),
                       ],
-                    ),
-                  ), // CalcwisePageEntrance closes
+                    ),  // Column
+                  ),    // ConstrainedBox
+                ),      // Center
+              ),        // SingleChildScrollView
+            ),          // Expanded
+          const CalcwiseAdFooter(),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Hero savings card (result-first — sits at the top of the screen)
+// ---------------------------------------------------------------------------
+class _HeroSavingsCard extends StatelessWidget {
+  final PayoffResult result;
+  final LoanInput input;
+  final String debtFreeDateStr;
+  final bool isEs;
+  final AppStrings s;
+
+  const _HeroSavingsCard({
+    required this.result,
+    required this.input,
+    required this.debtFreeDateStr,
+    required this.isEs,
+    required this.s,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.xxl,
+        horizontal: AppSpacing.xl,
+      ),
+      decoration: BoxDecoration(
+        gradient: result.monthsSaved > 0
+            ? const LinearGradient(
+                colors: [
+                  CalcwiseSemanticColors.successDeep,
+                  CalcwiseSemanticColors.successDark,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : const LinearGradient(
+                colors: [AppTheme.primary, AppTheme.primaryDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+      ),
+      child: Column(
+        children: [
+          if (result.monthsSaved > 0) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.savings_rounded,
+                  color: Colors.white70,
+                  size: 18,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  s.youCouldSave,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: AppTextSize.md,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              AmountFormatter.ui(result.interestSaved, 'USD'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: AppTextSize.hero,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -1.5,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.mdPlus,
+                vertical: 5,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(AppRadius.xxl),
+              ),
+              child: Text(
+                '${s.inInterest}  •  ${result.yearsSaved}y ${result.remMonthsSaved}m ${s.faster}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: AppTextSize.md,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-          ),
-          const CalcwiseAdFooter(),
+          ] else ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.schedule_rounded,
+                  color: Colors.white70,
+                  size: 18,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  s.payoffTimeline,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: AppTextSize.md,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.smPlus),
+            Text(
+              '${result.normalMonths ~/ 12} yrs ${result.normalMonths % 12} mos',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: AppTextSize.hero,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+          // ── Debt-free date chip ──
+          if (debtFreeDateStr.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.smPlus),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.event_available_rounded,
+                  color: Colors.white60,
+                  size: 15,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  '${s.debtFreeDate}: $debtFreeDateStr',
+                  style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: AppTextSize.sm,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          // ── Interest-to-loan ratio insight ──
+          if (result.interestNormal > 0 && input.loanAmount > 0) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              '${isEs ? "Pagas" : "You pay"} ${((result.interestNormal / input.loanAmount) * 100).toStringAsFixed(0)}% '
+              '${isEs ? "del préstamo en intereses" : "of loan amount in interest"}',
+              style: const TextStyle(
+                color: Colors.white60,
+                fontSize: AppTextSize.xs,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
       ),
     );
@@ -1804,11 +1778,6 @@ class _ConsolidationCta extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadius.xl),
       onTap: () {
-        if (!freemiumService.hasFullAccess) {
-          AnalyticsService.instance.logPaywallShown('hard');
-          PaywallHard.show(context);
-          return;
-        }
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const ConsolidationScreen()),
         );
@@ -1843,26 +1812,15 @@ class _ConsolidationCta extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        isEs
-                            ? 'Consolidación de Deudas'
-                            : 'Debt Consolidation',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: AppTextSize.body,
-                          color: AppTheme.primaryDark,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      if (!freemiumService.hasFullAccess)
-                        Icon(
-                          Icons.lock_outline_rounded,
-                          size: AppTextSize.sm,
-                          color: AppTheme.primary,
-                        ),
-                    ],
+                  Text(
+                    isEs
+                        ? 'Consolidación de Deudas'
+                        : 'Debt Consolidation',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: AppTextSize.body,
+                      color: AppTheme.primaryDark,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
@@ -1880,12 +1838,10 @@ class _ConsolidationCta extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              freemiumService.hasFullAccess
-                  ? Icons.arrow_forward_ios_rounded
-                  : Icons.lock_outline_rounded,
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
               size: 16,
-              color: AppTheme.primary.withValues(alpha: 0.6),
+              color: AppTheme.primary,
             ),
           ],
         ),
@@ -1906,11 +1862,6 @@ class _RefinanceCta extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadius.xl),
       onTap: () {
-        if (!freemiumService.hasFullAccess) {
-          AnalyticsService.instance.logPaywallShown('hard');
-          PaywallHard.show(context);
-          return;
-        }
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const RefinanceScreen()),
         );
@@ -1945,26 +1896,15 @@ class _RefinanceCta extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        isEs
-                            ? 'Calculadora de Refinanciamiento'
-                            : 'Refinance Calculator',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: AppTextSize.body,
-                          color: AppTheme.primaryDark,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      if (!freemiumService.hasFullAccess)
-                        Icon(
-                          Icons.lock_outline_rounded,
-                          size: AppTextSize.sm,
-                          color: AppTheme.primary,
-                        ),
-                    ],
+                  Text(
+                    isEs
+                        ? 'Calculadora de Refinanciamiento'
+                        : 'Refinance Calculator',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: AppTextSize.body,
+                      color: AppTheme.primaryDark,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
@@ -1982,12 +1922,10 @@ class _RefinanceCta extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              freemiumService.hasFullAccess
-                  ? Icons.arrow_forward_ios_rounded
-                  : Icons.lock_outline_rounded,
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
               size: 16,
-              color: AppTheme.primary.withValues(alpha: 0.6),
+              color: AppTheme.primary,
             ),
           ],
         ),
