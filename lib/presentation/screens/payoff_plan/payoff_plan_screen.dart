@@ -608,57 +608,8 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                   ),
                 );
               } else if (i == 1) {
-                // ── Share / PDF actions ──
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _share(context, result, isEs),
-                          icon: const Icon(Icons.share_rounded, size: 16),
-                          label: Text(
-                            s.shareLabel,
-                            style: const TextStyle(fontSize: AppTextSize.md),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 40),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ValueListenableBuilder<bool>(
-                          valueListenable: freemiumService.hasFullAccessNotifier,
-                          builder: (_, isPremium, __) => OutlinedButton.icon(
-                            onPressed: () => _exportPdf(context, result, isEs),
-                            icon: isPremium
-                                ? const Icon(Icons.picture_as_pdf_rounded, size: 16)
-                                : const Icon(Icons.lock_outline, size: 16),
-                            label: Text(
-                              s.exportPdf,
-                              style: const TextStyle(fontSize: AppTextSize.md),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 40),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              } else if (i == 2) {
-                // ── Save Scenario ──
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  child: SaveScenarioButton(onSave: _saveScenario),
-                );
-              } else if (i == 3) {
                 return const StreakCard();
-              } else if (i == 4) {
+              } else if (i == 2) {
                 // ── Next Victory ──
                 return FutureBuilder<List<DebtItem>>(
                   future: DebtPersistence.instance.load(),
@@ -680,7 +631,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                     );
                   },
                 );
-              } else if (i == 5) {
+              } else if (i == 3) {
                 // ── Balance over time chart ──
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
@@ -752,7 +703,6 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                               ),
                             ),
                             lineBarsData: [
-                              // Normal payoff line
                               LineChartBarData(
                                 spots: normalSpots,
                                 isCurved: true,
@@ -761,7 +711,6 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                                 dotData: const FlDotData(show: false),
                                 belowBarData: BarAreaData(show: false),
                               ),
-                              // Extra payment line
                               if (result.monthsSaved > 0)
                                 LineChartBarData(
                                   spots: extraSpots,
@@ -794,8 +743,9 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                     ],
                   ),
                 );
-              } else {
-                final gi = i - 6;
+              } else if (i < groups.length + 4) {
+                // ── Amortization groups ──
+                final gi = i - 4;
                 final group = groups[gi];
                 final firstMo = group.first.month;
                 final lastMo = group.last.month;
@@ -817,6 +767,57 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                   entries: group,
                   s: s,
                 );
+              } else if (i == groups.length + 4) {
+                // ── Save / Share / Export — bottom of list after full plan ──
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 20, 12, 8),
+                  child: Column(
+                    children: [
+                      SaveScenarioButton(onSave: _saveScenario),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _share(context, result, isEs),
+                              icon: const Icon(Icons.share_rounded, size: 16),
+                              label: Text(
+                                s.shareLabel,
+                                style: const TextStyle(fontSize: AppTextSize.md),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 44),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ValueListenableBuilder<bool>(
+                              valueListenable: freemiumService.hasFullAccessNotifier,
+                              builder: (_, isPremium, __) => OutlinedButton.icon(
+                                onPressed: () => _exportPdf(context, result, isEs),
+                                icon: isPremium
+                                    ? const Icon(Icons.picture_as_pdf_rounded, size: 16)
+                                    : const Icon(Icons.lock_outline, size: 16),
+                                label: Text(
+                                  s.exportPdf,
+                                  style: const TextStyle(fontSize: AppTextSize.md),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(double.infinity, 44),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                return const SizedBox(height: AppSpacing.listBottomInset);
               }
             },
           ),

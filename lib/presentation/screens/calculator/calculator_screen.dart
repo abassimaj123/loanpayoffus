@@ -1317,63 +1317,71 @@ class _DebtFreeDateBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border(
-          left: BorderSide(color: AppTheme.primary, width: 3),
-          top: BorderSide(
-            color: AppTheme.primary.withValues(alpha: 0.2),
-            width: 1,
-          ),
-          right: BorderSide(
-            color: AppTheme.primary.withValues(alpha: 0.2),
-            width: 1,
-          ),
-          bottom: BorderSide(
-            color: AppTheme.primary.withValues(alpha: 0.2),
-            width: 1,
-          ),
-        ),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
       ),
-      child: Row(
-        children: [
-          const Text('🎯', style: TextStyle(fontSize: AppTextSize.titleMd)),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  headerLabel,
-                  style: TextStyle(
-                    fontSize: AppTextSize.xs,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.primary,
-                    letterSpacing: 1.2,
-                  ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(width: 3, color: AppTheme.primary),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.mdPlus,
+                  AppSpacing.lg,
+                  AppSpacing.mdPlus,
                 ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  dateStr,
-                  style: const TextStyle(
-                    fontSize: AppTextSize.display,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.primary,
-                    letterSpacing: -0.5,
-                  ),
+                child: Row(
+                  children: [
+                    const Text(
+                      '🎯',
+                      style: TextStyle(fontSize: AppTextSize.titleMd),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            headerLabel,
+                            style: TextStyle(
+                              fontSize: AppTextSize.xs,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.primary,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xxs),
+                          Text(
+                            dateStr,
+                            style: const TextStyle(
+                              fontSize: AppTextSize.display,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.primary,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            soonerLabel,
+                            style: TextStyle(
+                              fontSize: AppTextSize.sm,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  soonerLabel,
-                  style: TextStyle(
-                    fontSize: AppTextSize.sm,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

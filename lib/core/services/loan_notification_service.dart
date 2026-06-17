@@ -14,28 +14,42 @@ class LoanNotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
 
   static Future<void> initialize() async {
-    tz_data.initializeTimeZones();
+    try {
+      tz_data.initializeTimeZones();
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const settings = InitializationSettings(android: android);
-    await _plugin.initialize(settings);
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const settings = InitializationSettings(android: android);
+      await _plugin.initialize(settings);
 
-    const channel = AndroidNotificationChannel(
-      _channelId,
-      _channelName,
-      description: _channelDesc,
-      importance: Importance.defaultImportance,
-    );
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(channel);
+      const channel = AndroidNotificationChannel(
+        _channelId,
+        _channelName,
+        description: _channelDesc,
+        importance: Importance.defaultImportance,
+      );
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.createNotificationChannel(channel);
+    } catch (_) {
+      // flutter_local_notifications v18 may throw on Android 14 — non-fatal.
+    }
   }
 
   /// Schedules a recurring notification on the 5th of each month at 9:00 AM.
   static Future<void> scheduleMonthlyCheckin(bool isSpanish) async {
-    await cancel();
+    try {
+      await _doSchedule(isSpanish);
+    } catch (_) {
+      // Non-fatal — monthly reminder silently skipped if scheduling fails.
+    }
+  }
+
+  static Future<void> _doSchedule(bool isSpanish) async {
+    // zonedSchedule with the same _notifId replaces any existing notification,
+    // so no explicit cancel() needed — avoids loadScheduledNotifications crash
+    // on devices that have legacy notification data from older plugin versions.
 
     final title = isSpanish
         ? 'Registra tu progreso de deuda 📊'
@@ -84,6 +98,10 @@ class LoanNotificationService {
   }
 
   static Future<void> cancel() async {
-    await _plugin.cancel(_notifId);
+    try {
+      await _plugin.cancel(_notifId);
+    } catch (_) {
+      // Legacy notification format in SharedPreferences — ignore.
+    }
   }
 }
