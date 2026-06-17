@@ -51,6 +51,8 @@ const _savingsDarkColor = Color(0xFF009624);
 const _warningDarkColor = Color(0xFFE65100);
 
 class _ConsolidationScreenState extends State<ConsolidationScreen> {
+  Timer? _calcDebounce;
+
   // Up to 4 debts — start with 2 pre-filled samples
   final List<_DebtEntry> _debts = [
     _DebtEntry(balance: '8000', rate: '19.99', payment: ''),
@@ -82,6 +84,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
 
   @override
   void dispose() {
+    _calcDebounce?.cancel();
     for (final d in _debts) {
       d.dispose();
     }
@@ -287,8 +290,11 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
             ),
           ),
           onChanged: (_) {
-            setState(() => _calculate());
-            _scheduleAutoSave();
+            _calcDebounce?.cancel();
+            _calcDebounce = Timer(const Duration(milliseconds: 400), () {
+              if (mounted) setState(() => _calculate());
+              _scheduleAutoSave();
+            });
           },
         ),
       );

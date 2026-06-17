@@ -27,6 +27,8 @@ class RefinanceScreen extends ConsumerStatefulWidget {
 }
 
 class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
+  Timer? _calcDebounce;
+
   // Input controllers — pre-filled from main loan provider, fallback to defaults
   final _balanceCtrl = TextEditingController(text: '15000');
   final _currentRateCtrl = TextEditingController(text: '5.5');
@@ -65,6 +67,7 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
 
   @override
   void dispose() {
+    _calcDebounce?.cancel();
     _balanceCtrl.dispose();
     _currentRateCtrl.dispose();
     _currentMonthsCtrl.dispose();
@@ -240,7 +243,12 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
           ),
-          onChanged: (_) => setState(() => _calculate()),
+          onChanged: (_) {
+            _calcDebounce?.cancel();
+            _calcDebounce = Timer(const Duration(milliseconds: 400), () {
+              if (mounted) setState(() => _calculate());
+            });
+          },
         ),
       );
 

@@ -24,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.logScreenView('settings');
     isSpanishNotifier.addListener(_onLangChange);
   }
 

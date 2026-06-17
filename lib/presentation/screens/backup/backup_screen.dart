@@ -25,6 +25,7 @@ class _BackupScreenState extends State<BackupScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.logScreenView('backup');
     isSpanishNotifier.addListener(_onLangChange);
   }
 

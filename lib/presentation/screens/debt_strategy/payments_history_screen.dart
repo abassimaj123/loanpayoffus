@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../core/firebase/analytics_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../../core/db/debt_payment_persistence.dart';
@@ -26,6 +27,7 @@ class _PaymentsHistoryScreenState extends State<PaymentsHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.logScreenView('payments_history');
     isSpanishNotifier.addListener(_onLang);
     _future = DebtPaymentPersistence.instance.listAll();
   }
