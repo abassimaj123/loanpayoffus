@@ -358,7 +358,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
-                          'Loan: ${AmountFormatter.ui(loanAmt, 'USD')} @ ${input.interestRatePct}%',
+                          '${isEs ? 'Préstamo' : 'Loan'}: ${AmountFormatter.ui(loanAmt, 'USD')} @ ${input.interestRatePct}%',
                           style: TextStyle(
                             color: Theme.of(
                               context,

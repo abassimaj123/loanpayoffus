@@ -250,7 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.manage_search_rounded,
               color: AppTheme.primary,
             ),
-            title: const Text('Privacy Settings'),
+            title: Text(isEs ? 'Configuración de Privacidad' : 'Privacy Settings'),
             onTap: showCalcwisePrivacyOptions,
           ),
           const Divider(),
