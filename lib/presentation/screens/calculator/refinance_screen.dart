@@ -49,6 +49,7 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
   void initState() {
     super.initState();
     AnalyticsService.instance.logScreenView('refinance');
+    isSpanishNotifier.addListener(_onLangChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       // Pre-fill balance and current rate from the main loan calculator.
@@ -66,6 +67,7 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
 
   @override
   void dispose() {
+    isSpanishNotifier.removeListener(_onLangChange);
     _calcDebounce?.cancel();
     _balanceCtrl.dispose();
     _currentRateCtrl.dispose();
@@ -76,6 +78,8 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
     smartHistoryService.cancelPendingSave('loanpayoffus', 'refinance');
     super.dispose();
   }
+
+  void _onLangChange() => setState(() {});
 
   double _parseField(TextEditingController ctrl) {
     final text = ctrl.text.replaceAll(',', '.');

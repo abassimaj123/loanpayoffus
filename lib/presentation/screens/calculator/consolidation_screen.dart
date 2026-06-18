@@ -78,11 +78,13 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
   void initState() {
     super.initState();
     AnalyticsService.instance.logScreenView('consolidation');
+    isSpanishNotifier.addListener(_onLangChange);
     _calculate();
   }
 
   @override
   void dispose() {
+    isSpanishNotifier.removeListener(_onLangChange);
     _calcDebounce?.cancel();
     for (final d in _debts) {
       d.dispose();
@@ -92,6 +94,8 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
     smartHistoryService.cancelPendingSave('loanpayoffus', 'consolidation');
     super.dispose();
   }
+
+  void _onLangChange() => setState(() {});
 
   double _parseField(TextEditingController ctrl) {
     final text = ctrl.text.replaceAll(',', '.');

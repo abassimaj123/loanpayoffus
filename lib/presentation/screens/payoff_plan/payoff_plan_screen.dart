@@ -269,6 +269,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
   void initState() {
     super.initState();
     AnalyticsService.instance.logScreenView('payoff_plan');
+    isSpanishNotifier.addListener(_onLangChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final result = ref.read(payoffResultProvider);
       final input = ref.read(loanInputProvider);
@@ -278,9 +279,12 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
 
   @override
   void dispose() {
+    isSpanishNotifier.removeListener(_onLangChange);
     smartHistoryService.cancelPendingSave('loanpayoffus', 'payoff_plan');
     super.dispose();
   }
+
+  void _onLangChange() => setState(() {});
 
   double _roundTo(double v, double step) => (v / step).round() * step;
 
