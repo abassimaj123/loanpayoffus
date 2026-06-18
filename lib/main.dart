@@ -79,7 +79,6 @@ final adService = CalcwiseAdService(
     bannerAndroid: AdConfig.bannerAndroid,
     interstitialAndroid: AdConfig.interstitialAndroid,
     rewardedAndroid: AdConfig.rewardedAndroid,
-    calcThreshold: 3,
     cooldownMinutes: 5,
   ),
   freemium: freemiumService,
