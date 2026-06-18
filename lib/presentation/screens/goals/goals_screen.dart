@@ -36,25 +36,6 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scheduleAutoSave();
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final trigger = await paywallSession.recordAction();
-      if (!mounted || freemiumService.hasFullAccess) return;
-      if (trigger == PaywallTrigger.soft) {
-        AnalyticsService.instance.logPaywallShown('soft');
-        PaywallSoft.show(
-          context,
-          isSpanish: isSpanishNotifier.value,
-          onUnlock: () {
-            AnalyticsService.instance.logPaywallShown('hard');
-            PaywallHard.show(context);
-          },
-        );
-      }
-      if (trigger == PaywallTrigger.hard) {
-        AnalyticsService.instance.logPaywallShown('hard');
-        PaywallHard.show(context);
-      }
-    });
   }
 
   @override

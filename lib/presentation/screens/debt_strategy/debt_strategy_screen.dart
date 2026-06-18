@@ -2832,9 +2832,9 @@ class _StrategyComparisonCard extends StatelessWidget {
         (snowball.totalInterest - avalanche.totalInterest).abs() < 0.01;
 
     return ValueListenableBuilder<bool>(
-      valueListenable: freemiumService.isPremiumNotifier,
-      builder: (context, isPremium, _) {
-        if (!isPremium) {
+      valueListenable: freemiumService.hasFullAccessNotifier,
+      builder: (context, hasAccess, _) {
+        if (!hasAccess) {
           return CalcwisePremiumGate(
             title: isEs
                 ? 'Nieve ❄️ vs Avalancha 🏔️'
