@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:calcwise_core/calcwise_core.dart' hide CrashlyticsService, PaywallHard;
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,9 +99,11 @@ Future<void> main() async {
   await IAPService.instance.initialize();
   await requestCalcwiseConsent();
   await adService.initialize();
-  unawaited(MobileAds.instance.updateRequestConfiguration(
-    RequestConfiguration(testDeviceIds: ['FD16D4616C3A21C3ACE5E48F8DC9C1DC']),
-  ));
+  if (kDebugMode) {
+    await MobileAds.instance.updateRequestConfiguration(
+      RequestConfiguration(testDeviceIds: ['FD16D4616C3A21C3ACE5E48F8DC9C1DC']),
+    );
+  }
   AnalyticsService.instance.setUserPremium(freemiumService.hasFullAccess);
   await AnalyticsService.instance.logAppOpen();
   CalcwiseAdFooter.configure(
