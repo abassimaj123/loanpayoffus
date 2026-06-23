@@ -1,6 +1,7 @@
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import '../../../core/firebase/analytics_service.dart';
 import '../../../core/services/pdf_export_service.dart' show PdfExportService;
@@ -139,6 +140,7 @@ pw.Widget _payoffPdfCell(String text, {bool header = false, bool bold = false}) 
     );
 
 Future<Uint8List> _buildPayoffPlanPdf(_PayoffPlanPdfParams p) async {
+  await initializeDateFormatting();
   final now = DateTime(p.nowYear, p.nowMonth, p.nowDay);
   final pdf = pw.Document();
   pdf.addPage(
