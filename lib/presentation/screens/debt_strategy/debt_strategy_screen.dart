@@ -1,5 +1,7 @@
+import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
@@ -145,26 +147,31 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   }
 
   Future<void> _loadDebts() async {
+    final prefs = await SharedPreferences.getInstance();
     final saved = await DebtPersistence.instance.load();
     if (!mounted) return;
+    final hasSeeded = prefs.getBool('_loan_payoff_seeded') ?? false;
     final initial = saved.isNotEmpty
         ? saved
-        : [
-            DebtItem.create(
-              name: 'Credit Card',
-              balance: 5000,
-              annualRate: 19.99,
-              minPayment: 100,
-              category: DebtCategory.creditCard,
-            ),
-            DebtItem.create(
-              name: 'Auto Loan',
-              balance: 12000,
-              annualRate: 6.5,
-              minPayment: 250,
-              category: DebtCategory.autoLoan,
-            ),
-          ];
+        : hasSeeded
+            ? const <DebtItem>[]
+            : [
+                DebtItem.create(
+                  name: 'Credit Card',
+                  balance: 5000,
+                  annualRate: 19.99,
+                  minPayment: 100,
+                  category: DebtCategory.creditCard,
+                ),
+                DebtItem.create(
+                  name: 'Auto Loan',
+                  balance: 12000,
+                  annualRate: 6.5,
+                  minPayment: 250,
+                  category: DebtCategory.autoLoan,
+                ),
+              ];
+    if (!hasSeeded) unawaited(prefs.setBool('_loan_payoff_seeded', true));
     setState(() {
       _debts = initial;
       // Restore priority order from saved data
