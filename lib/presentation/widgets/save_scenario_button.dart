@@ -49,7 +49,7 @@ class _SaveScenarioButtonState extends State<SaveScenarioButton> {
 
   Future<String?> _showNameDialog(bool isEs) async {
     final controller = TextEditingController();
-    return showDialog<String>(
+    final result = await showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
         title: Text(isEs ? 'Guardar escenario' : 'Save Scenario'),
@@ -76,6 +76,8 @@ class _SaveScenarioButtonState extends State<SaveScenarioButton> {
         ],
       ),
     );
+    controller.dispose();
+    return result;
   }
 
   @override
