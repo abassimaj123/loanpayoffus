@@ -142,6 +142,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ],
       ),
     );
+    ctrl.dispose();
     if (label == null) return;
     await smartHistoryService.rename(row['id'] as int, label.trim());
     _load();
