@@ -1,10 +1,12 @@
 import 'dart:isolate';
+import 'dart:math' show pow;
 import 'dart:typed_data';
 
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import 'package:flutter/material.dart';
 import '../../../core/firebase/analytics_service.dart';
 import 'package:intl/intl.dart' show DateFormat;
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -46,12 +48,29 @@ class _HistoryDetailPdfParams {
 }
 
 Future<Uint8List> _buildHistoryDetailPdf(_HistoryDetailPdfParams p) async {
+  await initializeDateFormatting(); // worker isolate: load locale date symbols
   final ts = p.createdAt != null ? DateTime.tryParse(p.createdAt!) : null;
-  final totalCost = p.monthlyPayment * p.normalMonths;
-  final totalInterest = (totalCost - p.loanAmount).clamp(0.0, double.infinity);
+  // Compute exact total interest by accounting for the smaller final payment.
+  // Standard formula overstates when all N payments are assumed full-sized.
+  // Instead: totalInterest = payment*(N-1) + finalPayment - principal
+  // where finalPayment = remaining balance after N-1 periods + one period's interest.
+  double totalInterest;
+  final r = p.interestRate / 100 / 12;
+  if (r > 0 && p.normalMonths > 0) {
+    final n = p.normalMonths;
+    // Balance after (n-1) payments: B * (1+r)^(n-1) - pmt * ((1+r)^(n-1) - 1) / r
+    final factor = pow(1 + r, n - 1);
+    final balanceBeforeLast = p.loanAmount * factor - p.monthlyPayment * (factor - 1) / r;
+    final finalPayment = balanceBeforeLast * (1 + r); // balance + last period's interest
+    totalInterest = (p.monthlyPayment * (n - 1) + finalPayment - p.loanAmount)
+        .clamp(0.0, double.infinity);
+  } else {
+    // Zero-interest loan: no interest charged
+    totalInterest = 0.0;
+  }
   final payoffDate = ts?.add(Duration(days: p.normalMonths * 30));
   final payoffDateStr =
-      payoffDate != null ? DateFormat('MMM yyyy').format(payoffDate) : '—';
+      payoffDate != null ? DateFormat('MMM yyyy', p.isEs ? 'es' : 'en').format(payoffDate) : '—';
   final yearsPayoff = p.normalMonths ~/ 12;
   final mosPayoff = p.normalMonths % 12;
 
@@ -122,7 +141,7 @@ Future<Uint8List> _buildHistoryDetailPdf(_HistoryDetailPdfParams p) async {
           ),
           if (ts != null)
             pw.Text(
-              DateFormat('MMM d, yyyy').format(ts),
+              DateFormat('MMM d, yyyy', p.isEs ? 'es' : 'en').format(ts),
               style: const pw.TextStyle(
                 fontSize: AppTextSize.xs,
                 color: PdfColors.grey600,
@@ -213,12 +232,24 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     final saved = _d('interest_saved');
     final loanAmount = _d('loan_amount');
     final monthlyPayment = _d('monthly_payment');
-    final totalInterest =
-        (monthlyPayment * months - loanAmount).clamp(0.0, double.infinity);
+    final rate = _d('interest_rate');
+    // Exact total interest: accounts for the smaller final payment instead of
+    // assuming all N payments are full-sized (which overstates interest).
+    double totalInterest;
+    final r2 = rate / 100 / 12;
+    if (r2 > 0 && months > 0) {
+      final factor = pow(1 + r2, months - 1);
+      final balanceBeforeLast = loanAmount * factor - monthlyPayment * (factor - 1) / r2;
+      final finalPayment = balanceBeforeLast * (1 + r2);
+      totalInterest = (monthlyPayment * (months - 1) + finalPayment - loanAmount)
+          .clamp(0.0, double.infinity);
+    } else {
+      totalInterest = 0.0;
+    }
     final ts = DateTime.tryParse(_e['created_at'] as String? ?? '');
     final payoffDate = ts?.add(Duration(days: months * 30));
     final payoffDateStr =
-        payoffDate != null ? DateFormat('MMM yyyy').format(payoffDate) : '—';
+        payoffDate != null ? DateFormat('MMM yyyy', isSpanishNotifier.value ? 'es' : 'en').format(payoffDate) : '—';
     return [
       (label: s.payoff, value: '${months ~/ 12}y ${months % 12}m'),
       (label: s.interestLabel, value: AmountFormatter.ui(totalInterest, 'USD')),
@@ -373,12 +404,23 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         final monthlyPayment = _d('monthly_payment');
         final loanAmount = _d('loan_amount');
         final rate = _d('interest_rate');
-        final totalCost = monthlyPayment * _i('normal_months');
-        final totalInterest =
-            (totalCost - loanAmount).clamp(0.0, double.infinity);
+        // Exact total interest: accounts for the smaller final payment instead of
+        // assuming all N payments are full-sized (which overstates interest).
+        double totalInterest;
+        final r3 = rate / 100 / 12;
+        final nMonths = _i('normal_months');
+        if (r3 > 0 && nMonths > 0) {
+          final factor3 = pow(1 + r3, nMonths - 1);
+          final balanceBeforeLast3 = loanAmount * factor3 - monthlyPayment * (factor3 - 1) / r3;
+          final finalPayment3 = balanceBeforeLast3 * (1 + r3);
+          totalInterest = (monthlyPayment * (nMonths - 1) + finalPayment3 - loanAmount)
+              .clamp(0.0, double.infinity);
+        } else {
+          totalInterest = 0.0;
+        }
         final payoffDate = ts?.add(Duration(days: _i('normal_months') * 30));
         final payoffDateStr =
-            payoffDate != null ? DateFormat('MMM yyyy').format(payoffDate) : '—';
+            payoffDate != null ? DateFormat('MMM yyyy', isEs ? 'es' : 'en').format(payoffDate) : '—';
         final yearsPayoff = _i('normal_months') ~/ 12;
         final mosPayoff = _i('normal_months') % 12;
 
@@ -389,7 +431,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
               appBar: AppBar(
                 title: Text(
                   ts != null
-                      ? DateFormat('MMM d, yyyy').format(ts)
+                      ? DateFormat('MMM d, yyyy', isEs ? 'es' : 'en').format(ts)
                       : s.historyDetail,
                 ),
                 centerTitle: false,

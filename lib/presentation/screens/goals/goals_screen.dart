@@ -426,7 +426,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                   label: Text(
                     _deadline == null
                         ? s.chooseTargetDate
-                        : '${s.goalPrefix} ${DateFormat('MMM d, yyyy').format(_deadline!)}',
+                        : '${s.goalPrefix} ${DateFormat('MMM d, yyyy', isEs ? 'es' : 'en').format(_deadline!)}',
                   ),
                 ),
                 if (_requiredExtra != null) ...[

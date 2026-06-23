@@ -4,12 +4,10 @@ import '../../core/language/language_notifier.dart';
 
 /// A "Save Scenario" button that pins the current calculator result.
 ///
-/// - **Premium users**: shows a name-entry dialog before saving.
-/// - **Free users**: saves immediately without a label (3 max pinned slots).
-///
+/// Shows a name-entry dialog before saving (all users).
 /// Bilingual EN/ES via [isSpanishNotifier].
 class SaveScenarioButton extends StatefulWidget {
-  /// Called when the user confirms the save. [label] is null for free users.
+  /// Called when the user confirms the save. [label] is null if the user left the name blank.
   final Future<void> Function(String? label) onSave;
 
   const SaveScenarioButton({super.key, required this.onSave});
@@ -25,11 +23,9 @@ class _SaveScenarioButtonState extends State<SaveScenarioButton> {
     final isEs = isSpanishNotifier.value;
     String? label;
 
-    if (freemiumService.hasFullAccess) {
-      label = await _showNameDialog(isEs);
-      if (label == null) return;
-      if (label.trim().isEmpty) label = null;
-    }
+    label = await _showNameDialog(isEs);
+    if (label == null) return;
+    if (label.trim().isEmpty) label = null;
 
     setState(() => _saving = true);
     try {

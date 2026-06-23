@@ -30,7 +30,7 @@ String _yMMM(DateTime date, bool isEs) {
   try {
     return DateFormat.yMMM(isEs ? 'es' : 'en').format(date);
   } catch (_) {
-    return DateFormat('MMM yyyy').format(date);
+    return DateFormat('MMM yyyy', isEs ? 'es' : 'en').format(date);
   }
 }
 

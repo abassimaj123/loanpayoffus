@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../language/language_notifier.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -453,6 +454,7 @@ pw.Widget _footerIsolate(bool isEs) => pw.Column(
 // ── Top-level isolate build functions ────────────────────────────────────────
 
 Future<Uint8List> _buildCalculatorPdf(_CalculatorPdfParams p) async {
+  await initializeDateFormatting(); // worker isolate: load locale date symbols
   final now = DateTime(p.nowYear, p.nowMonth);
   final payoffDateWithout = DateTime(p.nowYear, p.nowMonth + p.monthsWithout);
   final payoffDateWith = p.extraPayment > 0
@@ -510,7 +512,7 @@ Future<Uint8List> _buildCalculatorPdf(_CalculatorPdfParams p) async {
                   [
                     _row2Isolate(
                       p.isEs ? 'Sin pago extra' : 'Without extra',
-                      '${p.monthsWithout ~/ 12}y ${p.monthsWithout % 12}m  •  ${DateFormat('MMM yyyy').format(payoffDateWithout)}',
+                      '${p.monthsWithout ~/ 12}y ${p.monthsWithout % 12}m  •  ${DateFormat('MMM yyyy', p.isEs ? 'es' : 'en').format(payoffDateWithout)}',
                     ),
                     _row2Isolate(
                       p.isEs ? 'Interés sin extra' : 'Interest (no extra)',
@@ -520,7 +522,7 @@ Future<Uint8List> _buildCalculatorPdf(_CalculatorPdfParams p) async {
                       pw.Divider(color: PdfColors.grey300, height: 6),
                       _row2Isolate(
                         p.isEs ? 'Con pago extra' : 'With extra payment',
-                        '${p.monthsWith ~/ 12}y ${p.monthsWith % 12}m  •  ${DateFormat('MMM yyyy').format(payoffDateWith)}',
+                        '${p.monthsWith ~/ 12}y ${p.monthsWith % 12}m  •  ${DateFormat('MMM yyyy', p.isEs ? 'es' : 'en').format(payoffDateWith)}',
                         bold: true,
                         color: _purple,
                       ),
@@ -563,6 +565,7 @@ Future<Uint8List> _buildCalculatorPdf(_CalculatorPdfParams p) async {
 }
 
 Future<Uint8List> _buildConsolidationPdf(_ConsolidationPdfParams p) async {
+  await initializeDateFormatting(); // worker isolate: load locale date symbols
   final pdf = pw.Document();
   pdf.addPage(
     pw.Page(
@@ -762,6 +765,7 @@ Future<Uint8List> _buildConsolidationPdf(_ConsolidationPdfParams p) async {
 }
 
 Future<Uint8List> _buildRefinancePdf(_RefinancePdfParams p) async {
+  await initializeDateFormatting(); // worker isolate: load locale date symbols
   final pdf = pw.Document();
   pdf.addPage(
     pw.Page(
@@ -861,6 +865,7 @@ Future<Uint8List> _buildRefinancePdf(_RefinancePdfParams p) async {
 }
 
 Future<Uint8List> _buildDebtStrategyPdf(_DebtStrategyPdfParams p) async {
+  await initializeDateFormatting(); // worker isolate: load locale date symbols
   final now = DateTime(p.nowYear, p.nowMonth);
   final freeOnStrategy = DateTime(p.nowYear, p.nowMonth + p.totalMonthsStrategy);
   final interestSaved = (p.totalInterestMinimum - p.totalInterestStrategy)
@@ -1024,7 +1029,7 @@ Future<Uint8List> _buildDebtStrategyPdf(_DebtStrategyPdfParams p) async {
                   [
                     _row2Isolate(
                       p.isEs ? 'Libre de deudas en' : 'Debt-free in',
-                      '${p.totalMonthsStrategy ~/ 12}y ${p.totalMonthsStrategy % 12}m  •  ${DateFormat('MMM yyyy').format(freeOnStrategy)}',
+                      '${p.totalMonthsStrategy ~/ 12}y ${p.totalMonthsStrategy % 12}m  •  ${DateFormat('MMM yyyy', p.isEs ? 'es' : 'en').format(freeOnStrategy)}',
                       bold: true,
                       color: _purple,
                     ),
@@ -1133,7 +1138,7 @@ Future<Uint8List> _buildDebtStrategyPdf(_DebtStrategyPdfParams p) async {
                           pw.SizedBox(
                             width: 80,
                             child: pw.Text(
-                              DateFormat('MMM yyyy').format(payoffDate),
+                              DateFormat('MMM yyyy', p.isEs ? 'es' : 'en').format(payoffDate),
                               textAlign: pw.TextAlign.right,
                               style: const pw.TextStyle(fontSize: 9),
                             ),
@@ -1168,6 +1173,7 @@ Future<Uint8List> _buildDebtStrategyPdf(_DebtStrategyPdfParams p) async {
 }
 
 Future<Uint8List> _buildGoalsPdf(_GoalsPdfParams p) async {
+  await initializeDateFormatting(); // worker isolate: load locale date symbols
   final payoffDate = DateTime(p.nowYear, p.nowMonth + p.currentPayoffMonths);
   final targetDate = (p.targetDateYear != null && p.targetDateMonth != null && p.targetDateDay != null)
       ? DateTime(p.targetDateYear!, p.targetDateMonth!, p.targetDateDay!)
@@ -1224,7 +1230,7 @@ Future<Uint8List> _buildGoalsPdf(_GoalsPdfParams p) async {
                   [
                     _row2Isolate(
                       p.isEs ? 'Fecha de liquidación' : 'Payoff date',
-                      DateFormat('MMMM yyyy').format(payoffDate),
+                      DateFormat('MMMM yyyy', p.isEs ? 'es' : 'en').format(payoffDate),
                       bold: true,
                       color: _purple,
                     ),
@@ -1261,7 +1267,7 @@ Future<Uint8List> _buildGoalsPdf(_GoalsPdfParams p) async {
                 if (targetDate != null)
                   _row2Isolate(
                     p.isEs ? 'Fecha objetivo' : 'Target payoff date',
-                    DateFormat('MMMM d, yyyy').format(targetDate),
+                    DateFormat('MMMM d, yyyy', p.isEs ? 'es' : 'en').format(targetDate),
                     bold: true,
                     color: _purple,
                   ),

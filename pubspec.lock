@@ -95,7 +95,7 @@ packages:
       path: "../packages/calcwise_core"
       relative: true
     source: path
-    version: "1.0.61"
+    version: "1.0.66"
   calcwise_lint:
     dependency: "direct dev"
     description:

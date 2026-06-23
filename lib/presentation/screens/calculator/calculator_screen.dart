@@ -234,7 +234,11 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
       'loan_amount': input.loanAmount,
       'interest_rate': input.interestRatePct,
       'monthly_payment': input.monthlyPayment,
-      'extra_payment': input.extraPayment,
+      // Store the raw user-entered extra amount for display in history/PDF.
+      // For one-time payments _extra is the lump sum; for monthly it equals
+      // input.extraPayment. The calculation results (normal_months,
+      // interest_saved) are already pre-computed with the correct effectiveExtra.
+      'extra_payment': _extra,
       'normal_months': result.normalMonths,
       'interest_saved': result.interestSaved,
     };
@@ -299,7 +303,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
       final debtFreeDate = DateTime.now().add(
         Duration(days: result.extraMonths * 30),
       );
-      final dateStr = DateFormat('MMMM yyyy').format(debtFreeDate);
+      final dateStr = DateFormat('MMMM yyyy', isEs ? 'es' : 'en').format(debtFreeDate);
       final shareText = isEs
           ? 'Estoy libre de deudas gracias a LoanPayoff US! '
                 'Pagué mi ${input.loanType.label} completamente. '
@@ -426,7 +430,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
         ? DateTime.now().add(Duration(days: result.extraMonths * 30))
         : null;
     final debtFreeDateStr = debtFreeDate != null
-        ? DateFormat('MMM yyyy').format(debtFreeDate)
+        ? DateFormat('MMM yyyy', isEs ? 'es' : 'en').format(debtFreeDate)
         : '';
 
     return GestureDetector(
@@ -1149,12 +1153,18 @@ class _HeroSavingsCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.smPlus),
-            Text(
-              '${result.normalMonths ~/ 12} yrs ${result.normalMonths % 12} mos',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: AppTextSize.hero,
-                fontWeight: FontWeight.bold,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                isEs
+                    ? '${result.normalMonths ~/ 12} ${result.normalMonths ~/ 12 == 1 ? 'año' : 'años'} ${result.normalMonths % 12} ${result.normalMonths % 12 == 1 ? 'mes' : 'meses'}'
+                    : '${result.normalMonths ~/ 12} ${result.normalMonths ~/ 12 == 1 ? 'yr' : 'yrs'} ${result.normalMonths % 12} ${result.normalMonths % 12 == 1 ? 'month' : 'months'}',
+                maxLines: 1,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: AppTextSize.hero,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -1298,7 +1308,7 @@ class _DebtFreeDateBanner extends StatelessWidget {
     final debtFreeDate = DateTime.now().add(
       Duration(days: result.extraMonths * 30),
     );
-    final dateStr = DateFormat('MMMM yyyy').format(debtFreeDate);
+    final dateStr = DateFormat('MMMM yyyy', isEs ? 'es' : 'en').format(debtFreeDate);
     final yrs = result.monthsSaved ~/ 12;
     final mos = result.monthsSaved % 12;
     final soonerLabel = isEs

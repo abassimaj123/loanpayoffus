@@ -29,8 +29,10 @@ class AnalyticsService extends CalcwiseAnalytics {
 
   // ── App-specific features ─────────────────────────────────────────────────
 
+  // NB: 'session_start' is a Firebase-reserved event name and throws if logged
+  // manually — use a custom name.
   Future<void> logSessionStart({required int sessionNumber}) =>
-      log('session_start', {'session_number': sessionNumber});
+      log('app_session_start', {'session_number': sessionNumber});
 
   Future<void> logTabSwitch({required String tabName}) =>
       log('tab_switch', {'tab_name': tabName});
@@ -73,8 +75,9 @@ class AnalyticsService extends CalcwiseAnalytics {
 
   // ── Universal events (Phase 2) ────────────────────────────────────────────
 
-  Future<void> logScreenView(String screenName) =>
-      log('screen_view', {'screen_name': screenName});
+  // logScreenView is inherited from CalcwiseAnalytics, which uses the proper
+  // FirebaseAnalytics.logScreenView() API. Do NOT override it with
+  // log('screen_view', …) — 'screen_view' is a reserved event name and crashes.
   Future<void> logOnboardingComplete() => log('onboarding_complete');
   Future<void> logOnboardingSkipped() => log('onboarding_skipped');
   Future<void> logFirstCalculate() => log('first_calculate');

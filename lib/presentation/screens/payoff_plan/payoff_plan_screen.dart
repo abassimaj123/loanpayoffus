@@ -605,7 +605,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                       ),
                       _HeaderStat(
                         s.payoff,
-                        DateFormat('MMM yyyy').format(payoffDate),
+                        DateFormat('MMM yyyy', isEs ? 'es' : 'en').format(payoffDate),
                         AppTheme.accentGood,
                       ),
                     ],

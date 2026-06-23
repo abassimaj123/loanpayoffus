@@ -120,9 +120,11 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
       final balance = _parseField(debt.balanceCtrl);
       final rate = _parseField(debt.rateCtrl);
       final paymentRaw = _parseField(debt.paymentCtrl);
-      // Auto-calc payment if blank / zero (assuming 5yr / 60-month term)
+      // Auto-calc payment if blank / zero.
+      // Use 120 months (10yr) as a neutral default — a 60-month assumption
+      // massively overestimates the payment for long-term debts like mortgages.
       final payment =
-          paymentRaw > 0 ? paymentRaw : _calcMonthlyPayment(balance, rate, 60);
+          paymentRaw > 0 ? paymentRaw : _calcMonthlyPayment(balance, rate, 120);
 
       totalBalance += balance;
       totalPayment += payment;
@@ -865,10 +867,10 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                       final rate = _parseField(d.rateCtrl);
                                       final pmt = _parseField(d.paymentCtrl) > 0
                                           ? _parseField(d.paymentCtrl)
-                                          : _calcMonthlyPayment(bal, rate, 60);
+                                          : _calcMonthlyPayment(bal, rate, 120);
                                       final months = pmt > 0 && bal > 0
                                           ? (bal / pmt).ceil().clamp(1, 600)
-                                          : 60;
+                                          : 120;
                                       return sum + (pmt * months - bal).clamp(0, double.infinity);
                                     });
                                     PdfExportService.exportConsolidation(
@@ -883,7 +885,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                                   : _calcMonthlyPayment(
                                                       _parseField(d.balanceCtrl),
                                                       _parseField(d.rateCtrl),
-                                                      60,
+                                                      120,
                                                     ),
                                             ),
                                           )

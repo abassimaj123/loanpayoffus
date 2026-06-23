@@ -413,7 +413,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final pinLabel = row['pin_label'] as String?;
     final createdAt = DateTime.tryParse(row['created_at'] as String);
     final dateStr = createdAt != null
-        ? DateFormat('MMM d, yyyy').format(createdAt)
+        ? DateFormat('MMM d, yyyy', isEs ? 'es' : 'en').format(createdAt)
         : '';
     final id = row['id'] as int;
     final title = pinned && pinLabel != null && pinLabel.isNotEmpty
