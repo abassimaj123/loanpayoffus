@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'core/theme/app_theme.dart';
@@ -86,6 +87,9 @@ final adService = CalcwiseAdService(
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Load date symbols for all locales so DateFormat('…', 'es'|'en') never throws
+  // and month names follow the in-app language, not the device locale.
+  await initializeDateFormatting();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   unawaited(CalcwiseRemoteConfig.initialize());
   await CalcwiseTax.init(remoteFetcher: calcwiseTaxRemoteFetch);
@@ -104,6 +108,7 @@ Future<void> main() async {
       RequestConfiguration(testDeviceIds: ['FD16D4616C3A21C3ACE5E48F8DC9C1DC']),
     );
   }
+  unawaited(AnalyticsService.instance.initialize());
   AnalyticsService.instance.setUserPremium(freemiumService.hasFullAccess);
   await AnalyticsService.instance.logAppOpen();
   CalcwiseAdFooter.configure(
