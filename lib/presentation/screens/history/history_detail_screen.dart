@@ -201,6 +201,12 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   final _fmtDate = DateFormat('MMM d, yyyy');
   bool _isExporting = false;
 
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.logScreenView('history_detail');
+  }
+
   Map<String, dynamic> get _e => widget.entry;
 
   double _d(String key) {
