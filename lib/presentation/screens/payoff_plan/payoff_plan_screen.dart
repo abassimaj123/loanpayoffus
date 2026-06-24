@@ -496,6 +496,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
         bytes: bytes,
         filename: 'loan_payoff_us_plan_${DateFormat('yyyyMMdd').format(now)}.pdf',
       );
+      AnalyticsService.instance.logPdfExported();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -319,6 +319,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         bytes: bytes,
         filename: 'loan_payoff_us_$tsStr.pdf',
       );
+      AnalyticsService.instance.logPdfExported();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
