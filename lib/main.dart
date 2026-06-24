@@ -283,10 +283,8 @@ class _MainShellState extends State<_MainShell> {
     if (!mounted) return;
     if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
     if (trigger == PaywallTrigger.hard) {
-      AnalyticsService.instance.logPaywallShown('hard');
       PaywallHard.show(context);
     } else if (trigger == PaywallTrigger.soft) {
-      AnalyticsService.instance.logPaywallShown('soft');
       PaywallSoft.show(
         context,
         featureTitle: isSpanishNotifier.value

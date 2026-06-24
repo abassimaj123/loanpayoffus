@@ -347,7 +347,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             if (!isPremium)
               TextButton.icon(
                 onPressed: () {
-                  AnalyticsService.instance.logPaywallShown('hard');
                   PaywallHard.show(context);
                 },
                 icon: const Icon(Icons.star_outline, size: 14),

@@ -1788,7 +1788,6 @@ class _PdfUnlockSheetState extends State<_PdfUnlockSheet> {
             child: ElevatedButton.icon(
               onPressed: () {
                 Navigator.pop(context);
-                AnalyticsService.instance.logPaywallShown('hard');
                 PaywallHard.show(context);
               },
               icon: const Icon(Icons.workspace_premium, size: 18),

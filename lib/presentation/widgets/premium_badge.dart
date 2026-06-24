@@ -65,11 +65,9 @@ class PremiumBadge extends StatelessWidget {
           child: Center(
             child: InkWell(
               onTap: () {
-                AnalyticsService.instance.logPaywallShown('soft');
                 PaywallSoft.show(
                   context,
                   onUnlock: () {
-                    AnalyticsService.instance.logPaywallShown('hard');
                     PaywallHard.show(context);
                   },
                 );

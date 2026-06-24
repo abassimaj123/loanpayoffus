@@ -85,7 +85,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ).colorScheme.onSurface.withValues(alpha: 0.45),
                         ),
                         onTap: () {
-                          AnalyticsService.instance.logPaywallShown('hard');
                           PaywallHard.show(context);
                         },
                       ),

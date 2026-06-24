@@ -294,7 +294,6 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
   Future<void> _exportPdf(BuildContext context, AppStrings s) async {
     if (!freemiumService.hasFullAccess) {
-      AnalyticsService.instance.logPaywallShown('hard');
       await PaywallHard.show(context);
       return;
     }
