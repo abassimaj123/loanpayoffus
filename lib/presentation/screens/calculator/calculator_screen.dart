@@ -9,6 +9,7 @@ import '../../../core/services/pdf_export_service.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/freemium/freemium_service.dart';
 import '../../../main.dart';
 import '../../../core/firebase/analytics_service.dart';
 import '../../../domain/models/loan_input.dart';
@@ -194,6 +195,13 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
       if (result.monthsSaved > 12) {
         CalcwiseReviewService.instance.requestAfterPremium();
       }
+    }
+
+    if (mounted && !freemiumService.hasFullAccess) {
+      final trigger = await paywallSession.recordAction();
+      if (!mounted) return;
+      if (trigger == PaywallTrigger.soft) PaywallSoft.show(context);
+      if (trigger == PaywallTrigger.hard) PaywallHard.show(context);
     }
 
     // SmartHistory auto-save (debounced + hash dedup + ring buffer).
