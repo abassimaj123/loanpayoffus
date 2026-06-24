@@ -91,7 +91,7 @@ class _MilestoneCelebrationDialogState extends State<MilestoneCelebrationDialog>
               borderRadius: BorderRadius.circular(AppRadius.xxl),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
+                  color: Theme.of(context).shadowColor.withValues(alpha: 0.25),
                   blurRadius: 32,
                   offset: const Offset(0, 8),
                 ),

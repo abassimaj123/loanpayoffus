@@ -361,7 +361,7 @@ class _MainShellState extends State<_MainShell> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, -2),
             ),
