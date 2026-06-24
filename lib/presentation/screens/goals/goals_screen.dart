@@ -98,7 +98,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
       if (_requiredExtra != null)
         'required_extra': _requiredExtra!.toStringAsFixed(2),
       if (_deadline != null)
-        'target_date': DateFormat('MMM yyyy').format(_deadline!),
+        'target_date': DateFormat('MMM yyyy', isSpanishNotifier.value ? 'es' : 'en').format(_deadline!),
     };
     final l2 = <String, dynamic>{
       'inputs': {
@@ -153,7 +153,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
       if (_requiredExtra != null)
         'required_extra': _requiredExtra!.toStringAsFixed(2),
       if (_deadline != null)
-        'target_date': DateFormat('MMM yyyy').format(_deadline!),
+        'target_date': DateFormat('MMM yyyy', isSpanishNotifier.value ? 'es' : 'en').format(_deadline!),
     };
 
     final l2 = <String, dynamic>{
@@ -218,7 +218,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     final currentPayoff = DateTime.now().add(
       Duration(days: result.extraMonths * 30),
     );
-    final dateFmt = DateFormat('MMM yyyy');
+    final dateFmt = DateFormat('MMM yyyy', isEs ? 'es' : 'en');
 
     // ── Compute balance-based milestone months from the schedule ──────────────
     final loanAmt = input.loanAmount;

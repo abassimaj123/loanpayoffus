@@ -89,7 +89,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Load date symbols for all locales so DateFormat('…', 'es'|'en') never throws
   // and month names follow the in-app language, not the device locale.
-  await initializeDateFormatting();
+  await initializeDateFormatting('en_US', null);
+  await initializeDateFormatting('es_US', null);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   unawaited(CalcwiseRemoteConfig.initialize());
   await CalcwiseTax.init(remoteFetcher: calcwiseTaxRemoteFetch);
