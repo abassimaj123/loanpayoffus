@@ -2,13 +2,15 @@ import 'dart:async';
 import 'dart:math' show pow;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:calcwise_core/calcwise_core.dart';
+import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard, PaywallSoft;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/firebase/analytics_service.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../main.dart';
+import '../../widgets/paywall_hard.dart';
+import '../../widgets/paywall_soft.dart';
 import '../../widgets/save_scenario_button.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -238,7 +240,10 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
     try { AnalyticsService.instance.logSave(); } catch (_) {}
     try { AnalyticsService.instance.logResultSaved(); } catch (_) {}
     adService.onSave();
-    paywallSession.recordAction().ignore();
+    final trigger = await paywallSession.recordAction();
+    if (!mounted) return;
+    if (trigger == PaywallTrigger.soft) PaywallSoft.show(context);
+    if (trigger == PaywallTrigger.hard) PaywallHard.show(context);
   }
 
   void _addDebt() {

@@ -386,7 +386,10 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
       AnalyticsService.instance.logResultSaved();
     } catch (_) {}
     adService.onSave();
-    paywallSession.recordAction().ignore();
+    final trigger = await paywallSession.recordAction();
+    if (!mounted) return;
+    if (trigger == PaywallTrigger.soft) PaywallSoft.show(context);
+    if (trigger == PaywallTrigger.hard) PaywallHard.show(context);
   }
 
   Future<void> _share(
