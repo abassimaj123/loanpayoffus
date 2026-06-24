@@ -300,7 +300,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
     });
     final l1 = <String, dynamic>{
       'payoff_months': result.extraMonths,
-      'payoff_date': DateFormat('MMM yyyy').format(payoffDate),
+      'payoff_date': DateFormat('MMM yyyy', isSpanishNotifier.value ? 'es' : 'en').format(payoffDate),
       'total_interest': result.interestExtra.toStringAsFixed(0),
       'monthly_payment': input.monthlyPayment.toStringAsFixed(2),
       'extra_payment': input.extraPayment.toStringAsFixed(2),
@@ -347,7 +347,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
 
     final l1 = <String, dynamic>{
       'payoff_months': result.extraMonths,
-      'payoff_date': DateFormat('MMM yyyy').format(payoffDate),
+      'payoff_date': DateFormat('MMM yyyy', isSpanishNotifier.value ? 'es' : 'en').format(payoffDate),
       'total_interest': result.interestExtra.toStringAsFixed(0),
       'monthly_payment': input.monthlyPayment.toStringAsFixed(2),
       'extra_payment': input.extraPayment.toStringAsFixed(2),

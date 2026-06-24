@@ -203,7 +203,7 @@ final _cur0Isolate = NumberFormat.currency(
   symbol: '\$',
   decimalDigits: 0,
 );
-final _dateIsolate = DateFormat('MMMM d, yyyy');
+DateFormat _dateIsolate(bool isEs) => DateFormat('MMMM d, yyyy', isEs ? 'es' : 'en');
 
 pw.Widget _buildPayoffChartIsolate({
   required int monthsWithExtra,
@@ -425,7 +425,7 @@ pw.Widget _headerIsolate(String title, String subtitle, bool isEs, int nowYear, 
             ],
           ),
           pw.Text(
-            _dateIsolate.format(DateTime.now()),
+            _dateIsolate(isEs).format(DateTime.now()),
             style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
           ),
         ],
