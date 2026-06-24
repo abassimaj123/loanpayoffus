@@ -198,7 +198,7 @@ class HistoryDetailScreen extends StatefulWidget {
 }
 
 class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
-  final _fmtDate = DateFormat('MMM d, yyyy');
+  DateFormat get _fmtDate => DateFormat('MMM d, yyyy', isSpanishNotifier.value ? 'es' : 'en');
   bool _isExporting = false;
 
   @override
