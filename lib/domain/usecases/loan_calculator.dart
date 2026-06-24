@@ -9,7 +9,7 @@ class LoanCalculator {
     double annualRatePct,
     int termMonths,
   ) {
-    if (annualRatePct == 0) return amount / termMonths;
+    if (annualRatePct == 0) return termMonths > 0 ? amount / termMonths : 0;
     final r = annualRatePct / 100 / 12;
     return amount *
         (r * math.pow(1 + r, termMonths)) /

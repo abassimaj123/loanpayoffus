@@ -111,6 +111,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
 
   void _calculate() {
     unawaited(AnalyticsService.instance.maybeLogFirstCalculate());
+    adService.onAction();
     // Current debts
     double totalBalance = 0;
     double totalPayment = 0;

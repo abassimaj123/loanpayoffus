@@ -65,6 +65,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     final input = ref.read(loanInputProvider);
     final months = (_deadline!.difference(DateTime.now()).inDays / 30).floor();
     if (months <= 0) return;
+    adService.onAction();
     final required = LoanCalculator.requiredExtraForTarget(
       input.loanAmount,
       input.interestRatePct,

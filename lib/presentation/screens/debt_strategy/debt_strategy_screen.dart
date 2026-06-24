@@ -220,6 +220,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
       return;
     }
 
+    adService.onAction();
     final debtsForCalc = _debtsWithPriority;
 
     final snowflake = _snowflakeEnabled && _snowflakeAmount > 0

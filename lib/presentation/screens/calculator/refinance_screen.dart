@@ -117,6 +117,7 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
       return;
     }
 
+    adService.onAction();
     final cp = _calcMonthlyPayment(balance, currentRate, currentMonths);
     final np = _calcMonthlyPayment(balance, newRate, newMonths);
     final ms = cp - np;
