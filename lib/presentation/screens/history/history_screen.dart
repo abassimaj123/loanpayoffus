@@ -105,11 +105,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (ok != true) return;
     }
     await smartHistoryService.delete(id);
+    if (!mounted) return;
     _load();
   }
 
   Future<void> _unpin(int id) async {
     await smartHistoryService.unpin(id);
+    if (!mounted) return;
     _load();
   }
 
@@ -175,6 +177,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
     if (confirmed == true) {
       await DatabaseHelper.instance.clearHistory();
+      if (!mounted) return;
       _load();
     }
   }
