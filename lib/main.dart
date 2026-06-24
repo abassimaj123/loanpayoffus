@@ -279,6 +279,7 @@ class _MainShellState extends State<_MainShell> {
     // Don't gate the Calculator tab — it's always free
     if (i == 0) return;
 
+    adService.onAction();
     final trigger = await paywallSession.recordAction();
     if (!mounted) return;
     if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
