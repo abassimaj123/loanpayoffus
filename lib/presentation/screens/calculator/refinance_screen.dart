@@ -597,8 +597,9 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                               SizedBox(
                                 width: double.infinity,
                                 child: OutlinedButton.icon(
-                                  onPressed: () =>
-                                      PdfExportService.exportRefinance(
+                                  onPressed: () {
+                                    HapticFeedback.mediumImpact();
+                                    PdfExportService.exportRefinance(
                                     context,
                                     currentBalance:
                                         _parseField(_balanceCtrl),
@@ -617,7 +618,8 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                                     breakEvenMonths: _breakEvenMonths,
                                     totalSavings: _totalSavings,
                                     isEs: isEs,
-                                  ),
+                                  );
+                                  },
                                   icon: const Icon(
                                     Icons.picture_as_pdf_rounded,
                                     size: 18,

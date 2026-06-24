@@ -1,5 +1,6 @@
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/firebase/analytics_service.dart';
 import '../../../core/language/language_notifier.dart';
@@ -179,7 +180,10 @@ class _BackupScreenState extends State<BackupScreen> {
             title: s.exportBackup,
             description: s.exportBackupDesc,
             buttonLabel: s.exportBackup,
-            onPressed: _busy ? null : _export,
+            onPressed: _busy ? null : () {
+              HapticFeedback.mediumImpact();
+              _export();
+            },
           ),
           const SizedBox(height: AppSpacing.xl),
 
@@ -223,7 +227,10 @@ class _BackupScreenState extends State<BackupScreen> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: _busy ? null : _import,
+              onPressed: _busy ? null : () {
+                HapticFeedback.mediumImpact();
+                _import();
+              },
               icon: const Icon(Icons.restore_rounded, size: 18),
               label: Text(s.importBackup),
               style: FilledButton.styleFrom(

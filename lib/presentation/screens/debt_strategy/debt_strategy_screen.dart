@@ -505,6 +505,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
+                          HapticFeedback.mediumImpact();
                           final name = nameCtrl.text.trim();
                           final bal = _parseNum(balCtrl.text);
                           final rate = _parseNum(rateCtrl.text);
@@ -743,6 +744,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                         icon: const Icon(Icons.check_rounded, size: 18),
                         label: Text(isEs ? 'Guardar' : 'Save'),
                         onPressed: () {
+                          HapticFeedback.mediumImpact();
                           final amt = _parseNum(amountCtrl.text);
                           if (amt <= 0) return;
                           Navigator.pop(
@@ -1440,6 +1442,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
+                            HapticFeedback.mediumImpact();
                             final amt = _parseNum(_snowflakeCtrl.text);
                             final mo =
                                 int.tryParse(_snowflakeMonthCtrl.text.trim()) ??
@@ -1656,6 +1659,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () {
+                          HapticFeedback.mediumImpact();
                           final result = _strategyResult!;
                           final minResult = _minimumResult;
                           PdfExportService.exportDebtStrategy(

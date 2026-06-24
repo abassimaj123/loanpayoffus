@@ -448,7 +448,10 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                           // Add Debt button
                           if (_debts.length < 4)
                             OutlinedButton.icon(
-                              onPressed: _addDebt,
+                              onPressed: () {
+                                HapticFeedback.mediumImpact();
+                                _addDebt();
+                              },
                               icon: const Icon(Icons.add_rounded, size: 18),
                               label: Text(
                                 isEs ? 'Agregar Deuda' : 'Add Debt',
@@ -859,6 +862,7 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                 width: double.infinity,
                                 child: OutlinedButton.icon(
                                   onPressed: () {
+                                    HapticFeedback.mediumImpact();
                                     final consolidationRate =
                                         _parseField(_consolidationRateCtrl);
                                     final totalCurrentInterest =

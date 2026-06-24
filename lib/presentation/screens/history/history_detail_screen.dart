@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/firebase/analytics_service.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:intl/date_symbol_data_local.dart';
@@ -620,7 +621,10 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () => _share(context, s),
+                                onPressed: () {
+                                  HapticFeedback.mediumImpact();
+                                  _share(context, s);
+                                },
                                 icon: const Icon(Icons.share_rounded),
                                 label: Text(s.shareLabel),
                                 style: OutlinedButton.styleFrom(
@@ -633,7 +637,10 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                               child: FilledButton.icon(
                                 onPressed: _isExporting
                                     ? null
-                                    : () => _exportPdf(context, s),
+                                    : () {
+                                        HapticFeedback.mediumImpact();
+                                        _exportPdf(context, s);
+                                      },
                                 icon: _isExporting
                                     ? const SizedBox(
                                         width: 18,
