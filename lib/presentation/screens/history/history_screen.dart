@@ -23,6 +23,7 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   List<Map<String, dynamic>> _rows = [];
   bool _loading = true;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -74,6 +75,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (freemiumService.hasFullAccess) return _autoSaves;
     return _autoSaves.take(MonetizationConfig.freeRingBufferSize).toList();
   }
+
+  bool _matchesSearch(Map<String, dynamic> row) {
+    if (_searchQuery.isEmpty) return true;
+    final q = _searchQuery.toLowerCase();
+    final label = (row['pin_label'] as String? ?? '').toLowerCase();
+    final loanType = (row['loan_type'] as String? ?? '').toLowerCase();
+    return label.contains(q) || loanType.contains(q);
+  }
+
+  List<Map<String, dynamic>> get _filteredPinned =>
+      _pinned.where(_matchesSearch).toList();
+
+  List<Map<String, dynamic>> get _filteredAutoSaves =>
+      _visibleAutoSaves.where(_matchesSearch).toList();
 
   Future<void> _delete(int id, {bool confirm = true}) async {
     if (confirm) {
@@ -186,8 +201,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     final isEs = isSpanishNotifier.value;
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
-    final pinned = _pinned;
-    final autoSaves = _visibleAutoSaves;
+
+    final filteredPinned = _filteredPinned;
+    final filteredAutoSaves = _filteredAutoSaves;
+    final hasResults = filteredPinned.isNotEmpty || filteredAutoSaves.isNotEmpty;
 
     return CalcwisePageEntrance(
         child: Column(
@@ -200,7 +217,37 @@ class _HistoryScreenState extends State<HistoryScreen> {
               : CustomScrollView(
                   slivers: [
                     SliverToBoxAdapter(child: _buildHeader(isEs, s)),
-                    if (pinned.isNotEmpty) ...[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.md,
+                          0,
+                          AppSpacing.md,
+                          AppSpacing.sm,
+                        ),
+                        child: CalcwiseSearchBar(
+                          onChanged: (q) =>
+                              setState(() => _searchQuery = q),
+                        ),
+                      ),
+                    ),
+                    if (!hasResults && _searchQuery.isNotEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
+                          child: Text(
+                            isEs ? 'Sin resultados' : 'No results',
+                            style: TextStyle(
+                              fontSize: AppTextSize.bodyMd,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.45),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (filteredPinned.isNotEmpty) ...[
                       SliverToBoxAdapter(
                         child: _sectionHeader(
                           isEs ? 'Escenarios guardados' : 'Saved Scenarios',
@@ -216,13 +263,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               AppSpacing.md,
                               AppSpacing.smPlus,
                             ),
-                            child: _buildCard(pinned[i], s, pinned: true),
+                            child: _buildCard(filteredPinned[i], s,
+                                pinned: true),
                           ),
-                          childCount: pinned.length,
+                          childCount: filteredPinned.length,
                         ),
                       ),
                     ],
-                    if (autoSaves.isNotEmpty) ...[
+                    if (filteredAutoSaves.isNotEmpty) ...[
                       SliverToBoxAdapter(
                         child: _sectionHeader(
                           isEs ? 'Cálculos recientes' : 'Recent Calculations',
@@ -232,7 +280,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       SliverList(
                         delegate: SliverChildBuilderDelegate(
                           (context, i) {
-                            final row = autoSaves[i];
+                            final row = filteredAutoSaves[i];
                             return Padding(
                               padding: const EdgeInsets.fromLTRB(
                                 AppSpacing.md,
@@ -269,7 +317,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               ),
                             );
                           },
-                          childCount: autoSaves.length,
+                          childCount: filteredAutoSaves.length,
                         ),
                       ),
                     ],
