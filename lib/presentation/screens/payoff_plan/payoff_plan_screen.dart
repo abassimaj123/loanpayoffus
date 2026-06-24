@@ -394,6 +394,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
     PayoffResult result,
     bool isEs,
   ) async {
+    HapticFeedback.mediumImpact();
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
     const sep = '─────────────────────';
     final buf = StringBuffer();
@@ -434,6 +435,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
     PayoffResult result,
     bool isEs,
   ) async {
+    HapticFeedback.mediumImpact();
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
 
     if (!freemiumService.hasFullAccess) {

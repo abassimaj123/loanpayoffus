@@ -954,7 +954,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                             return SizedBox(
                                               width: double.infinity,
                                               child: OutlinedButton.icon(
-                                                onPressed: () =>
+                                                onPressed: () {
+                                                    HapticFeedback.mediumImpact();
                                                     PdfExportService.exportCalculator(
                                                   ctx,
                                                   loanBalance: inp.loanAmount,
@@ -968,7 +969,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                                   interestSaved: res.interestSaved,
                                                   monthsSaved: res.monthsSaved,
                                                   isEs: isEs,
-                                                ),
+                                                );},
                                                 icon: const Icon(
                                                   Icons.picture_as_pdf_rounded,
                                                   size: 18,
