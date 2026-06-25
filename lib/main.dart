@@ -278,26 +278,6 @@ class _MainShellState extends State<_MainShell> {
   Future<void> _onTabSelected(int i) async {
     setState(() => _index = i);
     await AnalyticsService.instance.logTabSwitch(tabName: _tabNames[i]);
-
-    // Don't gate the Calculator tab — it's always free
-    if (i == 0) return;
-
-    adService.onAction();
-    final trigger = await paywallSession.recordAction();
-    if (!mounted) return;
-    if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
-    if (trigger == PaywallTrigger.hard) {
-      PaywallHard.show(context);
-    } else if (trigger == PaywallTrigger.soft) {
-      PaywallSoft.show(
-        context,
-        featureTitle: isSpanishNotifier.value
-            ? 'Análisis de Liquidación'
-            : 'Full Payoff Analysis',
-        isSpanish: isSpanishNotifier.value,
-        onUnlock: () => PaywallHard.show(context),
-      );
-    }
   }
 
   @override
