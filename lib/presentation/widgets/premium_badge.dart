@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/freemium/freemium_service.dart';
 import '../../core/firebase/analytics_service.dart';
+import '../../core/language/language_notifier.dart';
 import 'paywall_soft.dart';
 import 'paywall_hard.dart';
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
@@ -88,18 +89,18 @@ class PremiumBadge extends StatelessWidget {
                     width: 1,
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.star_outline_rounded,
                       color: Colors.white,
                       size: 13,
                     ),
-                    SizedBox(width: AppSpacing.xs),
+                    const SizedBox(width: AppSpacing.xs),
                     Text(
-                      'Go Pro',
-                      style: TextStyle(
+                      isSpanishNotifier.value ? 'Hazte Pro' : 'Go Pro',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: AppTextSize.xs,
                         fontWeight: FontWeight.bold,

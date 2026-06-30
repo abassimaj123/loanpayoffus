@@ -714,7 +714,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                       ),
                       const SizedBox(width: AppSpacing.smPlus),
                       Text(
-                        DateFormat.yMMMd().format(selectedDate),
+                        DateFormat.yMMMd(isEs ? 'es' : 'en')
+                            .format(selectedDate),
                         style: const TextStyle(fontSize: AppTextSize.body),
                       ),
                       const Spacer(),
@@ -1138,6 +1139,35 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
+
+                if (_debts.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.lg,
+                      horizontal: AppSpacing.md,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.account_balance_wallet_outlined,
+                          size: 20,
+                          color: CalcwiseTheme.of(context).textSecondary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            isEs
+                                ? 'Agrega tu primera deuda para empezar.'
+                                : 'Add your first debt to get started.',
+                            style: TextStyle(
+                              fontSize: AppTextSize.sm,
+                              color: CalcwiseTheme.of(context).textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                 ..._debts.asMap().entries.map(
                   (e) => Dismissible(
@@ -2100,8 +2130,8 @@ class _DebtTile extends StatelessWidget {
                   onPressed: onEdit,
                   tooltip: isEs ? 'Editar' : 'Edit',
                   constraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
+                    minWidth: 48,
+                    minHeight: 48,
                   ),
                   padding: const EdgeInsets.all(6),
                 ),
@@ -2111,8 +2141,8 @@ class _DebtTile extends StatelessWidget {
                   onPressed: onDelete,
                   tooltip: isEs ? 'Eliminar' : 'Delete',
                   constraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
+                    minWidth: 48,
+                    minHeight: 48,
                   ),
                   padding: const EdgeInsets.all(6),
                 ),
@@ -2175,7 +2205,7 @@ class _DebtTile extends StatelessWidget {
                   side: BorderSide(
                     color: AppTheme.accentGood.withValues(alpha: 0.6),
                   ),
-                  minimumSize: const Size.fromHeight(34),
+                  minimumSize: const Size.fromHeight(48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),

@@ -295,7 +295,10 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   Future<void> _share(BuildContext context, AppStrings s) async {
     final text = _buildShareText(s);
     try {
-      await Share.share(text, subject: 'Loan Payoff US Summary');
+      await Share.share(text,
+          subject: isSpanishNotifier.value
+              ? 'Resumen de Loan Payoff US'
+              : 'Loan Payoff US Summary');
     } catch (_) {}
   }
 

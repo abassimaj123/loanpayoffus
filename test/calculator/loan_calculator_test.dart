@@ -123,16 +123,55 @@ void main() {
     expect(LoanType.auto.defaultTermMonths, 60);
   });
 
-  // ── One-time extra (spread across term) ──────────────────────────────────
-  test('one-time extra spread reduces payoff vs normal', () {
-    // Simulate a one-time extra of $10 000 spread over ~360 months ≈ $27.78/mo
-    const oneTimeExtra = 10000.0;
-    const approxTermMonths = 360.0;
-    final monthlyEffective = oneTimeExtra / approxTermMonths;
+  // ── One-time extra (true lump sum at month 1) ────────────────────────────
+  test('one-time lump reduces payoff vs normal', () {
     final r = LoanCalculator.calculate(
-      base.copyWith(extraPayment: monthlyEffective),
+      base.copyWith(extraPayment: 10000, extraIsOneTime: true),
     );
     expect(r.extraMonths, lessThan(r.normalMonths));
+  });
+
+  test('one-time lump applied once — not smeared every month', () {
+    // A $10k lump and a $10k/mo recurring extra must NOT be equivalent: the
+    // recurring one pays the loan off far faster, proving the lump is one-shot.
+    final lump = LoanCalculator.calculate(
+      base.copyWith(extraPayment: 10000, extraIsOneTime: true),
+    );
+    final recurring = LoanCalculator.calculate(
+      base.copyWith(extraPayment: 10000),
+    );
+    expect(recurring.extraMonths, lessThan(lump.extraMonths));
+    // The lump only saves a modest amount vs the huge recurring saving.
+    expect(lump.interestSaved, greaterThan(0));
+    expect(lump.interestSaved, lessThan(recurring.interestSaved));
+  });
+
+  test('buildSchedule oneTimeExtra applied at the chosen month', () {
+    final sched =
+        LoanCalculator.buildSchedule(400000, 6.0, 2398.20, 0, oneTimeExtra: 5000);
+    // Month 1 carries the extra (principal jumps by ~5000 vs no lump).
+    final noLump = LoanCalculator.buildSchedule(400000, 6.0, 2398.20, 0);
+    expect(sched.first.principal,
+        closeTo(noLump.first.principal + 5000, 0.01));
+  });
+
+  // ── Never-payoff (payment below interest) ────────────────────────────────
+  test('payment below interest → neverPayoff flag set, schedule capped', () {
+    final r = LoanCalculator.calculate(
+      const LoanInput(
+        loanType: LoanType.creditCard,
+        loanAmount: 5000,
+        interestRatePct: 24.0, // ~$100/mo interest
+        monthlyPayment: 50, // below the monthly interest
+      ),
+    );
+    expect(r.neverPayoff, isTrue);
+    expect(r.normalMonths, greaterThanOrEqualTo(600));
+  });
+
+  test('healthy loan is not flagged neverPayoff', () {
+    final r = LoanCalculator.calculate(base);
+    expect(r.neverPayoff, isFalse);
   });
 
   // ── totalPaid consistency ─────────────────────────────────────────────────

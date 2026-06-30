@@ -28,7 +28,7 @@ class MilestoneCelebrationDialog extends StatefulWidget {
     return showGeneralDialog(
       context: context,
       barrierDismissible: true,
-      barrierLabel: 'Dismiss',
+      barrierLabel: isEs ? 'Cerrar' : 'Dismiss',
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 350),
       pageBuilder: (_, __, ___) =>
@@ -159,7 +159,9 @@ class _MilestoneCelebrationDialogState extends State<MilestoneCelebrationDialog>
                           onPressed: () {
                             Share.share(
                               widget.shareText!,
-                              subject: 'I\'m Debt Free! \u{1F389}',
+                              subject: widget.isEs
+                                  ? '¡Estoy libre de deudas! \u{1F389}'
+                                  : 'I\'m Debt Free! \u{1F389}',
                             );
                           },
                         ),

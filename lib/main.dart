@@ -239,9 +239,9 @@ class _MainShellState extends State<_MainShell> {
 
   void _onPremiumChange() {
     final now = freemiumService.hasFullAccess;
-    if (now && !_wasPremium) {
-      AnalyticsService.instance.logPurchaseCompleted();
-    }
+    // NB: purchase_completed (with value/currency) is fired once by the core
+    // IapService when the purchase succeeds. Don't re-log it here or both the
+    // purchase count and revenue double up in Firebase.
     if (now && !_wasPremium && mounted) {
       showPremiumWelcomeSnackBar(context, isSpanish: isSpanishNotifier.value);
     }

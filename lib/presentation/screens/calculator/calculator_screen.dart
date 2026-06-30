@@ -26,6 +26,20 @@ import '../../widgets/milestone_celebration.dart';
 import '../../widgets/save_scenario_button.dart';
 import '../../../core/utils/insight_engine.dart';
 
+/// Debt-free date [months] from today using real calendar months
+/// (not a 30-day approximation, which drifts ~6 days/year).
+DateTime _debtFreeDate(int months) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month + months, now.day);
+}
+
+/// Formats a payoff duration, showing "50+ yrs" when the schedule hit the
+/// 600-month cap (loan never amortizes at the entered payment).
+String _fmtPayoff(int months, bool isEs) {
+  if (months >= 600) return isEs ? '50+ años' : '50+ yrs';
+  return '${months ~/ 12}y ${months % 12}m';
+}
+
 double _parseNum(String v) {
   if (v.isEmpty) return 0.0;
   String s;
@@ -136,17 +150,15 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
     );
     final monthlyPmt = (payment != null && payment > 0) ? payment : computed;
 
-    // For one-time extra, effective extra = spread across remaining months
-    final effectiveExtra = _extraOneTime && _extra > 0 && monthlyPmt > 0
-        ? _extra / (amount / monthlyPmt).clamp(1, 600)
-        : _extra;
-
     final input = LoanInput(
       loanType: _type,
       loanAmount: amount,
       interestRatePct: rate,
       monthlyPayment: monthlyPmt,
-      extraPayment: effectiveExtra,
+      // One-time extra is applied as a true lump sum at month 1 by the engine
+      // (extraIsOneTime), not smeared across the term.
+      extraPayment: _extra,
+      extraIsOneTime: _extraOneTime,
     );
     ref.read(loanInputProvider.notifier).update(input);
 
@@ -245,7 +257,8 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
       // Store the raw user-entered extra amount for display in history/PDF.
       // For one-time payments _extra is the lump sum; for monthly it equals
       // input.extraPayment. The calculation results (normal_months,
-      // interest_saved) are already pre-computed with the correct effectiveExtra.
+      // interest_saved) are already pre-computed by the engine (one-time vs
+      // monthly handled via LoanInput.extraIsOneTime).
       'extra_payment': _extra,
       'normal_months': result.normalMonths,
       'interest_saved': result.interestSaved,
@@ -308,9 +321,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
     if (isFullyPaid && !_celebrationShown) {
       _celebrationShown = true;
       final input = ref.read(loanInputProvider);
-      final debtFreeDate = DateTime.now().add(
-        Duration(days: result.extraMonths * 30),
-      );
+      final debtFreeDate = _debtFreeDate(result.extraMonths);
       final dateStr = DateFormat('MMMM yyyy', isEs ? 'es' : 'en').format(debtFreeDate);
       final shareText = isEs
           ? 'Estoy libre de deudas gracias a LoanPayoff US! '
@@ -433,9 +444,10 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
     final isEs = isSpanishNotifier.value;
     final AppStrings s = isEs ? AppStringsES() : AppStringsEN();
 
-    // Debt-free date based on extra schedule
-    final debtFreeDate = result != null
-        ? DateTime.now().add(Duration(days: result.extraMonths * 30))
+    // Debt-free date based on extra schedule. Suppressed when the loan never
+    // amortizes at the entered payment (schedule hit the 600-month cap).
+    final debtFreeDate = (result != null && !result.neverPayoff)
+        ? _debtFreeDate(result.extraMonths)
         : null;
     final debtFreeDateStr = debtFreeDate != null
         ? DateFormat('MMM yyyy', isEs ? 'es' : 'en').format(debtFreeDate)
@@ -508,11 +520,11 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                           s.loanAmount,
                           _amountCtrl,
                           prefix: '\$',
-                          hint: '15 000',
+                          hint: '15,000',
                           isCurrency: true,
                           errorText:
                               _validated && _parseNum(_amountCtrl.text) <= 0
-                              ? 'Required'
+                              ? (isEs ? 'Requerido' : 'Required')
                               : null,
                         ),
                         _field(
@@ -525,7 +537,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                               : 'Default rate as of 2026 — update to your actual rate',
                           errorText:
                               _validated && _parseNum(_rateCtrl.text) <= 0
-                              ? 'Required'
+                              ? (isEs ? 'Requerido' : 'Required')
                               : null,
                         ),
                         _field(
@@ -536,7 +548,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                           isCurrency: true,
                           errorText:
                               _validated && _parseNum(_paymentCtrl.text) < 0
-                              ? 'Invalid'
+                              ? (isEs ? 'No válido' : 'Invalid')
                               : null,
                         ),
 
@@ -835,7 +847,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                                 rows: [
                                                   (
                                                     s.payoff,
-                                                    '${result.normalMonths ~/ 12}y ${result.normalMonths % 12}m',
+                                                    _fmtPayoff(result.normalMonths, isEs),
                                                   ),
                                                   (
                                                     s.interest,
@@ -864,7 +876,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                                   rows: [
                                                     (
                                                       s.payoff,
-                                                      '${result.extraMonths ~/ 12}y ${result.extraMonths % 12}m',
+                                                      _fmtPayoff(result.extraMonths, isEs),
                                                     ),
                                                     (
                                                       s.interest,
@@ -921,15 +933,18 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                               totalInterest:
                                                   result.interestNormal,
                                               extraMonthlyPayment:
-                                                  input.extraPayment > 0
+                                                  (input.extraPayment > 0 &&
+                                                      !input.extraIsOneTime)
                                                   ? input.extraPayment
                                                   : null,
                                               monthsSavedWithExtra:
-                                                  input.extraPayment > 0
+                                                  (input.extraPayment > 0 &&
+                                                      !input.extraIsOneTime)
                                                   ? result.monthsSaved
                                                   : null,
                                               interestSavedWithExtra:
-                                                  input.extraPayment > 0
+                                                  (input.extraPayment > 0 &&
+                                                      !input.extraIsOneTime)
                                                   ? result.interestSaved
                                                   : null,
                                               isEs: isEs,
@@ -945,7 +960,10 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                         const SizedBox(height: AppSpacing.sm),
                                         CalcwiseStaggerItem(
                                           index: 4,
-                                          child: _ConsolidationCta(isEs: isEs),
+                                          child: _ConsolidationCta(
+                                            isEs: isEs,
+                                            input: input,
+                                          ),
                                         ),
                                         const SizedBox(height: AppSpacing.md),
                                         // ── Save Scenario (pinned history) ──
@@ -1165,9 +1183,11 @@ class _HeroSavingsCard extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                isEs
-                    ? '${result.normalMonths ~/ 12} ${result.normalMonths ~/ 12 == 1 ? 'año' : 'años'} ${result.normalMonths % 12} ${result.normalMonths % 12 == 1 ? 'mes' : 'meses'}'
-                    : '${result.normalMonths ~/ 12} ${result.normalMonths ~/ 12 == 1 ? 'yr' : 'yrs'} ${result.normalMonths % 12} ${result.normalMonths % 12 == 1 ? 'month' : 'months'}',
+                result.neverPayoff
+                    ? (isEs ? '50+ años' : '50+ yrs')
+                    : isEs
+                        ? '${result.normalMonths ~/ 12} ${result.normalMonths ~/ 12 == 1 ? 'año' : 'años'} ${result.normalMonths % 12} ${result.normalMonths % 12 == 1 ? 'mes' : 'meses'}'
+                        : '${result.normalMonths ~/ 12} ${result.normalMonths ~/ 12 == 1 ? 'yr' : 'yrs'} ${result.normalMonths % 12} ${result.normalMonths % 12 == 1 ? 'month' : 'months'}',
                 maxLines: 1,
                 style: const TextStyle(
                   color: Colors.white,
@@ -1176,6 +1196,19 @@ class _HeroSavingsCard extends StatelessWidget {
                 ),
               ),
             ),
+            if (result.neverPayoff) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                isEs
+                    ? 'El pago no cubre el interés — aumenta el pago mensual.'
+                    : 'Payment doesn\'t cover interest — raise your monthly payment.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: AppTextSize.xs,
+                ),
+              ),
+            ],
           ],
           // ── Debt-free date chip ──
           if (debtFreeDateStr.isNotEmpty) ...[
@@ -1314,9 +1347,7 @@ class _DebtFreeDateBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final debtFreeDate = DateTime.now().add(
-      Duration(days: result.extraMonths * 30),
-    );
+    final debtFreeDate = _debtFreeDate(result.extraMonths);
     final dateStr = DateFormat('MMMM yyyy', isEs ? 'es' : 'en').format(debtFreeDate);
     final yrs = result.monthsSaved ~/ 12;
     final mos = result.monthsSaved % 12;
@@ -1798,7 +1829,8 @@ class _BwRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _ConsolidationCta extends StatelessWidget {
   final bool isEs;
-  const _ConsolidationCta({required this.isEs});
+  final LoanInput input;
+  const _ConsolidationCta({required this.isEs, required this.input});
 
   @override
   Widget build(BuildContext context) {
@@ -1806,7 +1838,12 @@ class _ConsolidationCta extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.xl),
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ConsolidationScreen()),
+          MaterialPageRoute(
+            builder: (_) => ConsolidationScreen(
+              seedBalance: input.loanAmount,
+              seedRate: input.interestRatePct,
+            ),
+          ),
         );
       },
       child: Container(

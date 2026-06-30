@@ -20,7 +20,8 @@ class _PaymentsHistoryScreenState extends State<PaymentsHistoryScreen> {
     symbol: '\$',
     decimalDigits: 2,
   );
-  final _date = DateFormat.yMMMd();
+  DateFormat get _date =>
+      DateFormat.yMMMd(isSpanishNotifier.value ? 'es' : 'en');
 
   late Future<List<DebtPayment>> _future;
 

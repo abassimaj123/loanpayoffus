@@ -150,7 +150,7 @@ class _CrossPromoCardState extends State<CrossPromoCard> {
             children: [
               IconButton(
                 onPressed: _dismiss,
-                tooltip: 'Dismiss',
+                tooltip: isSpanishNotifier.value ? 'Descartar' : 'Dismiss',
                 constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 padding: EdgeInsets.zero,
                 icon: Icon(Icons.close_rounded, size: 16, color: ct.textSecondary),

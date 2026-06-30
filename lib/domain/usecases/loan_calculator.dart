@@ -20,8 +20,10 @@ class LoanCalculator {
     double loanAmount,
     double annualRatePct,
     double monthlyPayment,
-    double extraPayment,
-  ) {
+    double extraPayment, {
+    double oneTimeExtra = 0,
+    int oneTimeMonth = 1,
+  }) {
     final schedule = <AmortizationEntry>[];
     final r = annualRatePct / 100 / 12;
     double balance = loanAmount;
@@ -29,7 +31,9 @@ class LoanCalculator {
 
     while (balance > 0.01 && month <= 600) {
       final interest = balance * r;
-      var principal = monthlyPayment - interest + extraPayment;
+      final lump =
+          (oneTimeExtra > 0 && month == oneTimeMonth) ? oneTimeExtra : 0.0;
+      var principal = monthlyPayment - interest + extraPayment + lump;
       if (principal <= 0) principal = 0.01; // avoid infinite loop
       if (principal > balance) principal = balance;
       final payment = interest + principal;
@@ -43,7 +47,7 @@ class LoanCalculator {
           principal: principal,
           interest: interest,
           balance: balance,
-          extraPayment: extraPayment,
+          extraPayment: extraPayment + lump,
         ),
       );
       month++;
@@ -63,7 +67,8 @@ class LoanCalculator {
       input.loanAmount,
       input.interestRatePct,
       input.monthlyPayment,
-      input.extraPayment,
+      input.extraIsOneTime ? 0 : input.extraPayment,
+      oneTimeExtra: input.extraIsOneTime ? input.extraPayment : 0,
     );
 
     final normalMonths = normalSched.length;

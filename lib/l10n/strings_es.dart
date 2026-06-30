@@ -103,7 +103,7 @@ class AppStringsES implements AppStrings {
       'Solo para fines informativos. Consulte a un asesor financiero.';
   final calculatedWith = 'Calculado con Loan Payoff US';
   final payoffDate = 'Fecha de liquidación';
-  final schedule = 'Horario';
+  final schedule = 'Calendario';
   final pdfExportedSuccess = 'PDF exportado';
   final debtFreeBy = 'Libre de deuda el';
   final payoffIn = 'Liquida en';

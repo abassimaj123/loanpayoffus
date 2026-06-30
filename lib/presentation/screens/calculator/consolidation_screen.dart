@@ -40,7 +40,11 @@ class _DebtEntry {
 // ConsolidationScreen
 // ─────────────────────────────────────────────────────────────────────────────
 class ConsolidationScreen extends StatefulWidget {
-  const ConsolidationScreen({super.key});
+  /// Optional seed values from the main calculator so the first debt row
+  /// reflects the user's actual loan instead of canned sample data.
+  final double? seedBalance;
+  final double? seedRate;
+  const ConsolidationScreen({super.key, this.seedBalance, this.seedRate});
 
   @override
   State<ConsolidationScreen> createState() => _ConsolidationScreenState();
@@ -54,11 +58,10 @@ const _warningDarkColor = Color(0xFFE65100);
 class _ConsolidationScreenState extends State<ConsolidationScreen> {
   Timer? _calcDebounce;
 
-  // Up to 4 debts — start with 2 pre-filled samples
-  final List<_DebtEntry> _debts = [
-    _DebtEntry(balance: '8000', rate: '19.99', payment: ''),
-    _DebtEntry(balance: '5000', rate: '14.5', payment: ''),
-  ];
+  // Up to 4 debts. The first row is seeded from the main calculator's loan
+  // (so the screen reflects the user's actual debt, per the auto-sync rule);
+  // the second starts empty for the user to add another debt.
+  late final List<_DebtEntry> _debts;
 
   // Consolidation loan inputs
   final _loanAmountCtrl = TextEditingController();
@@ -79,6 +82,19 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
   @override
   void initState() {
     super.initState();
+    final seedBal = widget.seedBalance;
+    final seedRate = widget.seedRate;
+    _debts = [
+      _DebtEntry(
+        balance: (seedBal != null && seedBal > 0)
+            ? seedBal.toStringAsFixed(0)
+            : '',
+        rate: (seedRate != null && seedRate > 0)
+            ? seedRate.toStringAsFixed(2)
+            : '',
+      ),
+      _DebtEntry(),
+    ];
     AnalyticsService.instance.logScreenView('consolidation');
     isSpanishNotifier.addListener(_onLangChange);
     _calculate();
@@ -109,6 +125,27 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
     if (annualRatePct <= 0) return balance / months;
     final r = annualRatePct / 100 / 12;
     return balance * r / (1 - pow(1 + r, -months));
+  }
+
+  /// Total interest paid on a current debt via a real amortization loop —
+  /// not the 0%-APR `balance / payment` shortcut, which ignores interest and
+  /// understates the baseline (making consolidation look worse than it is).
+  double _currentDebtTotalInterest(
+      double balance, double annualRatePct, double payment) {
+    if (balance <= 0 || payment <= 0) return 0;
+    final r = annualRatePct / 100 / 12;
+    double bal = balance, interestSum = 0;
+    int month = 0;
+    while (bal > 0.01 && month < 600) {
+      final interest = bal * r;
+      var principal = payment - interest;
+      if (principal <= 0) break; // payment doesn't cover interest
+      if (principal > bal) principal = bal;
+      interestSum += interest;
+      bal -= principal;
+      month++;
+    }
+    return interestSum;
   }
 
   void _calculate() {
@@ -878,10 +915,9 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                       final pmt = _parseField(d.paymentCtrl) > 0
                                           ? _parseField(d.paymentCtrl)
                                           : _calcMonthlyPayment(bal, rate, 120);
-                                      final months = pmt > 0 && bal > 0
-                                          ? (bal / pmt).ceil().clamp(1, 600)
-                                          : 120;
-                                      return sum + (pmt * months - bal).clamp(0, double.infinity);
+                                      return sum +
+                                          _currentDebtTotalInterest(
+                                              bal, rate, pmt);
                                     });
                                     PdfExportService.exportConsolidation(
                                       context,

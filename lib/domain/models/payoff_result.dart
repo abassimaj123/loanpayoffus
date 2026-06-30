@@ -27,4 +27,10 @@ class PayoffResult {
 
   int get yearsSaved => monthsSaved ~/ 12;
   int get remMonthsSaved => monthsSaved % 12;
+
+  /// True when the loan never amortizes at the entered payment — the schedule
+  /// hit the 600-month safety cap instead of reaching a zero balance. Callers
+  /// should surface this honestly rather than presenting the capped figure as
+  /// a precise payoff date.
+  bool get neverPayoff => normalMonths >= 600;
 }

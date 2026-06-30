@@ -50,7 +50,7 @@ class InsightEngine {
           title: isEs ? 'Pago Mínimo Peligroso' : 'Minimum Payment Danger',
           body: isEs
               ? 'A ${_fmt(monthlyPayment)}/mes, estarás en deuda por $years años.'
-              : 'At ${_fmt(monthlyPayment)}/mo minimum, you\'ll be debt-free in $years years.',
+              : 'At ${_fmt(monthlyPayment)}/mo minimum, you\'ll be stuck in debt for $years years.',
         ),
       );
     }
