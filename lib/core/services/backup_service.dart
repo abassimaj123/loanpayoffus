@@ -28,6 +28,7 @@ import '../../domain/models/debt_category.dart';
 import '../../domain/models/debt_payment.dart';
 import '../db/debt_persistence.dart';
 import '../db/debt_payment_persistence.dart';
+import '../language/language_notifier.dart';
 
 /// File-format marker written as the very first cell of the backup.
 const _magic = '#LOAN_PAYOFF_US_BACKUP';
@@ -116,7 +117,9 @@ class BackupService {
     await file.writeAsString(csv);
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'text/csv')],
-      subject: 'Loan Payoff US — Backup',
+      subject: isSpanishNotifier.value
+          ? 'Loan Payoff US — Copia de seguridad'
+          : 'Loan Payoff US — Backup',
     );
     return true;
   }

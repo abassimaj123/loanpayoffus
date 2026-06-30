@@ -22,6 +22,12 @@ import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
 import '../../widgets/premium_badge.dart';
 
+/// Adds [months] calendar months to [from] (null-safe). Avoids the days*30
+/// approximation, which drifts ~6 days/year on long payoff projections.
+DateTime? _addMonths(DateTime? from, int months) => from == null
+    ? null
+    : DateTime(from.year, from.month + months, from.day);
+
 // ── Params + top-level builder for Isolate.run ────────────────────────────────
 
 class _HistoryDetailPdfParams {
@@ -69,7 +75,7 @@ Future<Uint8List> _buildHistoryDetailPdf(_HistoryDetailPdfParams p) async {
     // Zero-interest loan: no interest charged
     totalInterest = 0.0;
   }
-  final payoffDate = ts?.add(Duration(days: p.normalMonths * 30));
+  final payoffDate = _addMonths(ts, p.normalMonths);
   final payoffDateStr =
       payoffDate != null ? DateFormat('MMM yyyy', p.isEs ? 'es' : 'en').format(payoffDate) : '—';
   final yearsPayoff = p.normalMonths ~/ 12;
@@ -254,7 +260,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       totalInterest = 0.0;
     }
     final ts = DateTime.tryParse(_e['created_at'] as String? ?? '');
-    final payoffDate = ts?.add(Duration(days: months * 30));
+    final payoffDate = _addMonths(ts, months);
     final payoffDateStr =
         payoffDate != null ? DateFormat('MMM yyyy', isSpanishNotifier.value ? 'es' : 'en').format(payoffDate) : '—';
     return [
@@ -428,7 +434,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         } else {
           totalInterest = 0.0;
         }
-        final payoffDate = ts?.add(Duration(days: _i('normal_months') * 30));
+        final payoffDate = _addMonths(ts, _i('normal_months'));
         final payoffDateStr =
             payoffDate != null ? DateFormat('MMM yyyy', isEs ? 'es' : 'en').format(payoffDate) : '—';
         final yearsPayoff = _i('normal_months') ~/ 12;

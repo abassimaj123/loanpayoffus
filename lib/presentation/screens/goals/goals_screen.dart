@@ -215,9 +215,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
       );
     }
 
-    final currentPayoff = DateTime.now().add(
-      Duration(days: result.extraMonths * 30),
-    );
+    final now = DateTime.now();
+    final currentPayoff =
+        DateTime(now.year, now.month + result.extraMonths, now.day);
     final dateFmt = DateFormat('MMM yyyy', isEs ? 'es' : 'en');
 
     // ── Compute balance-based milestone months from the schedule ──────────────

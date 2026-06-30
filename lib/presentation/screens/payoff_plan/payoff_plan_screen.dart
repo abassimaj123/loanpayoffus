@@ -34,6 +34,13 @@ import '../../../core/db/debt_persistence.dart';
 import '../../../core/services/streak_service.dart';
 import '../../../domain/models/debt_item.dart';
 
+/// Debt-free date [months] from today using real calendar months
+/// (not a 30-day approximation, which drifts ~6 days/year).
+DateTime _debtFreeDate(int months) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month + months, now.day);
+}
+
 // ── Payoff Plan PDF isolate support ─────────────────────────────────────────
 
 class _AmortizationRow {
@@ -291,7 +298,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
   double _roundTo(double v, double step) => (v / step).round() * step;
 
   void _scheduleAutoSave(PayoffResult result, LoanInput input) {
-    final payoffDate = DateTime.now().add(Duration(days: result.extraMonths * 30));
+    final payoffDate = _debtFreeDate(result.extraMonths);
     final hash = ResultHasher.hashMixed({
       'loan_amount': _roundTo(input.loanAmount, 1000),
       'interest_rate': _roundTo(input.interestRatePct, 0.25),
@@ -343,7 +350,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
       'extra_payment': _roundTo(input.extraPayment, 50),
     });
 
-    final payoffDate = DateTime.now().add(Duration(days: result.extraMonths * 30));
+    final payoffDate = _debtFreeDate(result.extraMonths);
 
     final l1 = <String, dynamic>{
       'payoff_months': result.extraMonths,
@@ -428,7 +435,9 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
     try {
       await Share.share(
         buf.toString(),
-        subject: 'Loan Payoff US — Payoff Plan',
+        subject: isEs
+            ? 'Loan Payoff US — Plan de pago'
+            : 'Loan Payoff US — Payoff Plan',
       );
     } catch (_) {}
   }
@@ -553,9 +562,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
     }
 
     final schedule = result.schedule;
-    final payoffDate = DateTime.now().add(
-      Duration(days: result.extraMonths * 30),
-    );
+    final payoffDate = _debtFreeDate(result.extraMonths);
 
     // Group schedule into chunks of 12 months
     final groups = <List<AmortizationEntry>>[];
