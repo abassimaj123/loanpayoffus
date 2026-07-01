@@ -221,5 +221,97 @@ void main() {
           reason: 'Pinned payoff plan must survive ring buffer eviction');
       expect(pinned.first.l2['loan_amount'], 8000.0);
     });
+
+    test(
+        'scenario: consolidation save survives the history-screen purge check '
+        '(regression for silent data-loss bug)', () async {
+      // GIVEN: a consolidation scenario (mirrors _buildL1/_buildL2 in
+      // consolidation_screen.dart) — note total_balance/consolidation_rate
+      // are consolidation-specific keys, but the fix also mirrors them into
+      // the generic loan_amount/interest_rate/normal_months keys so the
+      // DB adapter (loan_payoff_us_database_adapter.dart) doesn't default
+      // them to 0.
+      const totalBalance = 32000.0;
+      const consolidationRate = 11.5;
+      const termMonths = 48;
+      const consolidationPayment = 780.0;
+      const monthlySavings = 120.0;
+
+      await svc.saveScenario(
+        appKey: 'loanpayoffus',
+        screenId: 'consolidation',
+        inputHash: 'consolidation-hash-1',
+        l1: {
+          'debt_count': 2,
+          'total_balance': totalBalance,
+          'consolidation_rate': consolidationRate,
+          'monthly_savings': monthlySavings,
+          'term_months': termMonths,
+        },
+        l2: {
+          'loan_type': 'Consolidation',
+          'loan_amount': totalBalance,
+          'interest_rate': consolidationRate,
+          'monthly_payment': consolidationPayment,
+          'extra_payment': 0.0,
+          'normal_months': termMonths,
+          'interest_saved': monthlySavings * termMonths,
+          'inputs': {
+            'debts': [
+              {'balance': 20000.0, 'rate': 18.0, 'payment': 500.0},
+              {'balance': 12000.0, 'rate': 22.0, 'payment': 400.0},
+            ],
+            'consolidation_rate': consolidationRate,
+            'term_months': termMonths,
+          },
+          'results': {
+            'total_balance': totalBalance,
+            'total_current_monthly': 900.0,
+            'consolidation_payment': consolidationPayment,
+            'total_consolidation_cost': consolidationPayment * termMonths,
+            'total_consolidation_interest':
+                consolidationPayment * termMonths - totalBalance,
+            'monthly_savings': monthlySavings,
+            'avg_current_rate': 19.5,
+          },
+        },
+        label: 'Debt consolidation plan',
+      );
+
+      // WHEN: replaying the exact same shape the DatabaseAdapter.insertRow
+      // uses to map l2_json → flat `history` columns (see
+      // loan_payoff_us_database_adapter.dart lines 25-32).
+      final saved = await svc.getPinned('loanpayoffus');
+      expect(saved, isNotEmpty,
+          reason: 'Consolidation scenario must be saved to history');
+      final l2 = saved.first.l2;
+      final mappedLoanAmount = (l2['loan_amount'] as num?)?.toDouble() ?? 0.0;
+      final mappedInterestRate =
+          (l2['interest_rate'] as num?)?.toDouble() ?? 0.0;
+      final mappedNormalMonths = (l2['normal_months'] as num?)?.toInt() ?? 0;
+
+      // THEN: replaying HistoryScreen._load()'s auto-purge condition
+      // (amount == 0 && rate == 0) must NOT trigger for a consolidation row.
+      final wouldBePurged = mappedLoanAmount == 0 && mappedInterestRate == 0;
+      expect(wouldBePurged, isFalse,
+          reason:
+              'Consolidation entries must not look like corrupted zero-value '
+              'auto-saves — this was the silent data-loss bug where '
+              'HistoryScreen deleted every saved consolidation scenario');
+
+      // AND: the mapped values are correct (not just non-zero) and safe for
+      // the unchecked `as num` casts in HistoryScreen._buildCard and the
+      // history-detail PDF export.
+      expect(mappedLoanAmount, totalBalance);
+      expect(mappedInterestRate, consolidationRate);
+      expect(mappedNormalMonths, termMonths);
+
+      // AND: the consolidation-specific results survive untouched for the
+      // consolidation UI / PDF export to read back.
+      final results = l2['results'] as Map<String, dynamic>;
+      expect(results['total_balance'], totalBalance);
+      expect(results['consolidation_payment'], consolidationPayment);
+      expect(results['monthly_savings'], monthlySavings);
+    });
   });
 }

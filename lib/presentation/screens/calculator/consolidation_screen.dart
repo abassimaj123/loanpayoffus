@@ -217,6 +217,21 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
       };
 
   Map<String, dynamic> _buildL2() => {
+        // Mirrors the generic loan-history schema (loan_type/loan_amount/
+        // interest_rate/monthly_payment/normal_months/interest_saved) so the
+        // DB adapter (loan_payoff_us_database_adapter.dart) populates the flat
+        // `history` columns instead of defaulting them to 0/null. Without
+        // these, HistoryScreen._load() treats the row as a corrupted auto-save
+        // (loan_amount==0 && interest_rate==0) and silently deletes it.
+        'loan_type': 'Consolidation',
+        'loan_amount': _totalCurrentBalance,
+        'interest_rate': _parseField(_consolidationRateCtrl),
+        'monthly_payment': _consolidationPayment,
+        'extra_payment': 0.0,
+        'normal_months': _termMonths,
+        'interest_saved': _monthlySavings > 0
+            ? _monthlySavings * _termMonths
+            : 0.0,
         'inputs': {
           'debts': _debts
               .map((d) => {
