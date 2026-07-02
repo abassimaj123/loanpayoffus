@@ -667,7 +667,8 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                       const SizedBox(height: 8),
                       SizedBox(
                         height: 180,
-                        child: LineChart(
+                        child: CalcwiseChartReveal(
+                          child: LineChart(
                           LineChartData(
                             minY: 0,
                             maxY: maxBalance * 1.05,
@@ -727,6 +728,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                                 isCurved: true,
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 barWidth: 2,
+                                dashArray: CalcwiseChartTokens.secondarySeriesDash,
                                 dotData: const FlDotData(show: false),
                                 belowBarData: BarAreaData(show: false),
                               ),
@@ -743,6 +745,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                                   ),
                                 ),
                             ],
+                          ),
                           ),
                         ),
                       ),
