@@ -56,11 +56,16 @@ class EngineResult {
   /// Premium-gated in the UI.
   final List<MonthlyAllocation> monthlyAllocations;
 
+  /// True if the simulation hit the 1200-month cap without paying off all debts.
+  /// Indicates debts cannot be paid off with the current payment strategy.
+  final bool cannotPayoff;
+
   const EngineResult({
     required this.totalMonths,
     required this.totalInterest,
     required this.payoffOrder,
     required this.monthlyAllocations,
+    this.cannotPayoff = false,
   });
 }
 
@@ -154,6 +159,7 @@ class DebtStrategyEngine {
         totalInterest: 0,
         payoffOrder: [],
         monthlyAllocations: [],
+        cannotPayoff: false,
       );
     }
 
@@ -260,11 +266,15 @@ class DebtStrategyEngine {
 
     payoffSummaries.sort((a, b) => a.monthPaidOff.compareTo(b.monthPaidOff));
 
+    // Check if we hit the cap: means debts cannot be paid off with current strategy
+    final hitCap = month >= maxMonths && balances.any((b) => b > 0.005);
+
     return EngineResult(
       totalMonths: month,
       totalInterest: totalInterest,
       payoffOrder: payoffSummaries,
       monthlyAllocations: allocations,
+      cannotPayoff: hitCap,
     );
   }
 }
