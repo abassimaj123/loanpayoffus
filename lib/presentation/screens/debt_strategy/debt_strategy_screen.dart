@@ -1,4 +1,5 @@
 import 'dart:async' show unawaited;
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,6 +23,96 @@ import 'payments_history_screen.dart';
 import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard, PaywallSoft;
 import '../../../main.dart';
 import '../../widgets/save_scenario_button.dart';
+
+// ---------------------------------------------------------------------------
+// Off-UI-thread strategy computation (compute() isolate)
+// ---------------------------------------------------------------------------
+
+/// Plain-data bundle of everything the 6 `DebtStrategyEngine.run()` calls
+/// need. Must stay free of callbacks/BuildContext/streams so it can be sent
+/// across the isolate boundary by `compute()`.
+class _StrategyComputeInput {
+  final List<DebtItem> debts;
+  final double extra;
+  final PayoffStrategy strategy;
+  final SnowflakePayment? snowflake;
+  final double whatIfExtra;
+
+  const _StrategyComputeInput({
+    required this.debts,
+    required this.extra,
+    required this.strategy,
+    required this.snowflake,
+    required this.whatIfExtra,
+  });
+}
+
+/// Combined result of all 6 strategy simulations, returned from the isolate.
+class _StrategyComputeResult {
+  final EngineResult strategyResult;
+  final EngineResult minimumResult;
+  final EngineResult? snowflakeResult;
+  final EngineResult? whatIfResult;
+  final EngineResult snowballResult;
+  final EngineResult avalancheResult;
+
+  const _StrategyComputeResult({
+    required this.strategyResult,
+    required this.minimumResult,
+    required this.snowflakeResult,
+    required this.whatIfResult,
+    required this.snowballResult,
+    required this.avalancheResult,
+  });
+}
+
+/// Top-level function (required by `compute()`) that runs all 6
+/// `DebtStrategyEngine.run()` simulations off the UI thread.
+_StrategyComputeResult _runAllStrategies(_StrategyComputeInput input) {
+  final debtsForCalc = input.debts;
+  final snowflake = input.snowflake;
+
+  final strategyResult = DebtStrategyEngine.run(
+    debts: debtsForCalc,
+    extraMonthly: input.extra,
+    strategy: input.strategy,
+  );
+  final minimumResult = DebtStrategyEngine.runMinimumOnly(debtsForCalc);
+  final snowflakeResult = snowflake != null
+      ? DebtStrategyEngine.run(
+          debts: debtsForCalc,
+          extraMonthly: input.extra,
+          strategy: input.strategy,
+          snowflake: snowflake,
+        )
+      : null;
+  final whatIfResult = input.whatIfExtra > 0
+      ? DebtStrategyEngine.run(
+          debts: debtsForCalc,
+          extraMonthly: input.extra + input.whatIfExtra,
+          strategy: input.strategy,
+        )
+      : null;
+  final snowballResult = DebtStrategyEngine.run(
+    debts: debtsForCalc,
+    extraMonthly: input.extra,
+    strategy: PayoffStrategy.snowball,
+  );
+  final avalancheResult = DebtStrategyEngine.run(
+    debts: debtsForCalc,
+    extraMonthly: input.extra,
+    strategy: PayoffStrategy.avalanche,
+  );
+
+  return _StrategyComputeResult(
+    strategyResult: strategyResult,
+    minimumResult: minimumResult,
+    snowflakeResult: snowflakeResult,
+    whatIfResult: whatIfResult,
+    snowballResult: snowballResult,
+    avalancheResult: avalancheResult,
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -92,6 +183,15 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   EngineResult? _avalancheResult;
 
   bool _loaded = false;
+
+  /// True while the 6 strategy simulations are running on a background
+  /// isolate via compute(). Guards against overlapping runs and drives the
+  /// loading indicator shown over the results section.
+  bool _isCalculating = false;
+
+  /// Monotonically-increasing token to discard stale compute() results if
+  /// a newer _runCalc() call started before the previous one finished.
+  int _calcRequestId = 0;
 
   static const int _freeDebtLimit = 5;
 
@@ -207,7 +307,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     }).toList();
   }
 
-  void _runCalc() {
+  Future<void> _runCalc() async {
     if (_debts.isEmpty) {
       setState(() {
         _strategyResult = null;
@@ -230,39 +330,31 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
           )
         : null;
 
+    final requestId = ++_calcRequestId;
+    setState(() => _isCalculating = true);
+
+    final input = _StrategyComputeInput(
+      debts: debtsForCalc,
+      extra: _extra,
+      strategy: _strategy,
+      snowflake: snowflake,
+      whatIfExtra: _whatIfExtra,
+    );
+
+    final result = await compute(_runAllStrategies, input);
+
+    // Discard stale results if a newer calculation started meanwhile, or if
+    // the widget was disposed while compute() was running.
+    if (!mounted || requestId != _calcRequestId) return;
+
     setState(() {
-      _strategyResult = DebtStrategyEngine.run(
-        debts: debtsForCalc,
-        extraMonthly: _extra,
-        strategy: _strategy,
-      );
-      _minimumResult = DebtStrategyEngine.runMinimumOnly(debtsForCalc);
-      _snowflakeResult = snowflake != null
-          ? DebtStrategyEngine.run(
-              debts: debtsForCalc,
-              extraMonthly: _extra,
-              strategy: _strategy,
-              snowflake: snowflake,
-            )
-          : null;
-      _whatIfResult = _whatIfExtra > 0
-          ? DebtStrategyEngine.run(
-              debts: debtsForCalc,
-              extraMonthly: _extra + _whatIfExtra,
-              strategy: _strategy,
-            )
-          : null;
-      // Always compute both canonical strategies for the comparison card.
-      _snowballResult = DebtStrategyEngine.run(
-        debts: debtsForCalc,
-        extraMonthly: _extra,
-        strategy: PayoffStrategy.snowball,
-      );
-      _avalancheResult = DebtStrategyEngine.run(
-        debts: debtsForCalc,
-        extraMonthly: _extra,
-        strategy: PayoffStrategy.avalanche,
-      );
+      _strategyResult = result.strategyResult;
+      _minimumResult = result.minimumResult;
+      _snowflakeResult = result.snowflakeResult;
+      _whatIfResult = result.whatIfResult;
+      _snowballResult = result.snowballResult;
+      _avalancheResult = result.avalancheResult;
+      _isCalculating = false;
     });
     _scheduleAutoSave();
     AnalyticsService.instance.maybeLogFirstCalculate();
@@ -1006,6 +1098,31 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Recalculating indicator (compute() running on isolate) ──
+                if (_isCalculating)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          isEs ? 'Recalculando…' : 'Recalculating…',
+                          style: TextStyle(
+                            fontSize: AppTextSize.sm,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 // ── Hero result card (result-first — top of screen) ──
                 if (_strategyResult != null && _debts.isNotEmpty) ...[
                   AnimatedSwitcher(

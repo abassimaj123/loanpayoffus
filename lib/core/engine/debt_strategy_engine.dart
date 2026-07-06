@@ -170,6 +170,12 @@ class DebtStrategyEngine {
     final allocations = <MonthlyAllocation>[];
     final recordedPayoff = List<bool>.filled(debts.length, false);
 
+    // Index of the most recent allocation entry per debt name for the
+    // *current* month — avoids an O(n) backward scan per extra-payment
+    // lookup (allocations can grow to 6000+ entries across 1200 months ×
+    // multiple debts, making a linear scan O(n²) overall).
+    final lastAllocationIndexForDebt = <String, int>{};
+
     double runningExtra = extraMonthly;
     double totalInterest = 0;
     int month = 0;
@@ -211,6 +217,8 @@ class DebtStrategyEngine {
             endingBalance: balances[i],
           ),
         );
+        // Record this month's allocation index for O(1) lookup in Step 2.
+        lastAllocationIndexForDebt[debts[i].name] = allocations.length - 1;
       }
 
       // Step 2 — apply extra to priority debt (first active by strategy order)
@@ -229,19 +237,17 @@ class DebtStrategyEngine {
         leftover -= apply;
 
         // Update the last allocation entry for this debt this month
-        // (update endingBalance to reflect extra payment)
-        for (int k = allocations.length - 1; k >= 0; k--) {
-          if (allocations[k].month == month &&
-              allocations[k].debtName == debts[i].name) {
-            allocations[k] = MonthlyAllocation(
-              month: allocations[k].month,
-              debtName: allocations[k].debtName,
-              interest: allocations[k].interest,
-              principal: allocations[k].principal + apply,
-              endingBalance: balances[i],
-            );
-            break;
-          }
+        // (update endingBalance to reflect extra payment) — O(1) via the map
+        // built in Step 1, instead of a backward linear scan.
+        final k = lastAllocationIndexForDebt[debts[i].name];
+        if (k != null && allocations[k].month == month) {
+          allocations[k] = MonthlyAllocation(
+            month: allocations[k].month,
+            debtName: allocations[k].debtName,
+            interest: allocations[k].interest,
+            principal: allocations[k].principal + apply,
+            endingBalance: balances[i],
+          );
         }
       }
 
