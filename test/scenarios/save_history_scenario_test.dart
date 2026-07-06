@@ -313,5 +313,139 @@ void main() {
       expect(results['consolidation_payment'], consolidationPayment);
       expect(results['monthly_savings'], monthlySavings);
     });
+
+    test(
+        'scenario: one-time extra payment survives save/restore and hashes '
+        'differently from an equivalent recurring extra '
+        '(regression for silent data-loss bug)', () async {
+      // GIVEN: two scenarios identical except for the one-time vs recurring
+      // toggle (mirrors _buildSnapshot in calculator_screen.dart, which must
+      // include extra_one_time in both the l2 payload and the input hash).
+      const loanAmount = 25000.0;
+      const interestRate = 7.5;
+      const monthlyPayment = 500.0;
+      const extraPayment = 200.0;
+      const normalMonths = 64;
+      const interestSaved = 900.0;
+
+      Map<String, dynamic> buildL2(bool extraOneTime) => {
+            'loan_type': 'Personal',
+            'loan_amount': loanAmount,
+            'interest_rate': interestRate,
+            'monthly_payment': monthlyPayment,
+            'extra_payment': extraPayment,
+            'extra_one_time': extraOneTime,
+            'normal_months': normalMonths,
+            'interest_saved': interestSaved,
+          };
+
+      String buildHash(bool extraOneTime) => ResultHasher.hashMixed({
+            'amount': ResultHasher.roundTo(loanAmount, 100),
+            'rate': ResultHasher.roundTo(interestRate, 0.01),
+            'payment': ResultHasher.roundTo(monthlyPayment, 10),
+            'extra': ResultHasher.roundTo(extraPayment, 10),
+            'extra_one_time': extraOneTime,
+            'type': 'personal',
+          });
+
+      final oneTimeHash = buildHash(true);
+      final recurringHash = buildHash(false);
+
+      // THEN: one-time and recurring scenarios must NOT collide into the
+      // same hash — otherwise SmartHistoryService's dedup would silently
+      // discard one of them as a "duplicate".
+      expect(oneTimeHash, isNot(equals(recurringHash)),
+          reason: 'One-time and recurring extra-payment scenarios with '
+              'identical amounts must produce different hashes, or dedup '
+              'silently conflates them.');
+
+      // WHEN: saving the one-time scenario (mirrors _saveScenario).
+      await svc.saveScenario(
+        appKey: 'loanpayoffus',
+        screenId: 'calculator',
+        inputHash: oneTimeHash,
+        l1: {
+          'loan_type': 'Personal',
+          'loan_amount': loanAmount,
+          'monthly_payment': monthlyPayment,
+          'interest_rate': interestRate,
+        },
+        l2: buildL2(true),
+        label: 'One-time lump sum plan',
+      );
+
+      // AND: saving the recurring scenario too — both must coexist.
+      await svc.saveScenario(
+        appKey: 'loanpayoffus',
+        screenId: 'calculator',
+        inputHash: recurringHash,
+        l1: {
+          'loan_type': 'Personal',
+          'loan_amount': loanAmount,
+          'monthly_payment': monthlyPayment,
+          'interest_rate': interestRate,
+        },
+        l2: buildL2(false),
+        label: 'Recurring monthly plan',
+      );
+
+      final pinned = await svc.getPinned('loanpayoffus');
+      expect(pinned.length, 2,
+          reason: 'One-time and recurring scenarios must both be saved, '
+              'not collapsed into a single duplicate entry.');
+
+      // THEN: restoring each entry (mirrors LoanPayoffUSDatabaseAdapter /
+      // HistoryDetailScreen reading extra_one_time back from l2) correctly
+      // reports which is which.
+      final oneTimeEntry =
+          pinned.firstWhere((e) => e.resultHash == oneTimeHash);
+      final recurringEntry =
+          pinned.firstWhere((e) => e.resultHash == recurringHash);
+
+      final restoredOneTime =
+          (oneTimeEntry.l2['extra_one_time'] as bool?) ?? false;
+      final restoredRecurring =
+          (recurringEntry.l2['extra_one_time'] as bool?) ?? false;
+
+      expect(restoredOneTime, isTrue,
+          reason: 'A one-time lump sum scenario must restore as one-time, '
+              'not silently default to recurring monthly.');
+      expect(restoredRecurring, isFalse,
+          reason: 'A recurring monthly scenario must restore as recurring.');
+    });
+
+    test(
+        'scenario: older saved snapshot without extra_one_time defaults to '
+        'recurring monthly on restore (backward compatibility)', () async {
+      // GIVEN: a legacy l2 payload saved before this fix existed — no
+      // extra_one_time key at all.
+      await svc.saveScenario(
+        appKey: 'loanpayoffus',
+        screenId: 'calculator',
+        inputHash: 'legacy-hash-no-flag',
+        l1: {'loan_type': 'Auto', 'loan_amount': 15000.0, 'interest_rate': 6.0},
+        l2: {
+          'loan_type': 'Auto',
+          'loan_amount': 15000.0,
+          'interest_rate': 6.0,
+          'monthly_payment': 350.0,
+          'extra_payment': 100.0,
+          'normal_months': 48,
+          'interest_saved': 300.0,
+        },
+        label: 'Legacy plan',
+      );
+
+      final pinned = await svc.getPinned('loanpayoffus');
+      final legacyEntry =
+          pinned.firstWhere((e) => e.resultHash == 'legacy-hash-no-flag');
+
+      // THEN: missing the flag must default to false (recurring monthly),
+      // not crash and not silently assume one-time.
+      final restored = (legacyEntry.l2['extra_one_time'] as bool?) ?? false;
+      expect(restored, isFalse,
+          reason: 'Missing extra_one_time on legacy entries must default to '
+              'recurring monthly for backward compatibility.');
+    });
   });
 }

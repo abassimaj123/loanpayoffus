@@ -30,6 +30,9 @@ class LoanPayoffUSDatabaseAdapter implements DatabaseAdapter {
       'extra_payment': (l2['extra_payment'] as num?)?.toDouble() ?? 0.0,
       'normal_months': (l2['normal_months'] as num?)?.toInt() ?? 0,
       'interest_saved': (l2['interest_saved'] as num?)?.toDouble() ?? 0.0,
+      // Older saved snapshots predate this flag; default to 0 (recurring
+      // monthly) for backward compatibility.
+      'extra_one_time': (l2['extra_one_time'] as bool?) == true ? 1 : 0,
       'created_at': savedAt.toIso8601String(),
       'input_hash': row['result_hash'],
       'is_pinned': row['is_pinned'] ?? 0,
@@ -153,6 +156,8 @@ class LoanPayoffUSDatabaseAdapter implements DatabaseAdapter {
       'extra_payment': row['extra_payment'],
       'normal_months': row['normal_months'],
       'interest_saved': row['interest_saved'],
+      // Older rows predate this column and default to 0 (recurring monthly).
+      'extra_one_time': ((row['extra_one_time'] as int?) ?? 0) == 1,
     });
   }
 }

@@ -241,6 +241,10 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
       'rate': ResultHasher.roundTo(input.interestRatePct, 0.01),
       'payment': ResultHasher.roundTo(input.monthlyPayment, 10),
       'extra': ResultHasher.roundTo(input.extraPayment, 10),
+      // Distinguishes a one-time lump sum from a recurring monthly extra so
+      // two otherwise-identical scenarios don't collide into the same hash
+      // (which would make SmartHistoryService treat them as duplicates).
+      'extra_one_time': _extraOneTime,
       'type': input.loanType.name,
     });
     final l1 = {
@@ -260,6 +264,10 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
       // interest_saved) are already pre-computed by the engine (one-time vs
       // monthly handled via LoanInput.extraIsOneTime).
       'extra_payment': _extra,
+      // Persists whether the extra above is a one-time lump sum or a
+      // recurring monthly extra, so restoring this scenario (or exporting
+      // its PDF) doesn't silently mislabel/misinterpret it.
+      'extra_one_time': _extraOneTime,
       'normal_months': result.normalMonths,
       'interest_saved': result.interestSaved,
     };
@@ -988,6 +996,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                                   interestRate: inp.interestRatePct,
                                                   monthlyPayment: inp.monthlyPayment,
                                                   extraPayment: inp.extraPayment,
+                                                  extraOneTime: inp.extraIsOneTime,
                                                   monthsWithout: res.normalMonths,
                                                   monthsWith: res.extraMonths,
                                                   interestWithout: res.interestNormal,

@@ -36,6 +36,7 @@ class _HistoryDetailPdfParams {
   final double interestRate;
   final double monthlyPayment;
   final double extraPayment;
+  final bool extraOneTime;
   final int normalMonths;
   final double interestSaved;
   final String? createdAt;
@@ -47,6 +48,7 @@ class _HistoryDetailPdfParams {
     required this.interestRate,
     required this.monthlyPayment,
     required this.extraPayment,
+    required this.extraOneTime,
     required this.normalMonths,
     required this.interestSaved,
     required this.createdAt,
@@ -94,8 +96,12 @@ Future<Uint8List> _buildHistoryDetailPdf(_HistoryDetailPdfParams p) async {
     (label: s.monthlyPayment, value: AmountFormatter.ui(p.monthlyPayment, 'USD')),
     if (p.extraPayment > 0)
       (
-        label: s.extraPayment,
-        value: '${AmountFormatter.ui(p.extraPayment, 'USD')}/mo',
+        label: p.extraOneTime
+            ? (p.isEs ? 'Pago extra único' : 'One-time extra payment')
+            : s.extraPayment,
+        value: p.extraOneTime
+            ? AmountFormatter.ui(p.extraPayment, 'USD')
+            : '${AmountFormatter.ui(p.extraPayment, 'USD')}/mo',
       ),
   ];
 
@@ -225,6 +231,10 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     return v == null ? 0 : (v as num).toInt();
   }
 
+  // Older saved snapshots predate this flag; default to false (recurring
+  // monthly) for backward compatibility with existing history entries.
+  bool get _extraOneTime => (_e['extra_one_time'] as bool?) ?? false;
+
   List<({String label, String value})> _inputRows(AppStrings s) => [
     (label: s.loanTypeLabel, value: (_e['loan_type'] as String? ?? '—')),
     (label: s.loanAmount, value: AmountFormatter.ui(_d('loan_amount'), 'USD')),
@@ -235,8 +245,12 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     (label: s.monthlyPayment, value: AmountFormatter.ui(_d('monthly_payment'), 'USD')),
     if (_d('extra_payment') > 0)
       (
-        label: s.extraPayment,
-        value: '${AmountFormatter.ui(_d('extra_payment'), 'USD')}/mo',
+        label: _extraOneTime
+            ? (isSpanishNotifier.value ? 'Pago extra único' : 'One-time extra payment')
+            : s.extraPayment,
+        value: _extraOneTime
+            ? AmountFormatter.ui(_d('extra_payment'), 'USD')
+            : '${AmountFormatter.ui(_d('extra_payment'), 'USD')}/mo',
       ),
   ];
 
@@ -323,6 +337,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         interestRate: _d('interest_rate'),
         monthlyPayment: _d('monthly_payment'),
         extraPayment: _d('extra_payment'),
+        extraOneTime: _extraOneTime,
         normalMonths: _i('normal_months'),
         interestSaved: _d('interest_saved'),
         createdAt: _e['created_at'] as String?,
@@ -588,9 +603,13 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                                 const SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: Text(
-                                    isEs
-                                        ? 'Extra +${AmountFormatter.ui(_d('extra_payment'), 'USD')}/mes → ahorrado ${AmountFormatter.ui(_d('interest_saved'), 'USD')}'
-                                        : 'Extra +${AmountFormatter.ui(_d('extra_payment'), 'USD')}/mo → saved ${AmountFormatter.ui(_d('interest_saved'), 'USD')}',
+                                    _extraOneTime
+                                        ? (isEs
+                                            ? 'Extra único +${AmountFormatter.ui(_d('extra_payment'), 'USD')} → ahorrado ${AmountFormatter.ui(_d('interest_saved'), 'USD')}'
+                                            : 'One-time extra +${AmountFormatter.ui(_d('extra_payment'), 'USD')} → saved ${AmountFormatter.ui(_d('interest_saved'), 'USD')}')
+                                        : (isEs
+                                            ? 'Extra +${AmountFormatter.ui(_d('extra_payment'), 'USD')}/mes → ahorrado ${AmountFormatter.ui(_d('interest_saved'), 'USD')}'
+                                            : 'Extra +${AmountFormatter.ui(_d('extra_payment'), 'USD')}/mo → saved ${AmountFormatter.ui(_d('interest_saved'), 'USD')}'),
                                     style: const TextStyle(
                                       color: AppTheme.accentGood,
                                       fontWeight: FontWeight.bold,

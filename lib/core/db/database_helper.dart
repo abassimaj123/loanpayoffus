@@ -6,7 +6,7 @@ class DatabaseHelper {
   static final instance = DatabaseHelper._();
   static Database? _db;
 
-  static const _dbVersion = 3;
+  static const _dbVersion = 4;
 
   Future<Database> get database async {
     _db ??= await _initDb();
@@ -39,7 +39,8 @@ class DatabaseHelper {
         input_hash TEXT,
         pin_label TEXT,
         pin_order INTEGER NOT NULL DEFAULT 0,
-        l1_json TEXT
+        l1_json TEXT,
+        extra_one_time INTEGER NOT NULL DEFAULT 0
       )
     ''');
     await _createDebtPaymentsTable(db);
@@ -59,6 +60,14 @@ class DatabaseHelper {
         'ALTER TABLE history ADD COLUMN pin_order INTEGER NOT NULL DEFAULT 0',
       );
       await db.execute('ALTER TABLE history ADD COLUMN l1_json TEXT');
+    }
+    if (oldVersion < 4) {
+      // Distinguishes a one-time lump-sum extra payment from a recurring
+      // monthly extra payment. Older rows predate this flag and default to
+      // 0 (recurring monthly), matching their original save-time behavior.
+      await db.execute(
+        'ALTER TABLE history ADD COLUMN extra_one_time INTEGER NOT NULL DEFAULT 0',
+      );
     }
   }
 

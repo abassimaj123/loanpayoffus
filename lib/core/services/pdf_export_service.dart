@@ -26,6 +26,7 @@ class _CalculatorPdfParams {
   final double interestRate;
   final double monthlyPayment;
   final double extraPayment;
+  final bool extraOneTime;
   final int monthsWithout;
   final int monthsWith;
   final double interestWithout;
@@ -41,6 +42,7 @@ class _CalculatorPdfParams {
     required this.interestRate,
     required this.monthlyPayment,
     required this.extraPayment,
+    required this.extraOneTime,
     required this.monthsWithout,
     required this.monthsWith,
     required this.interestWithout,
@@ -485,7 +487,9 @@ Future<Uint8List> _buildCalculatorPdf(_CalculatorPdfParams p) async {
                     ),
                     if (p.extraPayment > 0)
                       _row2Isolate(
-                        p.isEs ? 'Pago extra' : 'Extra payment',
+                        p.extraOneTime
+                            ? (p.isEs ? 'Pago extra único' : 'One-time extra payment')
+                            : (p.isEs ? 'Pago extra mensual' : 'Recurring monthly extra payment'),
                         _cur2Isolate.format(p.extraPayment),
                         bold: true,
                         color: _purple,
@@ -1324,6 +1328,7 @@ class PdfExportService {
     required double interestRate,
     required double monthlyPayment,
     required double extraPayment,
+    bool extraOneTime = false,
     required int monthsWithout,
     required int monthsWith,
     required double interestWithout,
@@ -1341,6 +1346,7 @@ class PdfExportService {
           interestRate: interestRate,
           monthlyPayment: monthlyPayment,
           extraPayment: extraPayment,
+          extraOneTime: extraOneTime,
           monthsWithout: monthsWithout,
           monthsWith: monthsWith,
           interestWithout: interestWithout,
@@ -1359,6 +1365,7 @@ class PdfExportService {
       interestRate: interestRate,
       monthlyPayment: monthlyPayment,
       extraPayment: extraPayment,
+      extraOneTime: extraOneTime,
       monthsWithout: monthsWithout,
       monthsWith: monthsWith,
       interestWithout: interestWithout,
