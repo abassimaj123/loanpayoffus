@@ -615,7 +615,7 @@ class _PayoffPlanScreenState extends ConsumerState<PayoffPlanScreen> {
                       _HeaderStat(s.months, '${result.extraMonths}', Colors.white),
                       _HeaderStat(
                         s.interest,
-                        AmountFormatter.ui(result.interestExtra, 'USD'),
+                        AmountFormatter.ui(result.interestExtra.roundToDouble(), 'USD'),
                         Colors.white70,
                       ),
                       _HeaderStat(
@@ -982,13 +982,13 @@ class _MonthGroupState extends State<_MonthGroup>
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       _MiniChip(
-                        label: AmountFormatter.ui(widget.totalPayment, 'USD'),
+                        label: AmountFormatter.ui(widget.totalPayment.roundToDouble(), 'USD'),
                         color: AppTheme.primaryDark,
                       ),
                       const SizedBox(height: 3),
                       _MiniChip(
                         label:
-                            '${AmountFormatter.ui(widget.totalInterest, 'USD')} int',
+                            '${AmountFormatter.ui(widget.totalInterest.roundToDouble(), 'USD')} int',
                         color: AppTheme.warning,
                       ),
                     ],
@@ -1043,15 +1043,15 @@ class _MonthGroupState extends State<_MonthGroup>
                 child: Row(
                   children: [
                     _Cell('${e.month}', 1, bold: last),
-                    _Cell(AmountFormatter.ui(e.payment, 'USD'), 2, bold: last),
-                    _Cell(AmountFormatter.ui(e.principal, 'USD'), 2, bold: last),
+                    _Cell(AmountFormatter.ui(e.payment.roundToDouble(), 'USD'), 2, bold: last),
+                    _Cell(AmountFormatter.ui(e.principal.roundToDouble(), 'USD'), 2, bold: last),
                     _Cell(
-                      AmountFormatter.ui(e.interest, 'USD'),
+                      AmountFormatter.ui(e.interest.roundToDouble(), 'USD'),
                       2,
                       color: AppTheme.warning,
                     ),
                     _Cell(
-                      AmountFormatter.ui(e.balance, 'USD'),
+                      AmountFormatter.ui(e.balance.roundToDouble(), 'USD'),
                       2,
                       bold: last,
                       color: last ? AppTheme.accentGood : null,

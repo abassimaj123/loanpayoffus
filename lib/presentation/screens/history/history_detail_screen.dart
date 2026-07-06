@@ -397,11 +397,15 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: bold ? FontWeight.bold : FontWeight.w600,
-              fontSize: AppTextSize.body,
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+                fontSize: AppTextSize.body,
+              ),
             ),
           ),
         ],
