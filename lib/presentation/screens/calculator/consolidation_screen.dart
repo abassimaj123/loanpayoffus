@@ -911,9 +911,8 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                   .withValues(alpha: 0.45),
                             ),
                           ),
-                          if (isPremium) ...[
-                            const SizedBox(height: AppSpacing.lg),
-                            SaveScenarioButton(onSave: _saveScenario),
+                          const SizedBox(height: AppSpacing.lg),
+                          SaveScenarioButton(onSave: _saveScenario),
                             const SizedBox(height: AppSpacing.sm),
                             if (hasResult)
                               SizedBox(
@@ -963,10 +962,15 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                       isEs: isEs,
                                     );
                                   },
-                                  icon: const Icon(
-                                    Icons.picture_as_pdf_rounded,
-                                    size: 18,
-                                  ),
+                                  icon: isPremium
+                                      ? const Icon(
+                                          Icons.picture_as_pdf_rounded,
+                                          size: 18,
+                                        )
+                                      : const Icon(
+                                          Icons.lock_outline_rounded,
+                                          size: 18,
+                                        ),
                                   label: Text(
                                     isEs ? 'Exportar PDF' : 'Export PDF',
                                   ),
@@ -983,7 +987,6 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
                                   ),
                                 ),
                               ),
-                          ],
                           const SizedBox(height: AppSpacing.listBottomInset),
                         ],
                       ),

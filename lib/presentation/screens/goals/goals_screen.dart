@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:calcwise_core/calcwise_core.dart';
+import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +15,8 @@ import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
 import '../../../main.dart' show paywallSession, smartHistoryService, historyRefreshNotifier, adService;
 import '../../providers/loan_provider.dart';
+import '../../widgets/paywall_soft.dart';
+import '../../widgets/paywall_hard.dart';
 import '../../widgets/save_scenario_button.dart';
 
 class GoalsScreen extends ConsumerStatefulWidget {
@@ -191,6 +193,10 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
       AnalyticsService.instance.logResultSaved();
     } catch (_) {}
     adService.onSave();
+    final trigger = await paywallSession.recordAction();
+    if (!mounted) return;
+    if (trigger == PaywallTrigger.soft) PaywallSoft.show(context);
+    if (trigger == PaywallTrigger.hard) PaywallHard.show(context);
   }
 
   @override

@@ -174,9 +174,19 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
     }
 
     _adDebounce?.cancel();
-    _adDebounce = Timer(const Duration(milliseconds: 1500), () {
-      adService.onAction();
-    });
+    // Skip the interstitial debounce entirely when this recalculation is
+    // about to trigger the "Debt Free!" milestone celebration — an
+    // interstitial popping right before/during that dialog is the worst
+    // possible timing.
+    final resultForAdGate = ref.read(payoffResultProvider);
+    final aboutToCelebrate = resultForAdGate != null &&
+        !_celebrationShown &&
+        (resultForAdGate.extraMonths <= 1 || resultForAdGate.extraMonths <= 0);
+    if (!aboutToCelebrate) {
+      _adDebounce = Timer(const Duration(milliseconds: 1500), () {
+        adService.onAction();
+      });
+    }
     // Haptic only fires the first time a result appears (not on every keystroke)
     final currentResult = ref.read(payoffResultProvider);
     if (currentResult != null && !_hadResult) {

@@ -595,58 +595,61 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                                   .withValues(alpha: 0.45),
                             ),
                           ),
-                          if (isPremium) ...[
-                            const SizedBox(height: AppSpacing.lg),
-                            SaveScenarioButton(onSave: _saveScenario),
-                            const SizedBox(height: AppSpacing.sm),
-                            if (hasResult)
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: () {
-                                    HapticFeedback.mediumImpact();
-                                    PdfExportService.exportRefinance(
-                                    context,
-                                    currentBalance:
-                                        _parseField(_balanceCtrl),
-                                    currentRate:
-                                        _parseField(_currentRateCtrl),
-                                    remainingMonths:
-                                        _parseField(_currentMonthsCtrl).toInt(),
-                                    newRate: _parseField(_newRateCtrl),
-                                    newTermMonths:
-                                        _parseField(_newTermCtrl).toInt(),
-                                    closingCosts:
-                                        _parseField(_closingCostsCtrl),
-                                    currentPayment: _currentPmt,
-                                    newPayment: _newPmt,
-                                    monthlySavings: _monthlySavings,
-                                    breakEvenMonths: _breakEvenMonths,
-                                    totalSavings: _totalSavings,
-                                    isEs: isEs,
-                                  );
-                                  },
-                                  icon: const Icon(
-                                    Icons.picture_as_pdf_rounded,
-                                    size: 18,
+                          const SizedBox(height: AppSpacing.lg),
+                          SaveScenarioButton(onSave: _saveScenario),
+                          const SizedBox(height: AppSpacing.sm),
+                          if (hasResult)
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  HapticFeedback.mediumImpact();
+                                  PdfExportService.exportRefinance(
+                                  context,
+                                  currentBalance:
+                                      _parseField(_balanceCtrl),
+                                  currentRate:
+                                      _parseField(_currentRateCtrl),
+                                  remainingMonths:
+                                      _parseField(_currentMonthsCtrl).toInt(),
+                                  newRate: _parseField(_newRateCtrl),
+                                  newTermMonths:
+                                      _parseField(_newTermCtrl).toInt(),
+                                  closingCosts:
+                                      _parseField(_closingCostsCtrl),
+                                  currentPayment: _currentPmt,
+                                  newPayment: _newPmt,
+                                  monthlySavings: _monthlySavings,
+                                  breakEvenMonths: _breakEvenMonths,
+                                  totalSavings: _totalSavings,
+                                  isEs: isEs,
+                                );
+                                },
+                                icon: isPremium
+                                    ? const Icon(
+                                        Icons.picture_as_pdf_rounded,
+                                        size: 18,
+                                      )
+                                    : const Icon(
+                                        Icons.lock_outline_rounded,
+                                        size: 18,
+                                      ),
+                                label: Text(
+                                  isEs ? 'Exportar PDF' : 'Export PDF',
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.primary,
+                                  side: const BorderSide(
+                                      color: AppTheme.primary),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        AppRadius.mdPlus),
                                   ),
-                                  label: Text(
-                                    isEs ? 'Exportar PDF' : 'Export PDF',
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppTheme.primary,
-                                    side: const BorderSide(
-                                        color: AppTheme.primary),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                          AppRadius.mdPlus),
-                                    ),
-                                    minimumSize:
-                                        const Size.fromHeight(44),
-                                  ),
+                                  minimumSize:
+                                      const Size.fromHeight(44),
                                 ),
                               ),
-                          ],
+                            ),
                           const SizedBox(height: AppSpacing.listBottomInset),
                         ],
                       ),

@@ -14,12 +14,10 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../../core/freemium/freemium_service.dart';
 import '../../../core/language/language_notifier.dart';
-import '../../../main.dart' show paywallSession;
+import '../../../core/services/pdf_export_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/strings_en.dart';
 import '../../../l10n/strings_es.dart';
-import '../../widgets/paywall_soft.dart';
-import '../../widgets/paywall_hard.dart';
 import '../../widgets/premium_badge.dart';
 
 /// Adds [months] calendar months to [from] (null-safe). Avoids the days*30
@@ -324,9 +322,16 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
   Future<void> _exportPdf(BuildContext context, AppStrings s) async {
     if (!freemiumService.hasFullAccess) {
-      await PaywallHard.show(context);
+      await PdfExportService.showUnlockOrPay(
+        context,
+        () => _doExportPdf(context, s),
+      );
       return;
     }
+    await _doExportPdf(context, s);
+  }
+
+  Future<void> _doExportPdf(BuildContext context, AppStrings s) async {
     setState(() => _isExporting = true);
     final ts = DateTime.tryParse(_e['created_at'] as String? ?? '');
     final tsStr = ts != null ? DateFormat('yyyyMMdd').format(ts) : 'export';

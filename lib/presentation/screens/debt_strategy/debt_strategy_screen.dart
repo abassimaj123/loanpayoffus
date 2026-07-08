@@ -1794,8 +1794,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                   ),
                 ],
 
-                if (freemiumService.hasFullAccess &&
-                    _strategyResult != null) ...[
+                if (_strategyResult != null) ...[
                   const SizedBox(height: AppSpacing.lg),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -1843,10 +1842,15 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                             isEs: isEs,
                           );
                         },
-                        icon: const Icon(
-                          Icons.picture_as_pdf_rounded,
-                          size: 18,
-                        ),
+                        icon: freemiumService.hasFullAccess
+                            ? const Icon(
+                                Icons.picture_as_pdf_rounded,
+                                size: 18,
+                              )
+                            : const Icon(
+                                Icons.lock_outline_rounded,
+                                size: 18,
+                              ),
                         label: Text(isEs ? 'Exportar PDF' : 'Export PDF'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.primary,
