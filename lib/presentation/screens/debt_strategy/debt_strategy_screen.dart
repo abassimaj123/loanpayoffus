@@ -254,7 +254,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
     final initial = saved.isNotEmpty
         ? saved
         : hasSeeded
-            ? const <DebtItem>[]
+            ? <DebtItem>[]
             : [
                 DebtItem.create(
                   name: 'Credit Card',
