@@ -606,7 +606,19 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                           final bal = _parseNum(balCtrl.text);
                           final rate = _parseNum(rateCtrl.text);
                           final minPmt = _parseNum(minCtrl.text);
-                          if (name.isEmpty || bal <= 0 || minPmt <= 0) return;
+                          if (name.isEmpty || bal <= 0 || minPmt <= 0) {
+                            ScaffoldMessenger.of(sheetCtx).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  isEs
+                                      ? 'Completa nombre, saldo y pago mínimo (mayores a cero).'
+                                      : 'Fill in name, balance and min payment (greater than zero).',
+                                ),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
                           Navigator.pop(
                             sheetCtx,
                             existing == null
