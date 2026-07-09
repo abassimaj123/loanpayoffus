@@ -11,8 +11,8 @@ import 'package:printing/printing.dart';
 import '../theme/app_theme.dart';
 import '../../main.dart';
 import '../freemium/freemium_service.dart';
-import '../../presentation/widgets/paywall_hard.dart';
-import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard;
+import '../freemium/iap_service.dart';
+import 'package:calcwise_core/calcwise_core.dart';
 import '../firebase/analytics_service.dart';
 
 const _purple = PdfColor(0.290, 0.196, 0.784); // LoanPayoff purple
@@ -1613,209 +1613,15 @@ class PdfExportService {
     BuildContext context,
     Future<void> Function() onExport,
   ) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => _PdfUnlockSheet(onExport: onExport),
-    );
-  }
-}
-
-class _PdfUnlockSheet extends StatefulWidget {
-  final Future<void> Function() onExport;
-  const _PdfUnlockSheet({required this.onExport});
-  @override
-  State<_PdfUnlockSheet> createState() => _PdfUnlockSheetState();
-}
-
-class _PdfUnlockSheetState extends State<_PdfUnlockSheet> {
-  bool _loading = false;
-  Future<void> _watchAd() async {
-    setState(() => _loading = true);
-    final earned = await adService.showRewarded();
-    if (!mounted) return;
-    setState(() => _loading = false);
-    if (earned) {
-      Navigator.pop(context);
-      await widget.onExport();
-    } else
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isSpanishNotifier.value
-                ? 'Anuncio no disponible. Inténtalo más tarde.'
-                : 'Ad not available. Try again later.',
-          ),
-        ),
-      );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final adReady = adService.isRewardedReady;
-    final isEs = isSpanishNotifier.value;
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 12,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 28,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFCBD5E1),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Icon(
-            Icons.picture_as_pdf_rounded,
-            size: 36,
-            color: AppTheme.primary,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            isEs ? 'Exportar PDF' : 'Export PDF',
-            style: const TextStyle(
-              fontSize: AppTextSize.subtitle,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            isEs
-                ? 'Elige cómo desbloquear la exportación'
-                : 'Choose how to unlock PDF export',
-            style: TextStyle(
-              fontSize: AppTextSize.md,
-              color:
-                  Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Opacity(
-            opacity: adReady ? 1.0 : 0.45,
-            child: InkWell(
-              onTap: (adReady && !_loading) ? _watchAd : null,
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: AppTheme.primary.withValues(alpha: 0.3),
-                  ),
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.play_circle_outline,
-                        color: AppTheme.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isEs ? 'Ver un video corto' : 'Watch a short video',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: AppTextSize.bodyMd,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            isEs
-                                ? 'Exportar una vez — gratis'
-                                : 'Export once — free',
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.65),
-                              fontSize: AppTextSize.md,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (_loading)
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: Color(0xFF94A3B8),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                PaywallHard.show(context);
-              },
-              icon: const Icon(Icons.workspace_premium, size: 18),
-              label: Text(
-                isEs
-                    ? 'Premium (ilimitado)'
-                    : 'Premium (unlimited)',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentGood,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              isEs ? 'Ahora no' : 'Not now',
-              style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.65)),
-            ),
-          ),
-        ],
-      ),
+    if (freemiumService.hasFullAccess) {
+      await onExport();
+      return;
+    }
+    await PaywallHard.show(
+      context,
+      isSpanish: isSpanishNotifier.value,
+      onPurchase: IAPService.instance.buy,
+      onWatchAd: () => CalcwiseRewardAdSheet.show(context),
     );
   }
 }
