@@ -652,6 +652,12 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
 
     if (result == null) return;
     final bool isNewDebt = index == null;
+    // Defer to the next frame so the bottom sheet's own pop/dispose fully
+    // settles before this screen rebuilds — doing it synchronously right
+    // after the sheet Future resolves races the sheet's element teardown
+    // and can leave a dangling InheritedElement dependent.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
     setState(() {
       if (index != null) {
         _debts[index] = result;
