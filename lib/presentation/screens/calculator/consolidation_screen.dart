@@ -68,6 +68,10 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
   final _consolidationRateCtrl = TextEditingController(text: '12.5');
   int _termMonths = 48;
 
+  // Tracks the total balance the loan-amount field was last auto-synced to,
+  // so we can tell "user hasn't touched it" apart from "total just changed".
+  double _lastSyncedTotalBalance = 0;
+
   // Results
   double _totalCurrentBalance = 0;
   double _totalCurrentMonthlyPayment = 0;
@@ -176,13 +180,17 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
     _averageCurrentRate =
         totalBalance > 0 ? weightedRateSum / totalBalance : 0;
 
-    // Sync loan amount field if user hasn't manually edited it
+    // Sync loan amount field if user hasn't manually edited it since the
+    // last auto-sync (compare against the previously-synced total, not the
+    // just-reassigned _totalCurrentBalance, or this never re-triggers when
+    // debts are added/edited).
     final loanAmountVal = _parseField(_loanAmountCtrl);
-    if (loanAmountVal == 0 || loanAmountVal == _totalCurrentBalance) {
+    if (loanAmountVal == 0 || loanAmountVal == _lastSyncedTotalBalance) {
       // Keep in sync with total balance
       _loanAmountCtrl.text = totalBalance > 0
           ? totalBalance.toStringAsFixed(0)
           : '';
+      _lastSyncedTotalBalance = totalBalance;
     }
 
     // Consolidation loan
