@@ -1,10 +1,12 @@
 import 'dart:async';
-import 'package:calcwise_core/calcwise_core.dart';
+import 'package:calcwise_core/calcwise_core.dart' hide PaywallHard, PaywallSoft;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'refinance_screen.dart';
 import 'consolidation_screen.dart';
+import '../../widgets/paywall_hard.dart';
+import '../../widgets/paywall_soft.dart';
 import '../../../core/services/pdf_export_service.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
