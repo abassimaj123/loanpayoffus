@@ -650,14 +650,16 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
       ),
     );
 
-    if (result == null) return;
-    final bool isNewDebt = index == null;
     // Defer to the next frame so the bottom sheet's own pop/dispose fully
-    // settles before this screen rebuilds — doing it synchronously right
-    // after the sheet Future resolves races the sheet's element teardown
-    // and can leave a dangling InheritedElement dependent.
+    // settles before this screen rebuilds or disposes the field controllers
+    // (in the `finally` below) — doing either synchronously right after the
+    // sheet Future resolves races the sheet's element teardown and can leave
+    // a dangling InheritedElement dependent. This applies on EVERY dismissal
+    // path (Save, Cancel, back button, tap-outside), not just Save.
     await WidgetsBinding.instance.endOfFrame;
+    if (result == null) return;
     if (!mounted) return;
+    final bool isNewDebt = index == null;
     setState(() {
       if (index != null) {
         _debts[index] = result;
