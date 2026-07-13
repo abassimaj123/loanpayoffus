@@ -58,7 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── Premium ──
           _SectionHeader('Premium'),
           ValueListenableBuilder<bool>(
-            valueListenable: freemiumService.hasFullAccessNotifier,
+            valueListenable: freemiumService.isPremiumNotifier,
             builder: (context, isPremium, _) => isPremium
                 ? ListTile(
                     leading: const Icon(
