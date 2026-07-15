@@ -8,9 +8,13 @@ import 'database_helper.dart';
 /// Bridges SmartHistoryService (which speaks HistoryEntry / l1_json / l2_json)
 /// to LoanPayoffUS's flat sqflite `history` table.
 ///
-/// `app_key` / `screen_id` are always 'loanpayoffus' / 'calculator' for this
-/// app. The flat columns (loan_amount, interest_rate, …) are preserved so the
-/// existing HistoryDetailScreen continues to read them directly.
+/// `app_key` is always 'loanpayoffus'. `screen_id` varies per save-capable
+/// screen (calculator, consolidation, refinance, debt_strategy, goals,
+/// payoff_plan) and is persisted per row so hash lookups stay scoped to the
+/// originating screen — two screens whose rounded inputs hash identically
+/// must never merge into one row. The flat columns (loan_amount,
+/// interest_rate, …) are preserved so the existing HistoryDetailScreen
+/// continues to read them directly.
 class LoanPayoffUSDatabaseAdapter implements DatabaseAdapter {
   static const _appKey = 'loanpayoffus';
   static const _screenId = 'calculator';
@@ -23,6 +27,7 @@ class LoanPayoffUSDatabaseAdapter implements DatabaseAdapter {
     final savedAt = DateTime.fromMillisecondsSinceEpoch(row['saved_at'] as int);
 
     return DatabaseHelper.instance.insertHistory({
+      'screen_id': (row['screen_id'] as String?) ?? _screenId,
       'loan_type': (l2['loan_type'] as String?) ?? '',
       'loan_amount': (l2['loan_amount'] as num?)?.toDouble() ?? 0.0,
       'interest_rate': (l2['interest_rate'] as num?)?.toDouble() ?? 0.0,
@@ -71,9 +76,13 @@ class LoanPayoffUSDatabaseAdapter implements DatabaseAdapter {
   @override
   Future<Map<String, dynamic>?> getRowByHash({
     required String appKey,
+    required String screenId,
     required String resultHash,
   }) async {
-    final row = await DatabaseHelper.instance.getHistoryByHash(resultHash);
+    final row = await DatabaseHelper.instance.getHistoryByHash(
+      resultHash,
+      screenId: screenId,
+    );
     return row == null ? null : _toAdapterRow(row);
   }
 
@@ -127,7 +136,7 @@ class LoanPayoffUSDatabaseAdapter implements DatabaseAdapter {
     return {
       'id': row['id'],
       'app_key': _appKey,
-      'screen_id': _screenId,
+      'screen_id': (row['screen_id'] as String?) ?? _screenId,
       'result_hash': (row['input_hash'] as String?) ?? '',
       'l1_json': l1Json,
       'l2_json': l2Json,

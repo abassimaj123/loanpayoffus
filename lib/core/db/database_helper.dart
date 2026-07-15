@@ -6,7 +6,7 @@ class DatabaseHelper {
   static final instance = DatabaseHelper._();
   static Database? _db;
 
-  static const _dbVersion = 4;
+  static const _dbVersion = 5;
 
   Future<Database> get database async {
     _db ??= await _initDb();
@@ -40,7 +40,8 @@ class DatabaseHelper {
         pin_label TEXT,
         pin_order INTEGER NOT NULL DEFAULT 0,
         l1_json TEXT,
-        extra_one_time INTEGER NOT NULL DEFAULT 0
+        extra_one_time INTEGER NOT NULL DEFAULT 0,
+        screen_id TEXT NOT NULL DEFAULT 'calculator'
       )
     ''');
     await _createDebtPaymentsTable(db);
@@ -67,6 +68,16 @@ class DatabaseHelper {
       // 0 (recurring monthly), matching their original save-time behavior.
       await db.execute(
         'ALTER TABLE history ADD COLUMN extra_one_time INTEGER NOT NULL DEFAULT 0',
+      );
+    }
+    if (oldVersion < 5) {
+      // Scopes history lookups by originating screen/tool. Without this,
+      // saves from different screens (calculator, consolidation, refinance,
+      // debt_strategy, goals, payoff_plan) whose rounded inputs hash to the
+      // same value can silently merge via the pinned-promotion path.
+      // Existing rows predate per-screen tracking; default to 'calculator'.
+      await db.execute(
+        "ALTER TABLE history ADD COLUMN screen_id TEXT NOT NULL DEFAULT 'calculator'",
       );
     }
   }
@@ -102,12 +113,15 @@ class DatabaseHelper {
     );
   }
 
-  Future<Map<String, dynamic>?> getHistoryByHash(String hash) async {
+  Future<Map<String, dynamic>?> getHistoryByHash(
+    String hash, {
+    required String screenId,
+  }) async {
     final db = await database;
     final rows = await db.query(
       'history',
-      where: 'input_hash = ?',
-      whereArgs: [hash],
+      where: 'input_hash = ? AND screen_id = ?',
+      whereArgs: [hash, screenId],
       limit: 1,
     );
     return rows.isEmpty ? null : rows.first;
