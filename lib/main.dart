@@ -339,35 +339,41 @@ class _MainShellState extends State<_MainShell> {
           ),
         ],
       ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: List.generate(
-          _screens.length,
-          (i) => IgnorePointer(
-            ignoring: _index != i,
-            child: CalcwiseTabReveal(active: _index == i, child: _screens[i]),
+      body: SafeArea(
+        bottom: false,
+        child: Stack(
+          fit: StackFit.expand,
+          children: List.generate(
+            _screens.length,
+            (i) => IgnorePointer(
+              ignoring: _index != i,
+              child: CalcwiseTabReveal(active: _index == i, child: _screens[i]),
+            ),
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).shadowColor.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: NavigationBar(
-          selectedIndex: _index,
-          onDestinationSelected: _onTabSelected,
-          destinations: List.generate(
-            labels.length,
-            (i) => NavigationDestination(
-              icon: Icon(_iconsOutlined[i]),
-              selectedIcon: Icon(_icons[i], color: AppTheme.primary),
-              label: labels[i],
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).shadowColor.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: NavigationBar(
+            selectedIndex: _index,
+            onDestinationSelected: _onTabSelected,
+            destinations: List.generate(
+              labels.length,
+              (i) => NavigationDestination(
+                icon: Icon(_iconsOutlined[i]),
+                selectedIcon: Icon(_icons[i], color: AppTheme.primary),
+                label: labels[i],
+              ),
             ),
           ),
         ),
