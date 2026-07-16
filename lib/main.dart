@@ -58,7 +58,11 @@ class AdConfig {
   AdConfig._();
 
   // Google official TEST ad unit IDs (debug + release fallback).
-  static const _testBannerAndroid = 'ca-app-pub-3940256099942544/6300978111';
+  // bannerAndroid uses the ADAPTIVE banner test unit — the fixed-size banner
+  // test unit (6300978111) serves a 320x50 creative letterboxed inside
+  // whatever adaptive size is requested, showing a visible border a real ad
+  // wouldn't have.
+  static const _testBannerAndroid = 'ca-app-pub-3940256099942544/9214589741';
   static const _testInterstitialAndroid = 'ca-app-pub-3940256099942544/1033173712';
   static const _testRewardedAndroid = 'ca-app-pub-3940256099942544/5224354917';
 
