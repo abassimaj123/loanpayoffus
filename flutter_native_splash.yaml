@@ -1,12 +1,24 @@
+# Native launch screen (pre-Flutter), pre-Android-12 devices only.
+# No `image:` here — a static image sitting on screen before Flutter loads
+# makes CalcwiseSplash's own dot-intro animation read as "not happening"
+# (on-device feedback, RetirementCA 2026-07-18). Plain color lets Flutter's
+# dots be the first thing that visibly moves.
 flutter_native_splash:
   color: "#512DA8"
   color_dark: "#512DA8"
-  image: assets/images/app_icon.png
-  android_12:
-    color: "#512DA8"
-    image: assets/images/app_icon.png
-    icon_background_color: "#512DA8"
-    icon_background_color_dark: "#512DA8"
   fullscreen: true
   android: true
   ios: false
+
+# Android 12+ SplashScreen API (android/app/src/main/res/values-v31/styles.xml)
+# is HAND-AUTHORED, not managed by flutter_native_splash above.
+# windowSplashScreenAnimatedIcon points at @drawable/animated_splash_dots, a
+# native AnimatedVectorDrawable that pulses 3 white dots at the OS level so
+# there's zero gap before Flutter's own CalcwiseSplash dot intro takes over.
+# Do NOT add an `android_12:` block to this file and run
+# `flutter_native_splash:create` — this file takes PRIORITY over pubspec.yaml's
+# flutter_native_splash config, and would overwrite styles-v31.xml back to a
+# static image, silently killing the dot animation (this exact bug hit
+# MortgageCA 2026-07-18, fixed in commit c013dcb; found still pointing at a
+# stale icon during the LoanPayoffUS icon refresh, 2026-07-18 — never
+# actually run against current code, but a live landmine).
