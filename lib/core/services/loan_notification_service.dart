@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
+import '../firebase/analytics_service.dart';
 
 class LoanNotificationService {
   LoanNotificationService._();
@@ -19,7 +20,16 @@ class LoanNotificationService {
 
       const android = AndroidInitializationSettings('@mipmap/ic_launcher');
       const settings = InitializationSettings(android: android);
-      await _plugin.initialize(settings);
+      await _plugin.initialize(
+        settings,
+        // "Fired but not tapped" isn't observable for local notifications
+        // without a running background isolate — tap is the funnel step we
+        // can actually measure.
+        onDidReceiveNotificationResponse: (response) {
+          AnalyticsService.instance
+              .logReminderTapped(response.payload ?? 'monthly_checkin');
+        },
+      );
 
       const channel = AndroidNotificationChannel(
         _channelId,
@@ -94,7 +104,9 @@ class LoanNotificationService {
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
+      payload: 'monthly_checkin',
     );
+    AnalyticsService.instance.logReminderScheduled('monthly_checkin');
   }
 
   static Future<void> cancel() async {
