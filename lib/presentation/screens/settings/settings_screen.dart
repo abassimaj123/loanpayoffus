@@ -268,6 +268,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             onTap: () => _launch('https://calqwise.com'),
           ),
+          ListTile(
+            leading: const Icon(Icons.grid_view_rounded, color: AppTheme.primary),
+            title: Text(isEs ? 'Más apps de CalqWise' : 'More apps by CalqWise'),
+            subtitle: Text(isEs
+                ? 'Ver todas nuestras calculadoras'
+                : 'See all our calculators'),
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.45),
+            ),
+            onTap: () => _launch(
+                'https://play.google.com/store/apps/developer?id=Dailywave+Apps'),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
