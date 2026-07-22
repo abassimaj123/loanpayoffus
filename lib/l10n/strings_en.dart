@@ -196,7 +196,7 @@ class AppStringsEN implements AppStrings {
   final interestLabel = 'Interest';
 
   // Debt Strategy
-  final navDebtStrategy = 'Strategy';
+  final navDebtStrategy = 'My Debts';
 
   // History Detail
   final historyDetail = 'Loan Detail';

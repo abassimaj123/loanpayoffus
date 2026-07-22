@@ -90,7 +90,7 @@ class AppStringsES implements AppStrings {
   final interestLabel = 'Interés';
 
   // Debt Strategy
-  final navDebtStrategy = 'Estrategia';
+  final navDebtStrategy = 'Mis Deudas';
 
   // History Detail
   final historyDetail = 'Detalle del Préstamo';

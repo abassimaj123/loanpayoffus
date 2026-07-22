@@ -21,7 +21,12 @@ const _savingsDarkColor = Color(0xFF009624);
 const _warningDarkColor = Color(0xFFE65100);
 
 class RefinanceScreen extends ConsumerStatefulWidget {
-  const RefinanceScreen({super.key});
+  /// Optional seed values from the main calculator so the current-loan
+  /// fields reflect the user's actual loan instead of the screen's own
+  /// canned defaults.
+  final double? seedBalance;
+  final double? seedRate;
+  const RefinanceScreen({super.key, this.seedBalance, this.seedRate});
 
   @override
   ConsumerState<RefinanceScreen> createState() => _RefinanceScreenState();
@@ -46,11 +51,25 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
   double _totalNewCost = 0;
   double _totalSavings = 0;
   int _breakEvenMonths = 0;
+  bool _seededFromCalc = false;
 
   @override
   void initState() {
     super.initState();
     AnalyticsService.instance.logScreenView('refinance');
+    // Prefer the explicit seed passed from the calculator's CTA (the exact
+    // values the user was looking at when they tapped through); fall back to
+    // whatever's currently in the shared loan provider.
+    final seedBal = widget.seedBalance;
+    final seedRate = widget.seedRate;
+    if (seedBal != null && seedBal > 0) {
+      _balanceCtrl.text = seedBal.toStringAsFixed(0);
+      _seededFromCalc = true;
+    }
+    if (seedRate != null && seedRate > 0) {
+      _currentRateCtrl.text = seedRate.toStringAsFixed(2);
+      _seededFromCalc = true;
+    }
     isSpanishNotifier.addListener(_onLangChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -58,10 +77,13 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
       // Only overwrite defaults when the user has actually entered a loan
       // (loanAmount > 0 guards against the provider's own default values
       // being a worse UX than our own sensible defaults).
-      final loanInput = ref.read(loanInputProvider);
-      if (loanInput.loanAmount > 0) {
-        _balanceCtrl.text = loanInput.loanAmount.toStringAsFixed(0);
-        _currentRateCtrl.text = loanInput.interestRatePct.toStringAsFixed(2);
+      if (!_seededFromCalc) {
+        final loanInput = ref.read(loanInputProvider);
+        if (loanInput.loanAmount > 0) {
+          _balanceCtrl.text = loanInput.loanAmount.toStringAsFixed(0);
+          _currentRateCtrl.text = loanInput.interestRatePct.toStringAsFixed(2);
+          _seededFromCalc = true;
+        }
       }
       _calculate();
     });
@@ -285,6 +307,13 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
               body: CalcwisePageEntrance(
                   child: Column(
                 children: [
+                  if (_seededFromCalc)
+                    CalcSourceBanner(
+                      label: isEs ? 'Desde tu calculadora:' : 'From your calculator:',
+                      summary: isEs
+                          ? '\$${_balanceCtrl.text} al ${_currentRateCtrl.text}%'
+                          : '\$${_balanceCtrl.text} at ${_currentRateCtrl.text}%',
+                    ),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -438,6 +467,22 @@ class _RefinanceScreenState extends ConsumerState<RefinanceScreen> {
                               ),
                               ),
                             ),
+
+                            if (_breakEvenMonths > 0) ...[
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                isEs
+                                    ? 'Punto de equilibrio: meses hasta que el ahorro cubra los costos de cierre.'
+                                    : 'Break-even: months until your refinance savings cover the closing costs.',
+                                style: TextStyle(
+                                  fontSize: AppTextSize.xs,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.55),
+                                ),
+                              ),
+                            ],
 
                             const SizedBox(height: AppSpacing.sm),
 

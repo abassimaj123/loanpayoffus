@@ -761,6 +761,21 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                             },
                           ),
                         ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                          child: Text(
+                            isEs
+                                ? 'Paga más del mínimo cada mes para terminar antes'
+                                : 'Pay more than required each month to finish sooner',
+                            style: TextStyle(
+                              fontSize: AppTextSize.xs,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ),
                         // ── Tick labels ──
                         if (!_extraOneTime)
                           Padding(
@@ -971,11 +986,23 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                                             ),
                                           ),
                                         ),
+                                        const SizedBox(height: AppSpacing.lg),
+                                        Text(
+                                          isEs ? 'Más Calculadoras' : 'More Calculators',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: AppTextSize.bodyMd,
+                                            color: AppTheme.primaryDark,
+                                          ),
+                                        ),
                                         const SizedBox(height: AppSpacing.sm),
                                         // index 3 — Refinance Calculator CTA
                                         CalcwiseStaggerItem(
                                           index: 3,
-                                          child: _RefinanceCta(isEs: isEs),
+                                          child: _RefinanceCta(
+                                            isEs: isEs,
+                                            input: input,
+                                          ),
                                         ),
                                         const SizedBox(height: AppSpacing.sm),
                                         CalcwiseStaggerItem(
@@ -1940,7 +1967,8 @@ class _ConsolidationCta extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _RefinanceCta extends StatelessWidget {
   final bool isEs;
-  const _RefinanceCta({required this.isEs});
+  final LoanInput input;
+  const _RefinanceCta({required this.isEs, required this.input});
 
   @override
   Widget build(BuildContext context) {
@@ -1948,7 +1976,12 @@ class _RefinanceCta extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.xl),
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const RefinanceScreen()),
+          MaterialPageRoute(
+            builder: (_) => RefinanceScreen(
+              seedBalance: input.loanAmount,
+              seedRate: input.interestRatePct,
+            ),
+          ),
         );
       },
       child: Container(

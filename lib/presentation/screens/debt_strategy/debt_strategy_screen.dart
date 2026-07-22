@@ -2,6 +2,7 @@ import 'dart:async' show unawaited;
 import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:fl_chart/fl_chart.dart';
@@ -15,8 +16,10 @@ import '../../../core/db/debt_payment_persistence.dart';
 import '../../../domain/models/debt_item.dart';
 import '../../../domain/models/debt_category.dart';
 import '../../../domain/models/debt_payment.dart';
+import '../../../domain/models/loan_type.dart';
 import '../../../core/language/language_notifier.dart';
 import '../../../core/services/pdf_export_service.dart';
+import '../../providers/loan_provider.dart';
 import '../../widgets/paywall_soft.dart';
 import '../../widgets/paywall_hard.dart';
 import 'payments_history_screen.dart';
@@ -138,14 +141,15 @@ double _parseNum(String v) {
 // ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
-class DebtStrategyScreen extends StatefulWidget {
+class DebtStrategyScreen extends ConsumerStatefulWidget {
   const DebtStrategyScreen({super.key});
 
   @override
-  State<DebtStrategyScreen> createState() => _DebtStrategyScreenState();
+  ConsumerState<DebtStrategyScreen> createState() =>
+      _DebtStrategyScreenState();
 }
 
-class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
+class _DebtStrategyScreenState extends ConsumerState<DebtStrategyScreen> {
   final _extraCtrl = TextEditingController(text: '0');
 
   // ── Snowflake (one-time windfall) ─────────────────────────────────────────
@@ -297,6 +301,38 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   }
 
   void _persist() => DebtPersistence.instance.save(_debts);
+
+  /// Imports the loan currently entered on the main Calculator screen as the
+  /// first entry in this multi-debt list, so users don't have to re-type
+  /// numbers they already entered elsewhere.
+  void _importFromCalculator() {
+    final loan = ref.read(loanInputProvider);
+    if (loan.loanAmount <= 0) return;
+    final category = switch (loan.loanType) {
+      LoanType.mortgage => DebtCategory.mortgage,
+      LoanType.auto => DebtCategory.autoLoan,
+      LoanType.student => DebtCategory.studentLoan,
+      LoanType.creditCard => DebtCategory.creditCard,
+      LoanType.personal => DebtCategory.personal,
+    };
+    final debt = DebtItem.create(
+      name: loan.loanType.label,
+      balance: loan.loanAmount,
+      annualRate: loan.interestRatePct,
+      minPayment: loan.monthlyPayment > 0 ? loan.monthlyPayment : 25,
+      category: category,
+    );
+    setState(() {
+      _debts.add(debt);
+      _customOrder.add(debt.id);
+    });
+    AnalyticsService.instance.logDebtAdded(
+      balance: debt.balance,
+      rate: debt.annualRate,
+    );
+    _persist();
+    _runCalc();
+  }
 
   /// Returns debts with `priority` field set according to `_customOrder`.
   List<DebtItem> get _debtsWithPriority {
@@ -1099,6 +1135,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
   @override
   Widget build(BuildContext context) {
     final isEs = isSpanishNotifier.value;
+    final calcLoanAmount = ref.watch(loanInputProvider).loanAmount;
 
     if (!_loaded) {
       return const _DebtStrategySkeleton();
@@ -1278,32 +1315,18 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                 const SizedBox(height: AppSpacing.sm),
 
                 if (_debts.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.lg,
-                      horizontal: AppSpacing.md,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.account_balance_wallet_outlined,
-                          size: 20,
-                          color: CalcwiseTheme.of(context).textSecondary,
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Text(
-                            isEs
-                                ? 'Agrega tu primera deuda para empezar.'
-                                : 'Add your first debt to get started.',
-                            style: TextStyle(
-                              fontSize: AppTextSize.sm,
-                              color: CalcwiseTheme.of(context).textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  CalcwiseEmptyState(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: isEs ? 'Agrega tu primera deuda' : 'Add your first debt',
+                    body: isEs
+                        ? 'Aquí puedes controlar varias deudas a la vez — esto es distinto del préstamo único de tu Calculadora.'
+                        : 'Track multiple debts here — this is separate from your single-loan Calculator.',
+                    actionLabel: calcLoanAmount > 0
+                        ? (isEs
+                            ? 'Importar desde la Calculadora'
+                            : 'Import from Calculator')
+                        : null,
+                    onAction: calcLoanAmount > 0 ? _importFromCalculator : null,
                   ),
 
                 ..._debts.asMap().entries.map(
@@ -1553,8 +1576,8 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                 _SectionHeader(
                   icon: Icons.auto_awesome_rounded,
                   title: isEs
-                      ? 'Pago Único (Windfall)'
-                      : 'Windfall Payment (one-time)',
+                      ? 'Pago Único Adicional'
+                      : 'One-Time Extra Payment',
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
@@ -1581,7 +1604,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(
-                      isEs ? 'Activar pago único' : 'Enable windfall payment',
+                      isEs ? 'Activar pago único' : 'Enable one-time extra payment',
                       style: const TextStyle(fontSize: AppTextSize.body),
                     ),
                   ],
@@ -1592,7 +1615,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                     children: [
                       Expanded(
                         child: _field(
-                          isEs ? 'Monto (\$)' : 'Windfall Amount (\$)',
+                          isEs ? 'Monto (\$)' : 'Extra Amount (\$)',
                           _snowflakeCtrl,
                           numeric: true,
                         ),
@@ -1626,7 +1649,7 @@ class _DebtStrategyScreenState extends State<DebtStrategyScreen> {
                           },
                           icon: const Icon(Icons.bolt_rounded, size: 16),
                           label: Text(
-                            isEs ? 'Aplicar pago único' : 'Apply Windfall',
+                            isEs ? 'Aplicar pago único' : 'Apply Extra Payment',
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.primary,

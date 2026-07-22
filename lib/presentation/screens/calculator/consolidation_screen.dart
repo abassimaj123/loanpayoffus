@@ -72,6 +72,8 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
   // so we can tell "user hasn't touched it" apart from "total just changed".
   double _lastSyncedTotalBalance = 0;
 
+  bool _seededFromCalc = false;
+
   // Results
   double _totalCurrentBalance = 0;
   double _totalCurrentMonthlyPayment = 0;
@@ -99,6 +101,8 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
       ),
       _DebtEntry(),
     ];
+    _seededFromCalc = (seedBal != null && seedBal > 0) ||
+        (seedRate != null && seedRate > 0);
     AnalyticsService.instance.logScreenView('consolidation');
     isSpanishNotifier.addListener(_onLangChange);
     _calculate();
@@ -495,6 +499,13 @@ class _ConsolidationScreenState extends State<ConsolidationScreen> {
               body: CalcwisePageEntrance(
                   child: Column(
                 children: [
+                  if (_seededFromCalc)
+                    CalcSourceBanner(
+                      label: isEs ? 'Desde tu calculadora:' : 'From your calculator:',
+                      summary: isEs
+                          ? '\$${_debts.first.balanceCtrl.text} al ${_debts.first.rateCtrl.text}%'
+                          : '\$${_debts.first.balanceCtrl.text} at ${_debts.first.rateCtrl.text}%',
+                    ),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(AppSpacing.lg),
